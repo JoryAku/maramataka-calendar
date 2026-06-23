@@ -1,0 +1,19 @@
+{
+  "name": "maramataka-domain",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "maramataka-domain/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/maramataka-domain",
+        "main": "maramataka-domain/src/index.ts",
+        "tsConfig": "maramataka-domain/tsconfig.lib.json",
+        "assets": ["maramataka-domain/*.md"]
+      }
+    }
+  }
+}

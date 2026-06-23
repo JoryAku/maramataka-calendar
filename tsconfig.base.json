@@ -13,7 +13,13 @@
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "paths": {}
+    "paths": {
+      "@maramataka-calendar/maramataka-domain": [
+        "./maramataka-domain/src/index.ts"
+      ],
+      "@maramataka-calendar/astronomy": ["./astronomy/src/index.ts"],
+      "@maramataka-calendar/location": ["./location/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
