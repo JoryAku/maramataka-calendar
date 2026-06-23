@@ -1,0 +1,11 @@
+{
+  "name": "maramataka-calendar-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/maramataka-calendar-e2e/src",
+  "implicitDependencies": [
+    "maramataka-calendar"
+  ],
+  "// targets": "to see all targets run: nx show project maramataka-calendar-e2e --web",
+  "targets": {}
+}
