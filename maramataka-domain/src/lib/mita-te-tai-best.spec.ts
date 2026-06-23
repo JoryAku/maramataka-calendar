@@ -8,4 +8,10 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
   it('has 30 mata', () => {
     expect(MITA_TE_TAI_BEST_MATA).toHaveLength(30);
   });
+
+  it('has sequential indexes', () => {
+    MITA_TE_TAI_BEST_MATA.forEach((mata, i) => {
+      expect(mata.index).toBe(i + 1);
+    });
+  });
 });
