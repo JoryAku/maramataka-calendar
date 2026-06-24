@@ -6,13 +6,13 @@ export interface Location {
 
 export interface NewMoon {
   occursAt: Date;
-  source: 'usno';
+  source: string;
 }
 
 export interface Sunset {
   date: string;
   occursAt: Date;
-  source: 'usno';
+  source: string;
 }
 
 export interface AstronomyProvider {

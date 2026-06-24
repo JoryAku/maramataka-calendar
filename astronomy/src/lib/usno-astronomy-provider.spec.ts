@@ -50,6 +50,7 @@ describe('UsnoAstronomyProvider', () => {
 
     expect(result[0].source).toBe('usno');
     expect(result[0].occursAt).toBeInstanceOf(Date);
+    expect(result[0].occursAt.getTime()).not.toBeNaN();
     expect(result[0].occursAt.toISOString()).toBe('2026-01-09T04:05:00.000Z');
   });
 
