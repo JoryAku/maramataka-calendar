@@ -63,6 +63,27 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Version:');
   });
 
+  it('uses Pacific/Auckland calendar date for the API date parameter', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T11:30:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    const request = httpTestingController.expectOne((req) =>
+      req.url === '/api/maramataka/month'
+    );
+
+    expect(request.request.params.get('date')).toBe('2026-01-02');
+    expect(request.request.params.get('tz')).toBe('13');
+
+    request.flush({
+      version: 'mita-te-tai-best',
+      whiroStartsAt: '2026-01-10T06:45:00.000Z',
+      nights: [],
+    });
+  });
+
   it('highlights the current maramataka night', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-10T12:00:00.000Z'));

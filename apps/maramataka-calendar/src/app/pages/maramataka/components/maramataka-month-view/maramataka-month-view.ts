@@ -10,6 +10,8 @@ import { MaramatakaNightCard } from '../maramataka-night-card/maramataka-night-c
   styleUrl: './maramataka-month-view.css',
 })
 export class MaramatakaMonthView {
+  protected readonly nzTimeZone = 'Pacific/Auckland';
+
   month = input.required<MaramatakaMonth>();
   now = input.required<Date>();
 

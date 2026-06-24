@@ -9,6 +9,8 @@ import { MaramatakaNight } from '../../maramataka.models';
   styleUrl: './maramataka-night-card.css',
 })
 export class MaramatakaNightCard {
+  protected readonly nzTimeZone = 'Pacific/Auckland';
+
   night = input.required<MaramatakaNight>();
   isCurrent = input(false);
 }

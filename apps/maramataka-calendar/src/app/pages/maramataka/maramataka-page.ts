@@ -65,7 +65,7 @@ export class MaramatakaPage implements OnInit {
       version: apiMonth.version,
       whiroStartsAt: new Date(apiMonth.whiroStartsAt),
       nights: apiMonth.nights.map((night) => ({
-          mata: this.mataName(night.mata),
+        mata: this.mataName(night.mata),
         startsAt: new Date(night.startsAt),
         endsAt: new Date(night.endsAt),
       })),
@@ -81,9 +81,24 @@ export class MaramatakaPage implements OnInit {
   }
 
   private toYyyyMmDd(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const formatter = new Intl.DateTimeFormat('en-NZ', {
+      timeZone: NZ_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const parts = formatter.formatToParts(date);
+    const year = parts.find((part) => part.type === 'year')?.value;
+    const month = parts.find((part) => part.type === 'month')?.value;
+    const day = parts.find((part) => part.type === 'day')?.value;
+
+    if (!year || !month || !day) {
+      const fallbackYear = date.getUTCFullYear();
+      const fallbackMonth = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const fallbackDay = String(date.getUTCDate()).padStart(2, '0');
+
+      return `${fallbackYear}-${fallbackMonth}-${fallbackDay}`;
+    }
 
     return `${year}-${month}-${day}`;
   }

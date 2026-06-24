@@ -3,6 +3,6 @@
 
   <dl>
     <dt>Start sunset</dt>
-    <dd>{{ night().startsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
+    <dd>{{ night().startsAt | date: 'EEE d MMM y, h:mm a' : nzTimeZone }}</dd>
   </dl>
 </article>

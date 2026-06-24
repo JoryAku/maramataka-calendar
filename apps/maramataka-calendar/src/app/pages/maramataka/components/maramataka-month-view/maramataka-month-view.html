@@ -2,7 +2,7 @@
   <p><strong>Version:</strong> {{ month().version }}</p>
   <p>
     <strong>Whiro starts:</strong>
-    {{ month().whiroStartsAt | date: 'EEE d MMM y, h:mm a' }}
+    {{ month().whiroStartsAt | date: 'EEE d MMM y, h:mm a' : nzTimeZone }}
   </p>
 </section>
 
