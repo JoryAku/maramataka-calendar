@@ -35,6 +35,10 @@ export class MaramatakaController {
       throw new BadRequestException('tz must be between -12 and 14');
     }
 
+    if (!Number.isInteger(timezoneOffset)) {
+      throw new BadRequestException('tz must be a whole-hour offset');
+    }
+
     const location: Location = {
       latitude,
       longitude,
@@ -49,9 +53,23 @@ export class MaramatakaController {
       throw new BadRequestException('date query parameter is required');
     }
 
-    const date = new Date(dateInput);
-    if (Number.isNaN(date.getTime())) {
-      throw new BadRequestException('date must be a valid date string');
+    const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+    const match = dateInput.match(datePattern);
+    if (!match) {
+      throw new BadRequestException('date must be in YYYY-MM-DD format');
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+      Number.isNaN(date.getTime()) ||
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    ) {
+      throw new BadRequestException('date must be a valid calendar date');
     }
 
     return date;

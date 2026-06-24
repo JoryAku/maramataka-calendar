@@ -78,7 +78,39 @@ describe('MaramatakaController', () => {
     });
 
     expect(response.status).toBe(400);
-    expect(response.data.message).toBe('date must be a valid date string');
+    expect(response.data.message).toBe('date must be in YYYY-MM-DD format');
+    expect(getMonthMock).not.toHaveBeenCalled();
+  });
+
+  it('returns HTTP 400 when date includes time or timezone', async () => {
+    const response = await axios.get(`${baseUrl}/maramataka/month`, {
+      params: {
+        date: '2026-01-01T12:00:00+13:00',
+        lat: '-41.2865',
+        lon: '174.7762',
+        tz: '13',
+      },
+      validateStatus: () => true,
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.data.message).toBe('date must be in YYYY-MM-DD format');
+    expect(getMonthMock).not.toHaveBeenCalled();
+  });
+
+  it('returns HTTP 400 when tz is not a whole hour', async () => {
+    const response = await axios.get(`${baseUrl}/maramataka/month`, {
+      params: {
+        date: '2026-01-01',
+        lat: '-41.2865',
+        lon: '174.7762',
+        tz: '5.5',
+      },
+      validateStatus: () => true,
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.data.message).toBe('tz must be a whole-hour offset');
     expect(getMonthMock).not.toHaveBeenCalled();
   });
 
