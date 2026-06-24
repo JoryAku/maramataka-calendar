@@ -9,6 +9,11 @@ describe('MaramatakaService', () => {
   };
 
   it('orchestrates astronomy, Whiro calculation, and month generation', async () => {
+    const mata = [
+      { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
+      { index: 2, name: 'Tirea', version: 'mita-te-tai-best' as const },
+    ];
+
     const getNewMoons = jest
       .fn()
       .mockResolvedValueOnce([{ occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' }])
@@ -37,16 +42,60 @@ describe('MaramatakaService', () => {
       astronomyProvider: { getNewMoons, getSunset },
       calculateWhiroStartFn,
       generateMaramatakaMonthFn,
+      mata,
     });
 
     const result = await service.getMonth(location, new Date('2026-01-15T12:00:00Z'));
 
     expect(getNewMoons).toHaveBeenCalledWith(2025);
     expect(getNewMoons).toHaveBeenCalledWith(2026);
-    expect(getSunset).toHaveBeenCalled();
+    expect(getSunset).toHaveBeenCalledTimes(4);
+    expect(getSunset.mock.calls).toEqual([
+      ['2025-12-30', location],
+      ['2025-12-31', location],
+      ['2026-01-01', location],
+      ['2026-01-02', location],
+    ]);
     expect(calculateWhiroStartFn).toHaveBeenCalled();
     expect(generateMaramatakaMonthFn).toHaveBeenCalled();
     expect(result).toBe(generatedMonth);
+  });
+
+  it('requests sunsets using the location calendar day across UTC boundaries', async () => {
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce([{ occursAt: new Date('2025-12-31T23:30:00Z'), source: 'usno' }])
+      .mockResolvedValueOnce([]);
+
+    const getSunset = jest.fn().mockResolvedValue({
+      date: '2026-01-01',
+      occursAt: new Date('2026-01-01T07:00:00Z'),
+      source: 'usno',
+    });
+
+    const service = new MaramatakaService({
+      astronomyProvider: { getNewMoons, getSunset },
+      calculateWhiroStartFn: jest.fn().mockReturnValue(new Date('2026-01-01T07:00:00Z')),
+      generateMaramatakaMonthFn: jest.fn().mockReturnValue({
+        version: 'mita-te-tai-best' as const,
+        whiroStartsAt: new Date('2026-01-01T07:00:00Z'),
+        nights: [],
+      }),
+    });
+
+    await service.getMonth(
+      {
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 13,
+      },
+      new Date('2026-01-01T12:00:00Z')
+    );
+
+    expect(getSunset).toHaveBeenCalledWith(
+      '2026-01-01',
+      expect.objectContaining({ timezoneOffset: 13 })
+    );
   });
 
   it('throws when no New Moon exists for requested period', async () => {

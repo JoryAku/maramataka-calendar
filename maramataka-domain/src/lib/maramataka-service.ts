@@ -96,7 +96,7 @@ export class MaramatakaService {
   private async fetchSunsetsForMonth(startAt: Date, location: Location): Promise<Date[]> {
     const sunsetDaysToFetch = this.mata.length + 2;
     const datesToFetch = Array.from({ length: sunsetDaysToFetch }, (_, offset) =>
-      this.formatIsoDateUtc(this.addUtcDays(startAt, offset))
+      this.formatIsoDateForLocation(this.addUtcDays(startAt, offset), location.timezoneOffset)
     );
 
     try {
@@ -119,10 +119,11 @@ export class MaramatakaService {
     return result;
   }
 
-  private formatIsoDateUtc(date: Date): string {
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
+  private formatIsoDateForLocation(date: Date, timezoneOffset: number): string {
+    const localizedDate = new Date(date.getTime() + timezoneOffset * 60 * 60 * 1000);
+    const year = localizedDate.getUTCFullYear();
+    const month = String(localizedDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(localizedDate.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
