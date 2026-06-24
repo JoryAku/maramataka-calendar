@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, input } from '@angular/core';
+import { NZ_TIMEZONE } from '../../maramataka.constants';
 import { MaramatakaNight } from '../../maramataka.models';
 
 @Component({
@@ -9,7 +10,7 @@ import { MaramatakaNight } from '../../maramataka.models';
   styleUrl: './maramataka-night-card.css',
 })
 export class MaramatakaNightCard {
-  protected readonly nzTimeZone = 'Pacific/Auckland';
+  protected readonly nzTimeZone = NZ_TIMEZONE;
 
   night = input.required<MaramatakaNight>();
   isCurrent = input(false);

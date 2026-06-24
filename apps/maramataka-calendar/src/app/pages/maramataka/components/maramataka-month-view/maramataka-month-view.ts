@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, input } from '@angular/core';
 import { MaramatakaMonth, MaramatakaNight } from '../../maramataka.models';
+import { NZ_TIMEZONE } from '../../maramataka.constants';
 import { MaramatakaNightCard } from '../maramataka-night-card/maramataka-night-card';
 
 @Component({
@@ -10,7 +11,7 @@ import { MaramatakaNightCard } from '../maramataka-night-card/maramataka-night-c
   styleUrl: './maramataka-month-view.css',
 })
 export class MaramatakaMonthView {
-  protected readonly nzTimeZone = 'Pacific/Auckland';
+  protected readonly nzTimeZone = NZ_TIMEZONE;
 
   month = input.required<MaramatakaMonth>();
   now = input.required<Date>();

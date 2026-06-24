@@ -12,13 +12,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MaramatakaMonthView } from './components/maramataka-month-view/maramataka-month-view';
 import { ApiMaramatakaMonth, ApiMata, MaramatakaMonth } from './maramataka.models';
 import { filter, fromEvent, merge } from 'rxjs';
+import { NZ_TIMEZONE } from './maramataka.constants';
 
 const DEFAULT_LOCATION = {
   latitude: -41.2865,
   longitude: 174.7762,
 };
 const DEFAULT_TIMEZONE_OFFSET = 12;
-const NZ_TIMEZONE = 'Pacific/Auckland';
 
 @Component({
   selector: 'app-maramataka-page',

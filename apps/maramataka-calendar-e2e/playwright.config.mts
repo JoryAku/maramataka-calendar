@@ -23,6 +23,7 @@ const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url));
  */
 export default defineConfig({
   testDir: './src',
+  outputDir: '../../dist/playwright/apps/maramataka-calendar-e2e',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     baseURL,
