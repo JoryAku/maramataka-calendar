@@ -2,12 +2,11 @@ import { MITA_TE_TAI_BEST_MATA } from './mita-te-tai-best';
 import { MaramatakaMonth } from './maramataka';
 
 describe('MaramatakaMonth', () => {
-  it('contains nights defined by MITA_TE_TAI_BEST_MATA', () => {
+  it('creates a valid Maramataka month', () => {
     const month: MaramatakaMonth = {
       version: 'mita-te-tai-best',
       whiroStartsAt: new Date('2026-01-01T19:00:00+13:00'),
       nights: [{
-        index: 1,
         mata: MITA_TE_TAI_BEST_MATA[0],
         startsAt: new Date('2026-01-01T19:00:00+13:00'),
         endsAt: new Date('2026-01-02T19:01:00+13:00'),
