@@ -47,6 +47,40 @@ describe('generateMaramatakaMonth', () => {
     ).toThrow('Whiro start must match first sunset');
   });
 
+  it('throws when mata version does not match month version', () => {
+    const invalidMata = {
+      ...MITA_TE_TAI_BEST_MATA[0],
+      version: 'different-version',
+    } as unknown as (typeof MITA_TE_TAI_BEST_MATA)[number];
+
+    expect(() =>
+      generateMaramatakaMonth({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-01-01T20:00:00+13:00'),
+        mata: [invalidMata],
+        sunsets: [
+          new Date('2026-01-01T20:00:00+13:00'),
+          new Date('2026-01-02T20:00:00+13:00'),
+        ],
+      })
+    ).toThrow('All mata entries must match month version');
+  });
+
+  it('throws when sunsets are not strictly increasing', () => {
+    expect(() =>
+      generateMaramatakaMonth({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-01-01T20:00:00+13:00'),
+        mata: MITA_TE_TAI_BEST_MATA.slice(0, 2),
+        sunsets: [
+          new Date('2026-01-01T20:00:00+13:00'),
+          new Date('2026-01-01T20:00:00+13:00'),
+          new Date('2026-01-03T20:00:00+13:00'),
+        ],
+      })
+    ).toThrow('Sunsets must be strictly increasing');
+  });
+
   it('assigns mata in the correct order', () => {
     const sunsets = [
       new Date('2026-01-01T20:00:00+13:00'),

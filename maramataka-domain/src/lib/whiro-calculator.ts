@@ -4,9 +4,11 @@ export interface WhiroInput {
 }
 
 export function calculateWhiroStart(input: WhiroInput): Date {
-  const whiro = input.sunsets.find(
-    sunset => sunset.getTime() >= input.newMoonAt.getTime()
-  );
+  const newMoonTime = input.newMoonAt.getTime();
+
+  const whiro = input.sunsets
+    .filter((sunset) => sunset.getTime() > newMoonTime)
+    .sort((a, b) => a.getTime() - b.getTime())[0];
 
   if (!whiro) {
     throw new Error('No sunset found after New Moon');
