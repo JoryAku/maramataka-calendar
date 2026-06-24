@@ -1,0 +1,18 @@
+<section class="maramataka-page">
+  <h1>Maramataka Calendar</h1>
+
+  @if (loading()) {
+    <p class="state" data-testid="loading-state">Loading maramataka month...</p>
+  } @else if (error()) {
+    <p class="state error" data-testid="error-state">{{ error() }}</p>
+  } @else if (!month() || !hasNights()) {
+    <p class="state" data-testid="empty-state">
+      No maramataka nights are available for this month.
+    </p>
+  } @else {
+    <app-maramataka-month-view
+      [month]="month()!"
+      [now]="now()"
+    ></app-maramataka-month-view>
+  }
+</section>

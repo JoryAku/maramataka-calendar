@@ -1,0 +1,34 @@
+.night-card {
+  border: 1px solid #d2ddd4;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #f8f4e7;
+}
+
+.night-card.current {
+  border-color: #1f6f43;
+  background: #e8f6ee;
+  box-shadow: 0 0 0 2px #1f6f4333;
+}
+
+h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+}
+
+dt {
+  color: #46534b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+dd {
+  margin: 0 0 0.5rem;
+}

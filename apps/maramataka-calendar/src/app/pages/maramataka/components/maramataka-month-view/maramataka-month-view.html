@@ -1,0 +1,16 @@
+<section class="month-summary">
+  <p><strong>Version:</strong> {{ month().version }}</p>
+  <p>
+    <strong>Whiro starts:</strong>
+    {{ month().whiroStartsAt | date: 'EEE d MMM y, h:mm a' }}
+  </p>
+</section>
+
+<section class="nights-grid" aria-label="Maramataka nights">
+  @for (night of month().nights; track night.startsAt.toISOString()) {
+    <app-maramataka-night-card
+      [night]="night"
+      [isCurrent]="isCurrentNight(night)"
+    ></app-maramataka-night-card>
+  }
+</section>
