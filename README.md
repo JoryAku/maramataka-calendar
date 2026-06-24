@@ -52,6 +52,23 @@ You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx 
 
 [Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
+## CI options
+
+This repository uses a GitHub Actions workflow in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+CI is intentionally gated so it does not run on every commit. You have two ways to trigger it:
+
+- Push an empty commit with a `[ci]` message tag:
+
+```sh
+git commit --allow-empty -m "[ci] run ci"
+git push
+```
+
+- Run the workflow manually from GitHub Actions and set the `run_ci` input to `true`.
+
+The workflow still runs the usual Nx checks once triggered.
+
 ## Set up CI!
 
 ### Step 1
@@ -76,6 +93,8 @@ Use the following command to configure a CI workflow for your workspace:
 ```sh
 npx nx g ci-workflow
 ```
+
+For this project, the workflow is already configured and the options above are the supported ways to run it.
 
 [Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 

@@ -3,8 +3,14 @@ name: CI
 on:
   push:
     branches:
-      - main
-  pull_request:
+      - '**'
+  workflow_dispatch:
+    inputs:
+      run_ci:
+        description: Run CI pipeline
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -13,6 +19,9 @@ permissions:
 jobs:
   main:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.run_ci ||
+      github.event_name == 'push' && contains(github.event.head_commit.message, '[ci]')
     steps:
       - uses: actions/checkout@v4
         with:
