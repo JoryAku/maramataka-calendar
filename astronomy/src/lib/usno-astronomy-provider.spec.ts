@@ -39,8 +39,8 @@ describe('UsnoAstronomyProvider', () => {
           phase: 'New Moon',
           year: 2026,
           month: 1,
-          day: 19,
-          time: '19:52',
+          day: 9,
+          time: '04:05',
         }],
       }),
     });
@@ -50,6 +50,7 @@ describe('UsnoAstronomyProvider', () => {
 
     expect(result[0].source).toBe('usno');
     expect(result[0].occursAt).toBeInstanceOf(Date);
+    expect(result[0].occursAt.toISOString()).toBe('2026-01-09T04:05:00.000Z');
   });
 
   it('throws when USNO request fails', async () => {
@@ -87,10 +88,48 @@ describe('UsnoAstronomyProvider', () => {
 
     expect(fetchFn).toHaveBeenCalledWith(
       expect.stringContaining('/rstt/oneday')
-    );    
-    expect(sunset.occursAt).toEqual(
-      new Date('2026-01-01T20:47:00+13:00')
     );
+    expect(sunset.occursAt.toISOString()).toBe('2026-01-01T07:47:00.000Z');
+  });
+
+  it('handles negative timezone offsets when building sunset timestamp', async () => {
+    const provider = new UsnoAstronomyProvider(
+      jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          properties: {
+            data: {
+              sundata: [{ phen: 'Set', time: '18:30' }],
+            },
+          },
+        }),
+      }) as typeof fetch
+    );
+
+    const sunset = await provider.getSunset('2026-01-01', {
+      latitude: 40.7128,
+      longitude: -74.006,
+      timezoneOffset: -5,
+    });
+
+    expect(sunset.occursAt.toISOString()).toBe('2026-01-01T23:30:00.000Z');
+  });
+
+  it('throws when USNO sunset request fails', async () => {
+    const provider = new UsnoAstronomyProvider(
+      jest.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      }) as typeof fetch
+    );
+
+    await expect(
+      provider.getSunset('2026-01-01', {
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 13,
+      })
+    ).rejects.toThrow('USNO sunset request failed: 503');
   });
 
   it('throws when sunset data is missing', async () => {
