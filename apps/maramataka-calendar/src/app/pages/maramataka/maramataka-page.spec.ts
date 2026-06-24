@@ -84,6 +84,37 @@ describe('MaramatakaPage', () => {
     });
   });
 
+  it('reloads month data on focus when the NZ calendar date has changed', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T09:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    const firstRequest = httpTestingController.expectOne((req) =>
+      req.url === '/api/maramataka/month'
+    );
+    expect(firstRequest.request.params.get('date')).toBe('2026-01-01');
+    firstRequest.flush({
+      version: 'mita-te-tai-best',
+      whiroStartsAt: '2026-01-10T06:45:00.000Z',
+      nights: [],
+    });
+
+    vi.setSystemTime(new Date('2026-01-01T13:30:00.000Z'));
+    window.dispatchEvent(new Event('focus'));
+
+    const secondRequest = httpTestingController.expectOne((req) =>
+      req.url === '/api/maramataka/month'
+    );
+    expect(secondRequest.request.params.get('date')).toBe('2026-01-02');
+    secondRequest.flush({
+      version: 'mita-te-tai-best',
+      whiroStartsAt: '2026-01-10T06:45:00.000Z',
+      nights: [],
+    });
+  });
+
   it('highlights the current maramataka night', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-10T12:00:00.000Z'));

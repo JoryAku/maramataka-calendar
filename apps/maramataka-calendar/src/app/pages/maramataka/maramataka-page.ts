@@ -1,8 +1,17 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MaramatakaMonthView } from './components/maramataka-month-view/maramataka-month-view';
 import { ApiMaramatakaMonth, ApiMata, MaramatakaMonth } from './maramataka.models';
+import { filter, fromEvent, merge } from 'rxjs';
 
 const DEFAULT_LOCATION = {
   latitude: -41.2865,
@@ -19,6 +28,8 @@ const NZ_TIMEZONE = 'Pacific/Auckland';
 })
 export class MaramatakaPage implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly destroyRef = inject(DestroyRef);
+  private lastRequestedNzDate: string | null = null;
 
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -30,6 +41,15 @@ export class MaramatakaPage implements OnInit {
 
   ngOnInit(): void {
     this.loadMonth();
+
+    merge(fromEvent(window, 'focus'), fromEvent(document, 'visibilitychange'))
+      .pipe(
+        filter(() => !document.hidden),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        this.refreshIfDateChanged();
+      });
   }
 
   private loadMonth(): void {
@@ -40,7 +60,7 @@ export class MaramatakaPage implements OnInit {
     this.now.set(now);
 
     const params = new HttpParams()
-      .set('date', this.toYyyyMmDd(now))
+      .set('date', this.trackRequestDate(now))
       .set('lat', String(DEFAULT_LOCATION.latitude))
       .set('lon', String(DEFAULT_LOCATION.longitude))
       .set('tz', String(this.getNzTimezoneOffset(now)));
@@ -101,6 +121,20 @@ export class MaramatakaPage implements OnInit {
     }
 
     return `${year}-${month}-${day}`;
+  }
+
+  private trackRequestDate(date: Date): string {
+    const requestDate = this.toYyyyMmDd(date);
+    this.lastRequestedNzDate = requestDate;
+
+    return requestDate;
+  }
+
+  private refreshIfDateChanged(): void {
+    const currentNzDate = this.toYyyyMmDd(new Date());
+    if (currentNzDate !== this.lastRequestedNzDate) {
+      this.loadMonth();
+    }
   }
 
   private getNzTimezoneOffset(date: Date): number {
