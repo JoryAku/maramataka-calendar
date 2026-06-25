@@ -53,19 +53,35 @@ export function getLocationSummaries(): LocationSummary[] {
   }));
 }
 
-export function validateLocationRegistry(): void {
+function validateIanaTimezone(timezone: string): void {
+  try {
+    new Intl.DateTimeFormat('en-NZ', { timeZone: timezone }).format(new Date());
+  } catch {
+    throw new Error(`Invalid IANA timezone: ${timezone}`);
+  }
+}
+
+export function validateLocationRegistry(locations: LocationData[] = LOCATIONS): void {
   const ids = new Set<string>();
 
-  for (const location of LOCATIONS) {
+  for (const location of locations) {
     if (ids.has(location.id)) {
       throw new Error(`Duplicate location ID: ${location.id}`);
     }
 
     ids.add(location.id);
 
-    if (!location.id || !location.name || location.latitude === undefined || location.longitude === undefined || !location.timezone) {
+    if (
+      !location.id ||
+      !location.name ||
+      location.latitude === undefined ||
+      location.longitude === undefined ||
+      !location.timezone
+    ) {
       throw new Error(`Invalid location data: ${JSON.stringify(location)}`);
     }
+
+    validateIanaTimezone(location.timezone);
   }
 }
 

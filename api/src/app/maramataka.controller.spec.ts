@@ -448,6 +448,61 @@ describe('MaramatakaController', () => {
       });
     });
 
+    it('uses NZST offset (+12) for winter named-location requests', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-06-01T07:00:00.000Z'),
+        nights: [
+          {
+            mata: {
+              index: 1,
+              name: 'Whiro',
+              version: 'mita-te-tai-best',
+            },
+            startsAt: new Date('2026-06-01T07:00:00.000Z'),
+            endsAt: new Date('2026-06-02T06:59:00.000Z'),
+          },
+        ],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-06-01T20:00:00',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 12,
+      });
+      expect(dateArg.toISOString()).toBe('2026-06-01T08:00:00.000Z');
+    });
+
+    it('returns HTTP 400 for invalid local datetime in DST spring-forward gap', async () => {
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-09-27T02:30:00',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.message).toBe('date must be a valid local date-time');
+      expect(getMonthMock).not.toHaveBeenCalled();
+    });
+
     it('returns HTTP 404 for unknown location', async () => {
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
@@ -633,6 +688,36 @@ describe('MaramatakaController', () => {
         latitude: -38.6624,
         longitude: 178.0097,
         timezoneOffset: 13,
+      });
+    });
+
+    it('uses NZST offset (+12) for winter month requests', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-06-10T06:45:00Z'),
+        nights: [],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/month`, {
+        params: {
+          date: '2026-06-01',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 12,
       });
     });
   });

@@ -1,5 +1,6 @@
 import {
   LOCATIONS,
+  LocationData,
   LocationSummary,
   findLocationById,
   getLocationSummaries,
@@ -147,6 +148,45 @@ describe('locations', () => {
   describe('validateLocationRegistry', () => {
     it('does not throw for valid registry', () => {
       expect(() => validateLocationRegistry()).not.toThrow();
+    });
+
+    it('throws for duplicate location IDs', () => {
+      const duplicatedIdLocations: LocationData[] = [
+        {
+          id: 'wellington',
+          name: 'Wellington',
+          latitude: -41.2865,
+          longitude: 174.7762,
+          timezone: 'Pacific/Auckland',
+        },
+        {
+          id: 'wellington',
+          name: 'Auckland',
+          latitude: -37.0082,
+          longitude: 174.6645,
+          timezone: 'Pacific/Auckland',
+        },
+      ];
+
+      expect(() => validateLocationRegistry(duplicatedIdLocations)).toThrow(
+        'Duplicate location ID: wellington'
+      );
+    });
+
+    it('throws for invalid IANA timezone values', () => {
+      const invalidTimezoneLocations: LocationData[] = [
+        {
+          id: 'wellington',
+          name: 'Wellington',
+          latitude: -41.2865,
+          longitude: 174.7762,
+          timezone: 'Pacific/NotARealTimezone',
+        },
+      ];
+
+      expect(() => validateLocationRegistry(invalidTimezoneLocations)).toThrow(
+        'Invalid IANA timezone: Pacific/NotARealTimezone'
+      );
     });
   });
 });
