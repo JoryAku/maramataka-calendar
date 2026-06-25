@@ -1,18 +1,77 @@
 <section class="maramataka-page">
   <h1>Maramataka Calendar</h1>
 
-  @if (loading()) {
-    <p class="state" data-testid="loading-state">Loading maramataka month...</p>
-  } @else if (error()) {
-    <p class="state error" data-testid="error-state">{{ error() }}</p>
-  } @else if (!month() || !hasNights()) {
-    <p class="state" data-testid="empty-state">
-      No maramataka nights are available for this month.
-    </p>
-  } @else {
-    <app-maramataka-month-view
-      [month]="month()!"
-      [now]="now()"
-    ></app-maramataka-month-view>
-  }
+  <section class="location-panel">
+    <label class="location-label" for="location-select">Location</label>
+    @if (locationsLoading()) {
+      <p class="state" data-testid="locations-loading-state">Loading locations...</p>
+    } @else if (locationsError()) {
+      <p class="state error" data-testid="locations-error-state">{{ locationsError() }}</p>
+    } @else {
+      <select
+        id="location-select"
+        class="location-select"
+        [value]="selectedLocationId()"
+        (change)="onLocationChange($any($event.target).value)"
+      >
+        @for (location of locations(); track location.id) {
+          <option [value]="location.id">{{ location.name }}</option>
+        }
+      </select>
+    }
+  </section>
+
+  <section class="today-section">
+    <div class="section-header">
+      <h2>Today</h2>
+      <p>{{ selectedLocationName() }}</p>
+    </div>
+
+    @if (todayLoading()) {
+      <p class="state" data-testid="today-loading-state">Loading today's maramataka...</p>
+    } @else if (todayError()) {
+      <p class="state error" data-testid="today-error-state">{{ todayError() }}</p>
+    } @else if (!today()) {
+      <p class="state" data-testid="today-empty-state">
+        No maramataka night is available for today.
+      </p>
+    } @else {
+      <article class="today-card" data-testid="today-card">
+        <p class="eyebrow">Current night</p>
+        <h3>{{ today()!.mata.name }}</h3>
+        <dl>
+          <div>
+            <dt>Starts</dt>
+            <dd>{{ today()!.startsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
+          </div>
+          <div>
+            <dt>Ends</dt>
+            <dd>{{ today()!.endsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
+          </div>
+        </dl>
+      </article>
+    }
+  </section>
+
+  <section class="month-section">
+    <div class="section-header">
+      <h2>This Month</h2>
+      <p>Based on {{ selectedLocationName() }}</p>
+    </div>
+
+    @if (monthLoading()) {
+      <p class="state" data-testid="month-loading-state">Loading maramataka month...</p>
+    } @else if (monthError()) {
+      <p class="state error" data-testid="month-error-state">{{ monthError() }}</p>
+    } @else if (!month() || !hasNights()) {
+      <p class="state" data-testid="month-empty-state">
+        No maramataka nights are available for this month.
+      </p>
+    } @else {
+      <app-maramataka-month-view
+        [month]="month()!"
+        [now]="now()"
+      ></app-maramataka-month-view>
+    }
+  </section>
 </section>

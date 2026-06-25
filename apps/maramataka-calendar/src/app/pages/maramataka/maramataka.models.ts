@@ -4,10 +4,26 @@ export interface MaramatakaNight {
   endsAt: Date;
 }
 
+export interface LocationSummary {
+  id: string;
+  name: string;
+}
+
 export interface MaramatakaMonth {
   version: string;
   whiroStartsAt: Date;
   nights: MaramatakaNight[];
+}
+
+export interface MaramatakaToday<TDate = Date> {
+  mata: MaramatakaTodayMata;
+  startsAt: TDate;
+  endsAt: TDate;
+}
+
+export interface MaramatakaTodayMata {
+  index: number;
+  name: string;
 }
 
 export interface ApiMaramatakaNight {

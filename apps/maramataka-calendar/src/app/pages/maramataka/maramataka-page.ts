@@ -1,4 +1,3 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -9,16 +8,10 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MaramatakaMonthView } from './components/maramataka-month-view/maramataka-month-view';
-import { ApiMaramatakaMonth, ApiMata, MaramatakaMonth } from './maramataka.models';
 import { filter, fromEvent, merge } from 'rxjs';
-import { NZ_TIMEZONE } from './maramataka.constants';
-
-const DEFAULT_LOCATION = {
-  latitude: -41.2865,
-  longitude: 174.7762,
-};
-const DEFAULT_TIMEZONE_OFFSET = 12;
+import { MaramatakaMonthView } from './components/maramataka-month-view/maramataka-month-view';
+import { MaramatakaApiService } from './maramataka-api.service';
+import { LocationSummary, MaramatakaMonth, MaramatakaToday } from './maramataka.models';
 
 @Component({
   selector: 'app-maramataka-page',
@@ -27,20 +20,35 @@ const DEFAULT_TIMEZONE_OFFSET = 12;
   styleUrl: './maramataka-page.css',
 })
 export class MaramatakaPage implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(MaramatakaApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private requestGeneration = 0;
   private lastRequestedNzDate: string | null = null;
 
-  protected readonly loading = signal(true);
-  protected readonly error = signal<string | null>(null);
+  protected readonly locationsLoading = signal(true);
+  protected readonly locationsError = signal<string | null>(null);
+  protected readonly locations = signal<LocationSummary[]>([]);
+  protected readonly selectedLocationId = signal<string | null>(null);
+  protected readonly monthLoading = signal(true);
+  protected readonly monthError = signal<string | null>(null);
   protected readonly month = signal<MaramatakaMonth | null>(null);
+  protected readonly todayLoading = signal(true);
+  protected readonly todayError = signal<string | null>(null);
+  protected readonly today = signal<MaramatakaToday | null>(null);
   protected readonly now = signal(new Date());
   protected readonly hasNights = computed(
     () => (this.month()?.nights.length ?? 0) > 0
   );
+  protected readonly selectedLocationName = computed(() => {
+    const selectedLocation = this.locations().find(
+      (location) => location.id === this.selectedLocationId()
+    );
+
+    return selectedLocation?.name ?? 'Selected location';
+  });
 
   ngOnInit(): void {
-    this.loadMonth();
+    this.loadLocations();
 
     merge(fromEvent(window, 'focus'), fromEvent(document, 'visibilitychange'))
       .pipe(
@@ -52,113 +60,122 @@ export class MaramatakaPage implements OnInit {
       });
   }
 
-  private loadMonth(): void {
-    this.loading.set(true);
-    this.error.set(null);
+  protected onLocationChange(locationId: string): void {
+    if (locationId === this.selectedLocationId()) {
+      return;
+    }
 
-    const now = new Date();
-    this.now.set(now);
+    this.selectedLocationId.set(locationId);
+    this.reloadData();
+  }
 
-    const params = new HttpParams()
-      .set('date', this.trackRequestDate(now))
-      .set('lat', String(DEFAULT_LOCATION.latitude))
-      .set('lon', String(DEFAULT_LOCATION.longitude))
-      .set('tz', String(this.getNzTimezoneOffset(now)));
+  private loadLocations(): void {
+    this.locationsLoading.set(true);
+    this.locationsError.set(null);
 
-    this.http
-      .get<ApiMaramatakaMonth>('/api/maramataka/month', { params })
+    this.api
+      .getLocations()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
-          this.month.set(this.mapMonth(response));
-          this.loading.set(false);
+        next: (locations) => {
+          this.locations.set(locations);
+          this.selectedLocationId.set(locations[0]?.id ?? null);
+          this.locationsLoading.set(false);
+
+          if (this.selectedLocationId()) {
+            this.reloadData();
+          }
         },
         error: () => {
-          this.month.set(null);
-          this.error.set('Unable to load maramataka month. Please try again.');
-          this.loading.set(false);
+          this.locations.set([]);
+          this.selectedLocationId.set(null);
+          this.locationsLoading.set(false);
+          this.monthLoading.set(false);
+          this.todayLoading.set(false);
+          this.monthError.set(
+            'Unable to load maramataka month because locations could not be loaded.'
+          );
+          this.todayError.set(
+            'Unable to load today\'s maramataka because locations could not be loaded.'
+          );
+          this.locationsError.set('Unable to load locations. Please try again.');
         },
       });
   }
 
-  private mapMonth(apiMonth: ApiMaramatakaMonth): MaramatakaMonth {
-    return {
-      version: apiMonth.version,
-      whiroStartsAt: new Date(apiMonth.whiroStartsAt),
-      nights: apiMonth.nights.map((night) => ({
-        mata: this.mataName(night.mata),
-        startsAt: new Date(night.startsAt),
-        endsAt: new Date(night.endsAt),
-      })),
-    };
-  }
-
-  private mataName(mata: string | ApiMata): string {
-    if (typeof mata === 'string') {
-      return mata;
+  private reloadData(): void {
+    const locationId = this.selectedLocationId();
+    if (!locationId) {
+      return;
     }
 
-    return mata.name;
-  }
+    const now = new Date();
+    this.now.set(now);
+    this.lastRequestedNzDate = this.api.formatDate(now);
+    this.monthLoading.set(true);
+    this.todayLoading.set(true);
+    this.monthError.set(null);
+    this.todayError.set(null);
+    this.month.set(null);
+    this.today.set(null);
 
-  private toYyyyMmDd(date: Date): string {
-    const formatter = new Intl.DateTimeFormat('en-NZ', {
-      timeZone: NZ_TIMEZONE,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-    const parts = formatter.formatToParts(date);
-    const year = parts.find((part) => part.type === 'year')?.value;
-    const month = parts.find((part) => part.type === 'month')?.value;
-    const day = parts.find((part) => part.type === 'day')?.value;
+    const generation = ++this.requestGeneration;
 
-    if (!year || !month || !day) {
-      const fallbackYear = date.getUTCFullYear();
-      const fallbackMonth = String(date.getUTCMonth() + 1).padStart(2, '0');
-      const fallbackDay = String(date.getUTCDate()).padStart(2, '0');
+    this.api
+      .getMonth(locationId, now)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (month) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
 
-      return `${fallbackYear}-${fallbackMonth}-${fallbackDay}`;
-    }
+          this.month.set(month);
+          this.monthLoading.set(false);
+        },
+        error: () => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
 
-    return `${year}-${month}-${day}`;
-  }
+          this.month.set(null);
+          this.monthLoading.set(false);
+          this.monthError.set('Unable to load maramataka month. Please try again.');
+        },
+      });
 
-  private trackRequestDate(date: Date): string {
-    const requestDate = this.toYyyyMmDd(date);
-    this.lastRequestedNzDate = requestDate;
+    this.api
+      .getToday(locationId, now)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (today) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
 
-    return requestDate;
+          this.today.set(today);
+          this.todayLoading.set(false);
+        },
+        error: () => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.today.set(null);
+          this.todayLoading.set(false);
+          this.todayError.set('Unable to load today\'s maramataka. Please try again.');
+        },
+      });
   }
 
   private refreshIfDateChanged(): void {
-    const currentNzDate = this.toYyyyMmDd(new Date());
+    if (this.locationsLoading() || !this.selectedLocationId()) {
+      return;
+    }
+
+    const currentNzDate = this.api.formatDate(new Date());
     if (currentNzDate !== this.lastRequestedNzDate) {
-      this.loadMonth();
+      this.reloadData();
     }
-  }
-
-  private getNzTimezoneOffset(date: Date): number {
-    const formatter = new Intl.DateTimeFormat('en-NZ', {
-      timeZone: NZ_TIMEZONE,
-      timeZoneName: 'shortOffset',
-    });
-    const timezonePart = formatter
-      .formatToParts(date)
-      .find((part) => part.type === 'timeZoneName')?.value;
-
-    const match = timezonePart?.match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
-    if (!match) {
-      return DEFAULT_TIMEZONE_OFFSET;
-    }
-
-    const sign = match[1] === '-' ? -1 : 1;
-    const hours = Number(match[2]);
-    const minutes = Number(match[3] ?? '0');
-
-    if (minutes !== 0 || !Number.isFinite(hours)) {
-      return DEFAULT_TIMEZONE_OFFSET;
-    }
-
-    return sign * hours;
   }
 }
