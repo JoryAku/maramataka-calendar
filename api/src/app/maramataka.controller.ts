@@ -39,16 +39,13 @@ export class MaramatakaController {
 
   @Get('today')
   async getToday(
-    @Query('date') dateInput: string,
+    @Query('dateTime') dateTimeInput: string,
     @Query('lat') latInput: string,
     @Query('lon') lonInput: string,
     @Query('tz') tzInput: string
   ): Promise<TodayMaramatakaNightResponse> {
-    const timezoneOffset = this.parseNumber(tzInput, 'tz');
-    this.validateTimezoneOffset(timezoneOffset);
-
-    const date = this.parseDateTime(dateInput, timezoneOffset);
     const location = this.parseLocation(latInput, lonInput, tzInput);
+    const date = this.parseDateTime(dateTimeInput, location.timezoneOffset);
     const month = await this.maramatakaService.getMonth(location, date);
     const night = this.findNightForDate(month.nights, date);
 
@@ -88,16 +85,18 @@ export class MaramatakaController {
     };
   }
 
-  private parseDateTime(dateInput: string, timezoneOffset: number): Date {
-    if (!dateInput) {
-      throw new BadRequestException('date query parameter is required');
+  private parseDateTime(dateTimeInput: string, timezoneOffset: number): Date {
+    if (!dateTimeInput) {
+      throw new BadRequestException('dateTime query parameter is required');
     }
 
     const datePattern =
       /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/;
-    const match = dateInput.match(datePattern);
+    const match = dateTimeInput.match(datePattern);
     if (!match) {
-      throw new BadRequestException('date must be in YYYY-MM-DDTHH:mm:ss format');
+      throw new BadRequestException(
+        'dateTime must be in YYYY-MM-DDTHH:mm:ss format'
+      );
     }
 
     const year = Number(match[1]);

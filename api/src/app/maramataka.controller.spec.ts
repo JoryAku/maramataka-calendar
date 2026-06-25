@@ -208,7 +208,7 @@ describe('MaramatakaController', () => {
 
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
-          date: '2026-01-01T21:00:00',
+          dateTime: '2026-01-01T21:00:00',
           lat: '-41.2865',
           lon: '174.7762',
           tz: '13',
@@ -230,7 +230,7 @@ describe('MaramatakaController', () => {
     it('returns HTTP 400 for invalid query parameters', async () => {
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
-          date: 'bad-date',
+          dateTime: 'bad-date',
           lat: '-41.2865',
           lon: '174.7762',
           tz: '13',
@@ -239,7 +239,9 @@ describe('MaramatakaController', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(response.data.message).toBe('date must be in YYYY-MM-DDTHH:mm:ss format');
+      expect(response.data.message).toBe(
+        'dateTime must be in YYYY-MM-DDTHH:mm:ss format'
+      );
       expect(getMonthMock).not.toHaveBeenCalled();
     });
 
@@ -248,7 +250,7 @@ describe('MaramatakaController', () => {
 
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
-          date: '2026-01-03T21:00:00',
+          dateTime: '2026-01-03T21:00:00',
           lat: '-41.2865',
           lon: '174.7762',
           tz: '13',
@@ -268,7 +270,7 @@ describe('MaramatakaController', () => {
 
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
-          date: '2026-01-01T20:47:00',
+          dateTime: '2026-01-01T20:47:00',
           lat: '-41.2865',
           lon: '174.7762',
           tz: '13',
@@ -288,7 +290,7 @@ describe('MaramatakaController', () => {
 
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
-          date: '2026-01-02T20:45:59',
+          dateTime: '2026-01-02T20:45:59',
           lat: '-41.2865',
           lon: '174.7762',
           tz: '13',
@@ -308,7 +310,7 @@ describe('MaramatakaController', () => {
 
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
-          date: '2026-01-02T20:46:00',
+          dateTime: '2026-01-02T20:46:00',
           lat: '-41.2865',
           lon: '174.7762',
           tz: '13',
@@ -323,12 +325,32 @@ describe('MaramatakaController', () => {
       });
     });
 
+    it('returns HTTP 400 when no Maramataka night matches the supplied date-time', async () => {
+      getMonthMock.mockResolvedValue(createMonthFixture());
+
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-01-04T20:44:00',
+          lat: '-41.2865',
+          lon: '174.7762',
+          tz: '13',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.message).toBe(
+        'No Maramataka night found for supplied date and location'
+      );
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+    });
+
     it('calls service with expected date-time and location for today endpoint', async () => {
       getMonthMock.mockResolvedValue(createMonthFixture());
 
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
-          date: '2026-01-01T20:47:00',
+          dateTime: '2026-01-01T20:47:00',
           lat: '-41.2865',
           lon: '174.7762',
           tz: '13',
@@ -358,7 +380,7 @@ describe('MaramatakaController', () => {
 
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
-          date: '2026-01-01T21:00:00',
+          dateTime: '2026-01-01T21:00:00',
           lat: '-41.2865',
           lon: '174.7762',
           tz: '13',
