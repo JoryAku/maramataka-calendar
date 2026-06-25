@@ -61,7 +61,7 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     todayRequest.flush({
-      mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+      mata: { index: 1, name: 'Whiro' },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -104,7 +104,7 @@ describe('MaramatakaPage', () => {
       ],
     });
     todayRequest.flush({
-      mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+      mata: { index: 1, name: 'Whiro' },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -139,7 +139,7 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     initialRequests.todayRequest.flush({
-      mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+      mata: { index: 1, name: 'Whiro' },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -162,7 +162,7 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     todayRequest.flush({
-      mata: { index: 2, name: 'Tirea', version: 'mita-te-tai-best' },
+      mata: { index: 2, name: 'Tirea' },
       startsAt: '2026-01-11T06:45:00.000Z',
       endsAt: '2026-01-12T06:45:00.000Z',
     });
@@ -195,7 +195,7 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     firstRequests.todayRequest.flush({
-      mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+      mata: { index: 1, name: 'Whiro' },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -213,7 +213,38 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     secondRequests.todayRequest.flush({
-      mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+      mata: { index: 1, name: 'Whiro' },
+      startsAt: '2026-01-10T06:45:00.000Z',
+      endsAt: '2026-01-11T06:45:00.000Z',
+    });
+  });
+
+  it('sends h23 midnight for today dateTime', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T11:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    const locationsRequest = flushInitialRequests();
+    locationsRequest.flush([
+      { id: 'wellington', name: 'Wellington' },
+      { id: 'auckland', name: 'Auckland' },
+      { id: 'christchurch', name: 'Christchurch' },
+      { id: 'gisborne', name: 'Gisborne' },
+    ]);
+
+    const { monthRequest, todayRequest } = flushMaramatakaRequests();
+
+    expect(todayRequest.request.params.get('dateTime')).toBe('2026-01-02T00:00:00');
+
+    monthRequest.flush({
+      version: 'mita-te-tai-best',
+      whiroStartsAt: '2026-01-10T06:45:00.000Z',
+      nights: [],
+    });
+    todayRequest.flush({
+      mata: { index: 1, name: 'Whiro' },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -243,5 +274,21 @@ describe('MaramatakaPage', () => {
 
     expect(fixture.nativeElement.querySelector('[data-testid="month-empty-state"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="today-error-state"]')).not.toBeNull();
+  });
+
+  it('shows location, month, and today errors when locations fail to load', () => {
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    const locationsRequest = flushInitialRequests();
+    locationsRequest.flush('Failure', { status: 500, statusText: 'Server Error' });
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="locations-error-state"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="month-error-state"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="today-error-state"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="month-empty-state"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="today-empty-state"]')).toBeNull();
   });
 });

@@ -82,7 +82,6 @@ test('renders API data for the selected location and updates when the location c
         mata: {
           index: 1,
           name: location === 'auckland' ? 'Mako' : 'Whiro',
-          version: 'mita-te-tai-best',
         },
         startsAt: location === 'auckland'
           ? '2026-06-25T04:30:00.000Z'

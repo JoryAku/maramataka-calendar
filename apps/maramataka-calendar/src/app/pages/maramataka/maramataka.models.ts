@@ -16,9 +16,14 @@ export interface MaramatakaMonth {
 }
 
 export interface MaramatakaToday<TDate = Date> {
-  mata: ApiMata;
+  mata: MaramatakaTodayMata;
   startsAt: TDate;
   endsAt: TDate;
+}
+
+export interface MaramatakaTodayMata {
+  index: number;
+  name: string;
 }
 
 export interface ApiMaramatakaNight {

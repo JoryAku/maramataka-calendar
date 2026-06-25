@@ -92,6 +92,12 @@ export class MaramatakaPage implements OnInit {
           this.locationsLoading.set(false);
           this.monthLoading.set(false);
           this.todayLoading.set(false);
+          this.monthError.set(
+            'Unable to load maramataka month because locations could not be loaded.'
+          );
+          this.todayError.set(
+            'Unable to load today\'s maramataka because locations could not be loaded.'
+          );
           this.locationsError.set('Unable to load locations. Please try again.');
         },
       });

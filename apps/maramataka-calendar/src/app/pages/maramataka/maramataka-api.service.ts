@@ -101,7 +101,7 @@ export class MaramatakaApiService {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false,
+      hourCycle: 'h23',
     });
 
     const parts = formatter.formatToParts(date);
@@ -116,7 +116,9 @@ export class MaramatakaApiService {
       return `${this.toYyyyMmDd(date)}T00:00:00`;
     }
 
-    return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+    const normalizedHour = hour === '24' ? '00' : hour;
+
+    return `${year}-${month}-${day}T${normalizedHour}:${minute}:${second}`;
   }
 
   private getNzTimezoneOffset(date: Date): number {
