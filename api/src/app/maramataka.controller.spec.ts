@@ -391,5 +391,334 @@ describe('MaramatakaController', () => {
       expect(response.status).toBe(500);
       expect(response.data.message).toBe('Internal server error');
     });
+
+    it('resolves named location and returns correct night', async () => {
+      getMonthMock.mockResolvedValue(createMonthFixture());
+
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-01-01T20:47:00',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.mata).toEqual({
+        index: 1,
+        name: 'Whiro',
+      });
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 13,
+      });
+    });
+
+    it('resolves auckland location correctly', async () => {
+      getMonthMock.mockResolvedValue(createMonthFixture());
+
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-01-01T20:47:00',
+          location: 'auckland',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -37.0082,
+        longitude: 174.6645,
+        timezoneOffset: 13,
+      });
+    });
+
+    it('uses NZST offset (+12) for winter named-location requests', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-06-01T07:00:00.000Z'),
+        nights: [
+          {
+            mata: {
+              index: 1,
+              name: 'Whiro',
+              version: 'mita-te-tai-best',
+            },
+            startsAt: new Date('2026-06-01T07:00:00.000Z'),
+            endsAt: new Date('2026-06-02T06:59:00.000Z'),
+          },
+        ],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-06-01T20:00:00',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 12,
+      });
+      expect(dateArg.toISOString()).toBe('2026-06-01T08:00:00.000Z');
+    });
+
+    it('returns HTTP 400 for invalid local datetime in DST spring-forward gap', async () => {
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-09-27T02:30:00',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.message).toBe('date must be a valid local date-time');
+      expect(getMonthMock).not.toHaveBeenCalled();
+    });
+
+    it('returns HTTP 404 for unknown location', async () => {
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-01-01T20:47:00',
+          location: 'unknown-place',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(404);
+      expect(response.data.message).toBe('Unknown location: unknown-place');
+      expect(getMonthMock).not.toHaveBeenCalled();
+    });
+
+    it('requires either location or all coordinates', async () => {
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-01-01T20:47:00',
+          lat: '-41.2865',
+          lon: '174.7762',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.message).toBe(
+        'Either location parameter or all of lat, lon, and tz parameters are required'
+      );
+      expect(getMonthMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /maramataka/month with location parameter', () => {
+    it('resolves named location and returns month data', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-01-10T06:45:00Z'),
+        nights: [],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/month`, {
+        params: {
+          date: '2026-01-01',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 13,
+      });
+      expect(dateArg.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+    });
+
+    it('resolves christchurch location correctly', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-01-10T06:45:00Z'),
+        nights: [],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/month`, {
+        params: {
+          date: '2026-01-01',
+          location: 'christchurch',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -43.5321,
+        longitude: 172.6362,
+        timezoneOffset: 13,
+      });
+    });
+
+    it('returns HTTP 404 for unknown location in month endpoint', async () => {
+      const response = await axios.get(`${baseUrl}/maramataka/month`, {
+        params: {
+          date: '2026-01-01',
+          location: 'atlantis',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(404);
+      expect(response.data.message).toBe('Unknown location: atlantis');
+      expect(getMonthMock).not.toHaveBeenCalled();
+    });
+
+    it('requires either location or all coordinates in month endpoint', async () => {
+      const response = await axios.get(`${baseUrl}/maramataka/month`, {
+        params: {
+          date: '2026-01-01',
+          lat: '-41.2865',
+          lon: '174.7762',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.message).toBe(
+        'Either location parameter or all of lat, lon, and tz parameters are required'
+      );
+      expect(getMonthMock).not.toHaveBeenCalled();
+    });
+
+    it('prefers location parameter over coordinates', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-01-10T06:45:00Z'),
+        nights: [],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/month`, {
+        params: {
+          date: '2026-01-01',
+          location: 'auckland',
+          lat: '-41.2865',
+          lon: '174.7762',
+          tz: '13',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -37.0082,
+        longitude: 174.6645,
+        timezoneOffset: 13,
+      });
+    });
+
+    it('resolves gisborne location correctly', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-01-10T06:45:00Z'),
+        nights: [],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/month`, {
+        params: {
+          date: '2026-01-01',
+          location: 'gisborne',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -38.6624,
+        longitude: 178.0097,
+        timezoneOffset: 13,
+      });
+    });
+
+    it('uses NZST offset (+12) for winter month requests', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-06-10T06:45:00Z'),
+        nights: [],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/month`, {
+        params: {
+          date: '2026-06-01',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getMonthMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg] = getMonthMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 12,
+      });
+    });
   });
 });
