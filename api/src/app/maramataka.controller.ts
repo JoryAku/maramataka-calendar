@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  NotFoundException,
   Query,
 } from '@nestjs/common';
 import { Location } from '@maramataka-calendar/astronomy';
@@ -10,6 +11,7 @@ import {
   MaramatakaNight,
   MaramatakaService,
 } from '@maramataka-calendar/maramataka-domain';
+import { findLocationById } from './locations';
 
 interface TodayMaramatakaNightResponse {
   mata: {
@@ -27,12 +29,18 @@ export class MaramatakaController {
   @Get('month')
   async getMonth(
     @Query('date') dateInput: string,
-    @Query('lat') latInput: string,
-    @Query('lon') lonInput: string,
-    @Query('tz') tzInput: string
+    @Query('location') locationInput?: string,
+    @Query('lat') latInput?: string,
+    @Query('lon') lonInput?: string,
+    @Query('tz') tzInput?: string
   ): Promise<MaramatakaMonth> {
     const date = this.parseDate(dateInput);
-    const location = this.parseLocation(latInput, lonInput, tzInput);
+    const location = this.parseLocationOrCoordinates(
+      locationInput,
+      latInput,
+      lonInput,
+      tzInput
+    );
 
     return this.maramatakaService.getMonth(location, date);
   }
@@ -40,11 +48,17 @@ export class MaramatakaController {
   @Get('today')
   async getToday(
     @Query('dateTime') dateTimeInput: string,
-    @Query('lat') latInput: string,
-    @Query('lon') lonInput: string,
-    @Query('tz') tzInput: string
+    @Query('location') locationInput?: string,
+    @Query('lat') latInput?: string,
+    @Query('lon') lonInput?: string,
+    @Query('tz') tzInput?: string
   ): Promise<TodayMaramatakaNightResponse> {
-    const location = this.parseLocation(latInput, lonInput, tzInput);
+    const location = this.parseLocationOrCoordinates(
+      locationInput,
+      latInput,
+      lonInput,
+      tzInput
+    );
     const date = this.parseDateTime(dateTimeInput, location.timezoneOffset);
     const month = await this.maramatakaService.getMonth(location, date);
     const night = this.findNightForDate(month.nights, date);
@@ -65,6 +79,35 @@ export class MaramatakaController {
     };
   }
 
+  private parseLocationOrCoordinates(
+    locationInput?: string,
+    latInput?: string,
+    lonInput?: string,
+    tzInput?: string
+  ): Location {
+    if (locationInput) {
+      const locationData = findLocationById(locationInput);
+      if (!locationData) {
+        throw new NotFoundException(`Unknown location: ${locationInput}`);
+      }
+
+      const timezoneOffset = this.timezoneToOffset(locationData.timezone);
+      return {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        timezoneOffset,
+      };
+    }
+
+    if (!latInput || !lonInput || !tzInput) {
+      throw new BadRequestException(
+        'Either location parameter or all of lat, lon, and tz parameters are required'
+      );
+    }
+
+    return this.parseLocation(latInput, lonInput, tzInput);
+  }
+
   private parseLocation(
     latInput: string,
     lonInput: string,
@@ -83,6 +126,16 @@ export class MaramatakaController {
       longitude,
       timezoneOffset,
     };
+  }
+
+  private timezoneToOffset(timezone: string): number {
+    if (timezone === 'Pacific/Auckland') {
+      return 13;
+    }
+
+    throw new BadRequestException(
+      `Unsupported timezone: ${timezone}`
+    );
   }
 
   private parseDateTime(dateTimeInput: string, timezoneOffset: number): Date {
