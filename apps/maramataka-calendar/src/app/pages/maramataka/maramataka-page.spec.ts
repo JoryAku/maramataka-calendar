@@ -144,7 +144,9 @@ describe('MaramatakaPage', () => {
       endsAt: '2026-01-11T06:45:00.000Z',
     });
 
-    const page = fixture.componentInstance as { onLocationChange(locationId: string): void };
+    const page = fixture.componentInstance as unknown as {
+      onLocationChange(locationId: string): void;
+    };
     page.onLocationChange('auckland');
 
     const monthRequest = httpTestingController.expectOne((req) =>
