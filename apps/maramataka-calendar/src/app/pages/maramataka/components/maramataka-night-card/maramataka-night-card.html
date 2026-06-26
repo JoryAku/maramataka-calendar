@@ -1,5 +1,6 @@
 <article class="night-card" [class.current]="isCurrent()">
-  <h3>{{ night().mata }}</h3>
+  <h3>{{ night().mata.name }}</h3>
+  <p class="description">{{ night().mata.description.join(', ') }}</p>
 
   <dl>
     <dt>Start sunset</dt>

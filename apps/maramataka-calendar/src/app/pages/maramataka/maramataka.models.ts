@@ -1,5 +1,5 @@
 export interface MaramatakaNight {
-  mata: string;
+  mata: MaramatakaMata;
   startsAt: Date;
   endsAt: Date;
 }
@@ -21,13 +21,22 @@ export interface MaramatakaToday<TDate = Date> {
   endsAt: TDate;
 }
 
-export interface MaramatakaTodayMata {
+export interface MaramatakaMata {
   index: number;
   name: string;
+  description: string[];
 }
 
+export type MaramatakaTodayMata = MaramatakaMata;
+
 export interface ApiMaramatakaNight {
-  mata: string | ApiMata;
+  mata: ApiMata;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface ApiMaramatakaToday {
+  mata: ApiMata;
   startsAt: string;
   endsAt: string;
 }
@@ -35,6 +44,7 @@ export interface ApiMaramatakaNight {
 export interface ApiMata {
   index: number;
   name: string;
+  description: string;
   version: string;
 }
 

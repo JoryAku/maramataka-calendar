@@ -4,9 +4,11 @@ import { map, Observable } from 'rxjs';
 import { NZ_TIMEZONE } from './maramataka.constants';
 import {
   ApiMaramatakaMonth,
+  ApiMaramatakaToday,
   ApiMata,
   LocationSummary,
   MaramatakaMonth,
+  MaramatakaMata,
   MaramatakaNight,
   MaramatakaToday,
 } from './maramataka.models';
@@ -40,7 +42,7 @@ export class MaramatakaApiService {
       .set('location', locationId);
 
     return this.http
-      .get<MaramatakaToday<string>>('/api/maramataka/today', { params })
+      .get<ApiMaramatakaToday>('/api/maramataka/today', { params })
       .pipe(map((response) => this.mapToday(response)));
   }
 
@@ -52,9 +54,9 @@ export class MaramatakaApiService {
     };
   }
 
-  private mapToday(apiToday: MaramatakaToday<string>): MaramatakaToday {
+  private mapToday(apiToday: ApiMaramatakaToday): MaramatakaToday {
     return {
-      mata: apiToday.mata,
+      mata: this.mapMata(apiToday.mata),
       startsAt: new Date(apiToday.startsAt),
       endsAt: new Date(apiToday.endsAt),
     };
@@ -62,14 +64,18 @@ export class MaramatakaApiService {
 
   private mapNight(night: ApiMaramatakaMonth['nights'][number]): MaramatakaNight {
     return {
-      mata: this.mataName(night.mata),
+      mata: this.mapMata(night.mata),
       startsAt: new Date(night.startsAt),
       endsAt: new Date(night.endsAt),
     };
   }
 
-  private mataName(mata: string | ApiMata): string {
-    return typeof mata === 'string' ? mata : mata.name;
+  private mapMata(mata: ApiMata): MaramatakaMata {
+    return {
+      index: mata.index,
+      name: mata.name,
+      description: Array.isArray(mata.description) ? mata.description : [mata.description]
+    };
   }
 
   private toYyyyMmDd(date: Date): string {

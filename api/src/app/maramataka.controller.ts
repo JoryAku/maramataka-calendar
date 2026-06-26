@@ -14,15 +14,6 @@ import {
 } from '@maramataka-calendar/maramataka-domain';
 import { findLocationById } from './locations';
 
-interface TodayMaramatakaNightResponse {
-  mata: {
-    index: number;
-    name: string;
-  };
-  startsAt: Date;
-  endsAt: Date;
-}
-
 interface LocalDateTimeParts {
   year: number;
   month: number;
@@ -59,7 +50,7 @@ export class MaramatakaController {
     @Query('lat') latInput?: string,
     @Query('lon') lonInput?: string,
     @Query('tz') tzInput?: string
-  ): Promise<TodayMaramatakaNightResponse> {
+  ): Promise<MaramatakaNight> {
     const { date, location } = locationInput
       ? this.parseNamedLocationDateTime(locationInput, dateTimeInput)
       : this.parseCoordinateDateTime(dateTimeInput, latInput, lonInput, tzInput);
@@ -73,10 +64,7 @@ export class MaramatakaController {
     }
 
     return {
-      mata: {
-        index: night.mata.index,
-        name: night.mata.name,
-      },
+      mata: night.mata,
       startsAt: night.startsAt,
       endsAt: night.endsAt,
     };

@@ -10,8 +10,24 @@ describe('MaramatakaService', () => {
 
   it('orchestrates astronomy, Whiro calculation, and month generation', async () => {
     const mata = [
-      { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
-      { index: 2, name: 'Tirea', version: 'mita-te-tai-best' as const },
+      {
+        index: 1,
+        name: 'Whiro',
+        description: ['Mo te hi', 'Mo te rama'],
+        version: 'mita-te-tai-best' as const,
+      },
+      {
+        index: 2,
+        name: 'Tirea',
+        description: [
+          'Mo te hi',
+          'Mo te rama',
+          'Mo te whakapa',
+          'Mo te whakaata',
+          'Mo te taiki',
+        ],
+        version: 'mita-te-tai-best' as const,
+      },
     ];
 
     const getNewMoons = jest
