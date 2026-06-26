@@ -2,8 +2,21 @@
   "name": "@maramataka-calendar/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "start": "nx serve maramataka-calendar",
+    "serve:api": "nx serve api",
+    "lint": "nx run-many -t lint",
+    "test": "nx run-many -t test",
+    "build": "nx run-many -t build",
+    "e2e": "nx run-many -t e2e",
+    "check": "nx run-many -t lint test build",
+    "ci": "MARAMATAKA_ASTRONOMY_MODE=stub nx run-many -t lint test build e2e"
+  },
   "private": true,
+  "engines": {
+    "node": ">=20.19.0 <21 || >=22.12.0",
+    "npm": ">=10"
+  },
   "dependencies": {
     "@angular/common": "~21.2.0",
     "@angular/compiler": "~21.2.0",

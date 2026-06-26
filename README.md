@@ -1,120 +1,74 @@
-# MaramatakaCalendar
+# Maramataka Calendar
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Maramataka Calendar is an Nx workspace for a modern Maramataka app. The current product focus is an accurate moon tracker: current mata, moonrise and moonset, lunar phase anchors, and a cycle/month view.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Requirements
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+Use Node.js 20.19.0 or newer in the Node 20 line. Node 22.12.0 or newer is also supported.
 
-## Run tasks
-
-To run the dev server for your app, use:
+If you use `nvm`:
 
 ```sh
-npx nx serve maramataka-calendar
+nvm use
 ```
 
-To create a production bundle:
+Install dependencies:
 
 ```sh
-npx nx build maramataka-calendar
+npm ci
 ```
 
-To see all available targets to run for a project, run:
+## Run Locally
+
+Start the Angular app:
 
 ```sh
-npx nx show project maramataka-calendar
+npm start
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
+Start the API:
 
 ```sh
-npx nx g @nx/angular:app demo
+npm run serve:api
 ```
 
-To generate a new library, use:
+Use stub astronomy data when you need deterministic local or CI runs:
 
 ```sh
-npx nx g @nx/angular:lib mylib
+MARAMATAKA_ASTRONOMY_MODE=stub npm run serve:api
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+## Checks
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## CI options
-
-This repository uses a GitHub Actions workflow in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
-
-CI is intentionally gated so it does not run on every commit. You have two ways to trigger it:
-
-- Push an empty commit with a `[ci]` message tag:
+Run the common verification tasks:
 
 ```sh
-git commit --allow-empty -m "[ci] run ci"
-git push
+npm run lint
+npm test
+npm run build
 ```
 
-- Run the workflow manually from GitHub Actions and set the `run_ci` input to `true`.
-
-The workflow still runs the usual Nx checks once triggered.
-
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
+Run lint, tests, and builds together:
 
 ```sh
-npx nx connect
+npm run check
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
+Run the CI-equivalent command with stub astronomy data:
 
 ```sh
-npx nx g ci-workflow
+npm run ci
 ```
 
-For this project, the workflow is already configured and the options above are the supported ways to run it.
+## CI
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+GitHub Actions runs CI for pull requests targeting `main`, pushes to `main`, and manual workflow dispatch. CI uses stub astronomy data so checks do not depend on live astronomy provider availability.
 
-## Install Nx Console
+## Workspace Layout
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- `apps/maramataka-calendar`: Angular frontend.
+- `api`: NestJS backend.
+- `maramataka-domain`: Maramataka domain logic.
+- `astronomy`: astronomical provider interfaces and implementations.
+- `location`: location support library.
+- `api-e2e` and `apps/maramataka-calendar-e2e`: API and browser e2e tests.
