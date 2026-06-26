@@ -40,7 +40,7 @@ jobs:
       # Prepend any command with "nx record --" to record its logs to Nx Cloud
       # - run: npx nx record -- echo Hello World
       # When you enable task distribution, run the e2e-ci task instead of e2e
-      - run: MARAMATAKA_ASTRONOMY_MODE=stub npx nx run-many -t lint test build e2e
+      - run: MARAMATAKA_ASTRONOMY_MODE=stub PORT=4300 E2E_PORT=4301 npx nx run-many -t lint test build e2e
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: npx nx fix-ci
         if: always()

@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 
 // For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
+const e2ePort = process.env['E2E_PORT'] || '4200';
+const baseURL = process.env['BASE_URL'] || `http://localhost:${e2ePort}`;
 const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url));
 
 /**
@@ -32,8 +33,8 @@ export default defineConfig({
   },
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npx nx run maramataka-calendar:serve',
-    url: 'http://localhost:4200',
+    command: `npx nx run maramataka-calendar:serve --port=${e2ePort}`,
+    url: baseURL,
     reuseExistingServer: true,
     cwd: workspaceRoot
   },
