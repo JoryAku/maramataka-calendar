@@ -16,6 +16,12 @@ h3 {
   font-size: 1.1rem;
 }
 
+.description {
+  margin: 0 0 0.75rem;
+  color: #4a584f;
+  line-height: 1.45;
+}
+
 dl {
   margin: 0;
   display: grid;

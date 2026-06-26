@@ -52,6 +52,7 @@ describe('MaramatakaController', () => {
         mata: {
           index: 1,
           name: 'Whiro',
+          description: ['Mo te hi'],
           version: 'mita-te-tai-best',
         },
         startsAt: new Date('2026-01-01T07:47:00.000Z'),
@@ -61,6 +62,13 @@ describe('MaramatakaController', () => {
         mata: {
           index: 2,
           name: 'Tirea',
+          description: [
+            'Mo te hi',
+            'Mo te rama',
+            'Mo te whakapa',
+            'Mo te whakaata',
+            'Mo te taiki',
+          ],
           version: 'mita-te-tai-best',
         },
         startsAt: new Date('2026-01-02T07:46:00.000Z'),
@@ -70,6 +78,13 @@ describe('MaramatakaController', () => {
         mata: {
           index: 3,
           name: 'Ohoata',
+          description: [
+            'Mo te hi',
+            'Mo te rama',
+            'Mo te whakapa',
+            'Mo te taiki',
+            'Mo te ngaro kai, &c.',
+          ],
           version: 'mita-te-tai-best',
         },
         startsAt: new Date('2026-01-03T07:45:00.000Z'),
@@ -221,6 +236,8 @@ describe('MaramatakaController', () => {
         mata: {
           index: 1,
           name: 'Whiro',
+          description: ['Mo te hi'],
+          version: 'mita-te-tai-best',
         },
         startsAt: '2026-01-01T07:47:00.000Z',
         endsAt: '2026-01-02T07:46:00.000Z',
@@ -262,6 +279,14 @@ describe('MaramatakaController', () => {
       expect(response.data.mata).toEqual({
         index: 3,
         name: 'Ohoata',
+        description: [
+          'Mo te hi',
+          'Mo te rama',
+          'Mo te whakapa',
+          'Mo te taiki',
+          'Mo te ngaro kai, &c.',
+        ],
+        version: 'mita-te-tai-best',
       });
     });
 
@@ -282,6 +307,8 @@ describe('MaramatakaController', () => {
       expect(response.data.mata).toEqual({
         index: 1,
         name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
       });
     });
 
@@ -302,6 +329,8 @@ describe('MaramatakaController', () => {
       expect(response.data.mata).toEqual({
         index: 1,
         name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
       });
     });
 
@@ -322,6 +351,14 @@ describe('MaramatakaController', () => {
       expect(response.data.mata).toEqual({
         index: 2,
         name: 'Tirea',
+        description: [
+          'Mo te hi',
+          'Mo te rama',
+          'Mo te whakapa',
+          'Mo te whakaata',
+          'Mo te taiki',
+        ],
+        version: 'mita-te-tai-best',
       });
     });
 
@@ -407,6 +444,8 @@ describe('MaramatakaController', () => {
       expect(response.data.mata).toEqual({
         index: 1,
         name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
       });
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
@@ -457,6 +496,7 @@ describe('MaramatakaController', () => {
             mata: {
               index: 1,
               name: 'Whiro',
+              description: ['Mo te hi'],
               version: 'mita-te-tai-best',
             },
             startsAt: new Date('2026-06-01T07:00:00.000Z'),

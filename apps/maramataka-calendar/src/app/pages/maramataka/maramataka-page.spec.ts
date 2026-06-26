@@ -61,7 +61,12 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     todayRequest.flush({
-      mata: { index: 1, name: 'Whiro' },
+      mata: {
+        index: 1,
+        name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
+      },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -92,19 +97,40 @@ describe('MaramatakaPage', () => {
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [
         {
-          mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+          mata: {
+            index: 1,
+            name: 'Whiro',
+            description: ['Mo te hi'],
+            version: 'mita-te-tai-best',
+          },
           startsAt: '2026-01-10T06:45:00.000Z',
           endsAt: '2026-01-11T06:45:00.000Z',
         },
         {
-          mata: { index: 2, name: 'Tirea', version: 'mita-te-tai-best' },
+          mata: {
+            index: 2,
+            name: 'Tirea',
+            description: [
+              'Mo te hi',
+              'Mo te rama',
+              'Mo te whakapa',
+              'Mo te whakaata',
+              'Mo te taiki',
+            ],
+            version: 'mita-te-tai-best',
+          },
           startsAt: '2026-01-11T06:45:00.000Z',
           endsAt: '2026-01-12T06:45:00.000Z',
         },
       ],
     });
     todayRequest.flush({
-      mata: { index: 1, name: 'Whiro' },
+      mata: {
+        index: 1,
+        name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
+      },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -139,7 +165,12 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     initialRequests.todayRequest.flush({
-      mata: { index: 1, name: 'Whiro' },
+      mata: {
+        index: 1,
+        name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
+      },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -162,7 +193,18 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     todayRequest.flush({
-      mata: { index: 2, name: 'Tirea' },
+      mata: { 
+        index: 2,
+        name: 'Tirea',
+        description: [
+          'Mo te hi',
+          'Mo te rama',
+          'Mo te whakapa',
+          'Mo te whakaata',
+          'Mo te taiki',
+        ],
+        version: 'mita-te-tai-best'
+      },
       startsAt: '2026-01-11T06:45:00.000Z',
       endsAt: '2026-01-12T06:45:00.000Z',
     });
@@ -195,7 +237,12 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     firstRequests.todayRequest.flush({
-      mata: { index: 1, name: 'Whiro' },
+      mata: {
+        index: 1,
+        name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
+      },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -213,7 +260,12 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     secondRequests.todayRequest.flush({
-      mata: { index: 1, name: 'Whiro' },
+      mata: {
+        index: 1,
+        name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
+      },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
@@ -244,7 +296,12 @@ describe('MaramatakaPage', () => {
       nights: [],
     });
     todayRequest.flush({
-      mata: { index: 1, name: 'Whiro' },
+      mata: {
+        index: 1,
+        name: 'Whiro',
+        description: ['Mo te hi'],
+        version: 'mita-te-tai-best',
+      },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     });
