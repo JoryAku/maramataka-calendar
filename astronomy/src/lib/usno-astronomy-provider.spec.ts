@@ -288,7 +288,7 @@ describe('UsnoAstronomyProvider', () => {
       fractionIlluminated: 0.91,
       closestPhase: {
         phase: 'Full Moon',
-        occursAt: new Date('2026-01-03T23:03:00.000Z'),
+        occursAt: new Date('2026-01-03T10:03:00.000Z'),
         source: 'usno',
       },
       moonrise: {

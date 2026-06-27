@@ -31,6 +31,33 @@ interface TodayMaramatakaNightResponse {
   endsAt: Date;
 }
 
+interface MoonDetailsResponse {
+  date: string;
+  phase: string;
+  fractionIlluminated: number;
+  lunarAgeDays: null;
+  distanceKm: null;
+  closestPhase?: {
+    phase: string;
+    occursAt: Date;
+    source: string;
+  };
+  moonrise?: {
+    occursAt: Date;
+    source: string;
+  };
+  moonset?: {
+    occursAt: Date;
+    source: string;
+  };
+  transit?: {
+    occursAt: Date;
+    source: string;
+  };
+  unavailable: Array<'lunarAgeDays' | 'distanceKm'>;
+  source: string;
+}
+
 interface LocalDateTimeParts {
   year: number;
   month: number;
@@ -100,6 +127,56 @@ export class MaramatakaController {
       })),
       startsAt: night.startsAt,
       endsAt: night.endsAt,
+    };
+  }
+
+  @Get('moon-details')
+  async getMoonDetails(
+    @Query('date') dateInput: string,
+    @Query('location') locationInput?: string,
+    @Query('lat') latInput?: string,
+    @Query('lon') lonInput?: string,
+    @Query('tz') tzInput?: string,
+  ): Promise<MoonDetailsResponse> {
+    const date = this.parseDate(dateInput);
+    const location = locationInput
+      ? this.parseNamedLocationForDate(locationInput, date)
+      : this.parseCoordinatesOrThrow(latInput, lonInput, tzInput);
+    const details = await this.maramatakaService.getMoonDetails(location, date);
+
+    return {
+      date: details.date,
+      phase: details.phase,
+      fractionIlluminated: details.fractionIlluminated,
+      lunarAgeDays: null,
+      distanceKm: null,
+      closestPhase: details.closestPhase
+        ? {
+            phase: details.closestPhase.phase,
+            occursAt: details.closestPhase.occursAt,
+            source: details.closestPhase.source,
+          }
+        : undefined,
+      moonrise: details.moonrise
+        ? {
+            occursAt: details.moonrise.risesAt,
+            source: details.moonrise.source,
+          }
+        : undefined,
+      moonset: details.moonset
+        ? {
+            occursAt: details.moonset.setsAt,
+            source: details.moonset.source,
+          }
+        : undefined,
+      transit: details.transit
+        ? {
+            occursAt: details.transit.transitsAt,
+            source: details.transit.source,
+          }
+        : undefined,
+      unavailable: ['lunarAgeDays', 'distanceKm'],
+      source: details.source,
     };
   }
 
