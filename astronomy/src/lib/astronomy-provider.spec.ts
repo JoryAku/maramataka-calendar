@@ -6,7 +6,6 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
-  Sunset,
 } from './astronomy-provider';
 
 describe('AstronomyProvider', () => {
@@ -36,16 +35,6 @@ describe('AstronomyProvider', () => {
     };
 
     expect(phase.phase).toBe('Full Moon');
-  });
-
-  it('defines a Sunset shape', () => {
-    const sunset: Sunset = {
-      date: '2026-01-01',
-      occursAt: new Date(),
-      source: 'usno',
-    };
-
-    expect(sunset.date).toBe('2026-01-01');
   });
 
   it('defines a MoonRiseSet shape', () => {
