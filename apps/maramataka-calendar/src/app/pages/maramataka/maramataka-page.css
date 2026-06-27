@@ -73,6 +73,12 @@ h1 {
   margin: 0 0 0.75rem;
 }
 
+.overlap-label {
+  margin: -0.35rem 0 0.75rem;
+  color: #35664b;
+  font-weight: 600;
+}
+
 .today-card dl {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

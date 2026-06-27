@@ -19,6 +19,14 @@ interface TodayMaramatakaNightResponse {
     index: number;
     name: string;
   };
+  overlappingMata?: {
+    mata: {
+      index: number;
+      name: string;
+    };
+    cycleStartsAt: Date;
+    reason: 'new-moon-anchor';
+  }[];
   startsAt: Date;
   endsAt: Date;
 }
@@ -42,7 +50,7 @@ export class MaramatakaController {
     @Query('location') locationInput?: string,
     @Query('lat') latInput?: string,
     @Query('lon') lonInput?: string,
-    @Query('tz') tzInput?: string
+    @Query('tz') tzInput?: string,
   ): Promise<MaramatakaMonth> {
     const date = this.parseDate(dateInput);
     const location = locationInput
@@ -58,17 +66,22 @@ export class MaramatakaController {
     @Query('location') locationInput?: string,
     @Query('lat') latInput?: string,
     @Query('lon') lonInput?: string,
-    @Query('tz') tzInput?: string
+    @Query('tz') tzInput?: string,
   ): Promise<TodayMaramatakaNightResponse> {
     const { date, location } = locationInput
       ? this.parseNamedLocationDateTime(locationInput, dateTimeInput)
-      : this.parseCoordinateDateTime(dateTimeInput, latInput, lonInput, tzInput);
+      : this.parseCoordinateDateTime(
+          dateTimeInput,
+          latInput,
+          lonInput,
+          tzInput,
+        );
     const month = await this.maramatakaService.getMonth(location, date);
     const night = this.findNightForDate(month.nights, date);
 
     if (!night) {
       throw new BadRequestException(
-        'No Maramataka night found for supplied date and location'
+        'No Maramataka night found for supplied date and location',
       );
     }
 
@@ -77,6 +90,14 @@ export class MaramatakaController {
         index: night.mata.index,
         name: night.mata.name,
       },
+      overlappingMata: night.overlappingMata?.map((overlap) => ({
+        mata: {
+          index: overlap.mata.index,
+          name: overlap.mata.name,
+        },
+        cycleStartsAt: overlap.cycleStartsAt,
+        reason: overlap.reason,
+      })),
       startsAt: night.startsAt,
       endsAt: night.endsAt,
     };
@@ -85,11 +106,11 @@ export class MaramatakaController {
   private parseCoordinatesOrThrow(
     latInput?: string,
     lonInput?: string,
-    tzInput?: string
+    tzInput?: string,
   ): Location {
     if (!latInput || !lonInput || !tzInput) {
       throw new BadRequestException(
-        'Either location parameter or all of lat, lon, and tz parameters are required'
+        'Either location parameter or all of lat, lon, and tz parameters are required',
       );
     }
 
@@ -100,7 +121,7 @@ export class MaramatakaController {
     dateTimeInput: string,
     latInput?: string,
     lonInput?: string,
-    tzInput?: string
+    tzInput?: string,
   ): { date: Date; location: Location } {
     const location = this.parseCoordinatesOrThrow(latInput, lonInput, tzInput);
     const date = this.parseDateTime(dateTimeInput, location.timezoneOffset);
@@ -110,11 +131,17 @@ export class MaramatakaController {
 
   private parseNamedLocationDateTime(
     locationInput: string,
-    dateTimeInput: string
+    dateTimeInput: string,
   ): { date: Date; location: Location } {
     const locationData = this.findNamedLocationOrThrow(locationInput);
-    const date = this.parseDateTimeForTimezone(dateTimeInput, locationData.timezone);
-    const timezoneOffset = this.getTimezoneOffsetForDate(locationData.timezone, date);
+    const date = this.parseDateTimeForTimezone(
+      dateTimeInput,
+      locationData.timezone,
+    );
+    const timezoneOffset = this.getTimezoneOffsetForDate(
+      locationData.timezone,
+      date,
+    );
 
     return {
       date,
@@ -126,7 +153,10 @@ export class MaramatakaController {
     };
   }
 
-  private parseNamedLocationForDate(locationInput: string, date: Date): Location {
+  private parseNamedLocationForDate(
+    locationInput: string,
+    date: Date,
+  ): Location {
     const locationData = this.findNamedLocationOrThrow(locationInput);
     const localMidday = new Date(
       Date.UTC(
@@ -135,12 +165,12 @@ export class MaramatakaController {
         date.getUTCDate(),
         12,
         0,
-        0
-      )
+        0,
+      ),
     );
     const timezoneOffset = this.getTimezoneOffsetForDate(
       locationData.timezone,
-      localMidday
+      localMidday,
     );
 
     return {
@@ -166,7 +196,7 @@ export class MaramatakaController {
   private parseLocation(
     latInput: string,
     lonInput: string,
-    tzInput: string
+    tzInput: string,
   ): Location {
     const latitude = this.parseNumber(latInput, 'lat');
     const longitude = this.parseNumber(lonInput, 'lon');
@@ -188,7 +218,10 @@ export class MaramatakaController {
     return this.parseDateTimeWithOffset(dateTimeParts, timezoneOffset);
   }
 
-  private parseDateTimeForTimezone(dateTimeInput: string, timezone: string): Date {
+  private parseDateTimeForTimezone(
+    dateTimeInput: string,
+    timezone: string,
+  ): Date {
     const dateTimeParts = this.parseDateTimeParts(dateTimeInput);
     const hourMs = 60 * 60 * 1000;
     const localDateTimeAsUtcMs = Date.UTC(
@@ -197,7 +230,7 @@ export class MaramatakaController {
       dateTimeParts.day,
       dateTimeParts.hour,
       dateTimeParts.minute,
-      dateTimeParts.second
+      dateTimeParts.second,
     );
 
     const candidateOffsets = new Set<number>();
@@ -209,7 +242,7 @@ export class MaramatakaController {
 
     for (const candidateOffset of candidateOffsets) {
       const candidateDate = new Date(
-        localDateTimeAsUtcMs - candidateOffset * hourMs
+        localDateTimeAsUtcMs - candidateOffset * hourMs,
       );
       if (
         this.matchesLocalDateTimeParts(candidateDate, timezone, dateTimeParts)
@@ -226,12 +259,11 @@ export class MaramatakaController {
       throw new BadRequestException('dateTime query parameter is required');
     }
 
-    const datePattern =
-      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/;
+    const datePattern = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/;
     const match = dateTimeInput.match(datePattern);
     if (!match) {
       throw new BadRequestException(
-        'dateTime must be in YYYY-MM-DDTHH:mm:ss format'
+        'dateTime must be in YYYY-MM-DDTHH:mm:ss format',
       );
     }
 
@@ -247,15 +279,15 @@ export class MaramatakaController {
 
   private parseDateTimeWithOffset(
     dateTimeParts: LocalDateTimeParts,
-    timezoneOffset: number
+    timezoneOffset: number,
   ): Date {
     const { year, month, day, hour, minute, second } = dateTimeParts;
 
     const utcDate = new Date(
-      Date.UTC(year, month - 1, day, hour - timezoneOffset, minute, second)
+      Date.UTC(year, month - 1, day, hour - timezoneOffset, minute, second),
     );
     const localizedDate = new Date(
-      utcDate.getTime() + timezoneOffset * 60 * 60 * 1000
+      utcDate.getTime() + timezoneOffset * 60 * 60 * 1000,
     );
 
     if (
@@ -276,7 +308,7 @@ export class MaramatakaController {
   private matchesLocalDateTimeParts(
     date: Date,
     timezone: string,
-    dateTimeParts: LocalDateTimeParts
+    dateTimeParts: LocalDateTimeParts,
   ): boolean {
     const formatter = new Intl.DateTimeFormat('en-NZ', {
       timeZone: timezone,
@@ -291,22 +323,22 @@ export class MaramatakaController {
 
     const formattedParts = formatter.formatToParts(date);
     const year = Number(
-      formattedParts.find((part) => part.type === 'year')?.value
+      formattedParts.find((part) => part.type === 'year')?.value,
     );
     const month = Number(
-      formattedParts.find((part) => part.type === 'month')?.value
+      formattedParts.find((part) => part.type === 'month')?.value,
     );
     const day = Number(
-      formattedParts.find((part) => part.type === 'day')?.value
+      formattedParts.find((part) => part.type === 'day')?.value,
     );
     const hour = Number(
-      formattedParts.find((part) => part.type === 'hour')?.value
+      formattedParts.find((part) => part.type === 'hour')?.value,
     );
     const minute = Number(
-      formattedParts.find((part) => part.type === 'minute')?.value
+      formattedParts.find((part) => part.type === 'minute')?.value,
     );
     const second = Number(
-      formattedParts.find((part) => part.type === 'second')?.value
+      formattedParts.find((part) => part.type === 'second')?.value,
     );
 
     return (
@@ -334,7 +366,7 @@ export class MaramatakaController {
 
       if (!timezoneName) {
         throw new InternalServerErrorException(
-          `Invalid location timezone configuration: ${timezone}`
+          `Invalid location timezone configuration: ${timezone}`,
         );
       }
 
@@ -342,10 +374,12 @@ export class MaramatakaController {
         return 0;
       }
 
-      const offsetMatch = timezoneName.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+      const offsetMatch = timezoneName.match(
+        /^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/,
+      );
       if (!offsetMatch) {
         throw new InternalServerErrorException(
-          `Invalid location timezone offset configuration: ${timezoneName}`
+          `Invalid location timezone offset configuration: ${timezoneName}`,
         );
       }
 
@@ -360,7 +394,7 @@ export class MaramatakaController {
       }
 
       throw new InternalServerErrorException(
-        `Invalid location timezone configuration: ${timezone}`
+        `Invalid location timezone configuration: ${timezone}`,
       );
     }
   }
@@ -429,14 +463,14 @@ export class MaramatakaController {
 
   private findNightForDate(
     nights: MaramatakaNight[],
-    date: Date
+    date: Date,
   ): MaramatakaNight | undefined {
     const requestedTime = date.getTime();
 
     return nights.find(
       (night) =>
         night.startsAt.getTime() <= requestedTime &&
-        requestedTime < night.endsAt.getTime()
+        requestedTime < night.endsAt.getTime(),
     );
   }
 }

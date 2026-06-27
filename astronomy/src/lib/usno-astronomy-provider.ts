@@ -1,27 +1,54 @@
 import {
   AstronomyProvider,
   Location,
+  MoonRiseSet,
   NewMoon,
   Sunset,
 } from './astronomy-provider';
 
 type FetchFn = typeof fetch;
 
+interface UsnoRiseSetTransitItem {
+  phen: string;
+  time: string;
+}
+
+interface UsnoRiseSetTransitData {
+  properties?: {
+    data?: {
+      sundata?: UsnoRiseSetTransitItem[];
+      moondata?: UsnoRiseSetTransitItem[];
+    };
+  };
+}
+
+interface UsnoMoonPhase {
+  phase: string;
+  year: number | string;
+  month: number | string;
+  day: number | string;
+  time: string;
+}
+
+interface UsnoMoonPhaseData {
+  phasedata?: UsnoMoonPhase[];
+}
+
 export class UsnoAstronomyProvider implements AstronomyProvider {
   constructor(private readonly fetchFn: FetchFn = fetch) {}
 
   async getNewMoons(year: number): Promise<NewMoon[]> {
     const response = await this.fetchFn(
-      `https://aa.usno.navy.mil/api/moon/phases/year?year=${year}`
+      `https://aa.usno.navy.mil/api/moon/phases/year?year=${year}`,
     );
     if (!response.ok) {
       throw new Error(`USNO moon phases request failed: ${response.status}`);
     }
-    const data = await response.json();
+    const data = (await response.json()) as UsnoMoonPhaseData;
 
-    return data.phasedata
-      .filter((phase: any) => phase.phase === 'New Moon')
-      .map((phase: any) => {
+    return (data.phasedata ?? [])
+      .filter((phase) => phase.phase === 'New Moon')
+      .map((phase) => {
         const moonYear = Number.parseInt(String(phase.year), 10);
         const moonMonth = Number.parseInt(String(phase.month), 10);
         const moonDay = Number.parseInt(String(phase.day), 10);
@@ -36,12 +63,14 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
           Number.isNaN(moonHour) ||
           Number.isNaN(moonMinute)
         ) {
-          throw new Error(`Invalid USNO moon phase date/time: ${JSON.stringify(phase)}`);
+          throw new Error(
+            `Invalid USNO moon phase date/time: ${JSON.stringify(phase)}`,
+          );
         }
 
         return {
           occursAt: new Date(
-            Date.UTC(moonYear, moonMonth - 1, moonDay, moonHour, moonMinute)
+            Date.UTC(moonYear, moonMonth - 1, moonDay, moonHour, moonMinute),
           ),
           source: 'usno' as const,
         };
@@ -49,53 +78,154 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
   }
 
   async getSunset(date: string, location: Location): Promise<Sunset> {
-    const response = await this.fetchFn(
-      `https://aa.usno.navy.mil/api/rstt/oneday?date=${date}&coords=${location.latitude},${location.longitude}&tz=${location.timezoneOffset}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`USNO sunset request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const sunset = data.properties.data.sundata.find(
-      (item: any) => item.phen === 'Set'
+    const data = await this.getRiseSetTransitData(date, location, 'sunset');
+    const sunset = data.properties?.data?.sundata?.find(
+      (item) => item.phen === 'Set',
     );
 
     if (!sunset) {
       throw new Error('No sunset data found');
     }
 
-    const [yearPart, monthPart, dayPart] = date.split('-');
-    const [hoursPart, minutesPart] = String(sunset.time).split(':');
-    const sunsetYear = Number.parseInt(yearPart, 10);
-    const sunsetMonth = Number.parseInt(monthPart, 10);
-    const sunsetDay = Number.parseInt(dayPart, 10);
-    const sunsetHour = Number.parseInt(hoursPart, 10);
-    const sunsetMinute = Number.parseInt(minutesPart, 10);
-
-    if (
-      Number.isNaN(sunsetYear) ||
-      Number.isNaN(sunsetMonth) ||
-      Number.isNaN(sunsetDay) ||
-      Number.isNaN(sunsetHour) ||
-      Number.isNaN(sunsetMinute)
-    ) {
-      throw new Error(`Invalid USNO sunset date/time: ${date} ${String(sunset.time)}`);
-    }
-
-    const occursAtUtcMs = Date.UTC(
-      sunsetYear,
-      sunsetMonth - 1,
-      sunsetDay,
-      sunsetHour - location.timezoneOffset,
-      sunsetMinute
+    const occursAt = this.parseLocalUsnoTime(
+      date,
+      sunset.time,
+      location,
+      'sunset',
     );
 
     return {
       date,
-      occursAt: new Date(occursAtUtcMs),
+      occursAt,
       source: 'usno',
     };
+  }
+
+  async getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet> {
+    const todayData = await this.getRiseSetTransitData(
+      date,
+      location,
+      'moonrise/moonset',
+    );
+    const moonrise = todayData.properties?.data?.moondata?.find(
+      (item) => item.phen === 'Rise',
+    );
+
+    if (!moonrise) {
+      throw new Error(`No moonrise data found for ${date}`);
+    }
+
+    const risesAt = this.parseLocalUsnoTime(
+      date,
+      moonrise.time,
+      location,
+      'moonrise',
+    );
+    const sameDaySet = todayData.properties?.data?.moondata
+      ?.filter((item) => item.phen === 'Set')
+      .map((item) =>
+        this.parseLocalUsnoTime(date, item.time, location, 'moonset'),
+      )
+      .find((setsAt) => setsAt.getTime() > risesAt.getTime());
+
+    if (sameDaySet) {
+      return {
+        date,
+        risesAt,
+        setsAt: sameDaySet,
+        source: 'usno',
+      };
+    }
+
+    const nextDate = this.addIsoDateDays(date, 1);
+    const nextDayData = await this.getRiseSetTransitData(
+      nextDate,
+      location,
+      'moonrise/moonset',
+    );
+    const nextSet = nextDayData.properties?.data?.moondata
+      ?.filter((item) => item.phen === 'Set')
+      .map((item) =>
+        this.parseLocalUsnoTime(nextDate, item.time, location, 'moonset'),
+      )
+      .find((setsAt) => setsAt.getTime() > risesAt.getTime());
+
+    if (!nextSet) {
+      throw new Error(`No moonset found after moonrise on ${date}`);
+    }
+
+    return {
+      date,
+      risesAt,
+      setsAt: nextSet,
+      source: 'usno',
+    };
+  }
+
+  private async getRiseSetTransitData(
+    date: string,
+    location: Location,
+    label: string,
+  ): Promise<UsnoRiseSetTransitData> {
+    const response = await this.fetchFn(
+      `https://aa.usno.navy.mil/api/rstt/oneday?date=${date}&coords=${location.latitude},${location.longitude}&tz=${location.timezoneOffset}`,
+    );
+
+    if (!response.ok) {
+      throw new Error(`USNO ${label} request failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  private parseLocalUsnoTime(
+    date: string,
+    time: string,
+    location: Location,
+    label: string,
+  ): Date {
+    const [yearPart, monthPart, dayPart] = date.split('-');
+    const [hoursPart, minutesPart] = String(time).split(':');
+    const year = Number.parseInt(yearPart, 10);
+    const month = Number.parseInt(monthPart, 10);
+    const day = Number.parseInt(dayPart, 10);
+    const hour = Number.parseInt(hoursPart, 10);
+    const minute = Number.parseInt(minutesPart, 10);
+
+    if (
+      Number.isNaN(year) ||
+      Number.isNaN(month) ||
+      Number.isNaN(day) ||
+      Number.isNaN(hour) ||
+      Number.isNaN(minute)
+    ) {
+      throw new Error(
+        `Invalid USNO ${label} date/time: ${date} ${String(time)}`,
+      );
+    }
+
+    const occursAtUtcMs = Date.UTC(
+      year,
+      month - 1,
+      day,
+      hour - location.timezoneOffset,
+      minute,
+    );
+
+    return new Date(occursAtUtcMs);
+  }
+
+  private addIsoDateDays(date: string, days: number): string {
+    const [yearPart, monthPart, dayPart] = date.split('-');
+    const year = Number.parseInt(yearPart, 10);
+    const month = Number.parseInt(monthPart, 10);
+    const day = Number.parseInt(dayPart, 10);
+    const result = new Date(Date.UTC(year, month - 1, day + days));
+
+    return [
+      result.getUTCFullYear(),
+      String(result.getUTCMonth() + 1).padStart(2, '0'),
+      String(result.getUTCDate()).padStart(2, '0'),
+    ].join('-');
   }
 }

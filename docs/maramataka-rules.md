@@ -1,0 +1,74 @@
+# Maramataka Rules
+
+This document records the domain rules currently used for the MVP moon tracker.
+It is intentionally separate from implementation code so cultural, product, and
+technical decisions can be reviewed together.
+
+## MVP Mata Boundary Rule
+
+For the MVP, a mata is defined by moonrise-to-moonset, not sunset-to-sunset.
+
+1. Get the astronomical New Moon date from USNO New Moon data, interpreted in
+   the selected location and timezone.
+2. Find the moonrise on that local New Moon date.
+3. Mark the interval from that moonrise to its following moonset as Whiro.
+4. Assign the remaining 29 mata to the next 29 moonrise-to-moonset intervals,
+   counting forward through the 30 mata sequence.
+5. Resolve a current timestamp to the mata whose moonrise-to-moonset interval
+   contains that timestamp.
+6. Treat every USNO New Moon date as a hard Whiro anchor. If the next New Moon
+   date lands before the previous 30-mata cycle has finished, the matching
+   moonrise-to-moonset interval carries both meanings: its position in the
+   previous cycle and Whiro for the next cycle.
+
+This means Whiro is anchored to the New Moon date's moonrise and moonset. The New
+Moon date comes from USNO New Moon data, but the mata boundary is the local
+moonrise/moonset interval for that date. One maramataka cycle contains Whiro plus
+the next 29 moonrise-to-moonset intervals. Cycles may overlap rather than being
+forced into a clean cut between New Moons.
+
+## Current MVP Scope
+
+The first product goal is to become a very accurate moon tracker. The MVP should
+prioritise:
+
+- current mata
+- moonrise and moonset
+- moon transit or meridian where available
+- New Moon, Full Moon, and next New Moon anchor points
+- lunar age, illumination, phase direction, and distance where available
+- the 30-mata cycle wheel
+
+Tide, weather, wind, year view, and three-year intercalation views are future
+state until the core moon tracking is trusted.
+
+## Source Reference
+
+The current mata sequence uses the Mita Te Tai / Elsdon Best reference already
+represented in the domain model. The working source is:
+
+- Elsdon Best, _Fishing Methods and Devices of the Maori_, NZETC, archived by
+  the National Library of New Zealand:
+  https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html
+
+The source is useful because it records a 30-night lunar sequence, Whiro as the
+first night, and fishing guidance linked to moon-age names. The MVP
+moonrise-to-moonset boundary is an application rule layered onto that reference.
+
+## Open Implementation Decisions
+
+These cases need explicit behaviour before the rule is implemented in code:
+
+- If there is no moonrise on the local New Moon date, decide whether Whiro uses
+  the nearest following moonrise or the nearest moonrise after the New Moon
+  instant.
+- If moonset occurs on the next local date, keep the interval intact as one mata.
+- If a timestamp falls outside a moonrise-to-moonset interval, decide whether the
+  app shows the next mata, the previous mata, or a transition state.
+- If the next astronomical New Moon arrives before Whiro plus 29 intervals are
+  assigned, mark that interval with overlapping Whiro for the next cycle.
+- If Whiro plus 29 intervals complete before the next astronomical New Moon,
+  decide whether the app waits for the next Whiro anchor or continues cyclically.
+
+The historical source notes that lunar-month naming could be adjusted in
+practice. The app should avoid hiding those adjustments inside implicit code.

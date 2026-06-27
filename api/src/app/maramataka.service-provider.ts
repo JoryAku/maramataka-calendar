@@ -3,6 +3,7 @@ import {
   AstronomyProvider,
   CachedAstronomyProvider,
   Location,
+  MoonRiseSet,
   NewMoon,
   Sunset,
   UsnoAstronomyProvider,
@@ -27,12 +28,36 @@ class StubAstronomyProvider implements AstronomyProvider {
     const month = Number(match[2]);
     const day = Number(match[3]);
     const occursAt = new Date(
-      Date.UTC(year, month - 1, day, 18 - location.timezoneOffset, 0, 0)
+      Date.UTC(year, month - 1, day, 18 - location.timezoneOffset, 0, 0),
     );
 
     return {
       date,
       occursAt,
+      source: 'stub',
+    };
+  }
+
+  async getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet> {
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+      throw new Error(`Invalid moonrise/moonset date format: ${date}`);
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const risesAt = new Date(
+      Date.UTC(year, month - 1, day, 18 - location.timezoneOffset, 0, 0),
+    );
+    const setsAt = new Date(
+      Date.UTC(year, month - 1, day + 1, 6 - location.timezoneOffset, 0, 0),
+    );
+
+    return {
+      date,
+      risesAt,
+      setsAt,
       source: 'stub',
     };
   }
