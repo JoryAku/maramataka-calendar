@@ -1,5 +1,7 @@
 import {
   AstronomyProvider,
+  AstronomyProviderError,
+  findAstronomyProviderError,
   formatIsoDateInTimezone,
   Location,
   MoonDetails,
@@ -208,6 +210,16 @@ export class MaramatakaService {
         .filter((moonRise): moonRise is MoonRise => Boolean(moonRise))
         .sort((a, b) => a.risesAt.getTime() - b.risesAt.getTime());
     } catch (error) {
+      const astronomyError = findAstronomyProviderError(error);
+      if (astronomyError) {
+        throw new AstronomyProviderError(
+          astronomyError.provider,
+          astronomyError.code,
+          `Failed to retrieve moonrise data: ${astronomyError.message}`,
+          { cause: astronomyError },
+        );
+      }
+
       throw new Error(
         `Failed to retrieve moonrise data: ${this.getErrorMessage(error)}`,
       );

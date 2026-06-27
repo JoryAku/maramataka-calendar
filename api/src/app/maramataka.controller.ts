@@ -4,8 +4,10 @@ import {
   Get,
   NotFoundException,
   Query,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import {
+  findAstronomyProviderError,
   Location,
   parseLocalDateTimeInTimezone,
   validateIanaTimezone,
@@ -94,7 +96,9 @@ export class MaramatakaController {
       : this.parseCoordinatesOrThrow(latInput, lonInput, timezoneInput);
     const date = this.parseLocalDateForTimezone(dateParts, location.timezone);
 
-    return this.maramatakaService.getMonth(location, date);
+    return this.handleAstronomyErrors(() =>
+      this.maramatakaService.getMonth(location, date),
+    );
   }
 
   @Get('today')
@@ -113,7 +117,9 @@ export class MaramatakaController {
           lonInput,
           timezoneInput,
         );
-    const month = await this.maramatakaService.getMonth(location, date);
+    const month = await this.handleAstronomyErrors(() =>
+      this.maramatakaService.getMonth(location, date),
+    );
     const night = this.findNightForDate(month.nights, date);
 
     if (!night) {
@@ -153,7 +159,9 @@ export class MaramatakaController {
       ? this.parseNamedLocation(locationInput)
       : this.parseCoordinatesOrThrow(latInput, lonInput, timezoneInput);
     const date = this.parseLocalDateForTimezone(dateParts, location.timezone);
-    const details = await this.maramatakaService.getMoonDetails(location, date);
+    const details = await this.handleAstronomyErrors(() =>
+      this.maramatakaService.getMoonDetails(location, date),
+    );
 
     return {
       date: details.date,
@@ -203,6 +211,25 @@ export class MaramatakaController {
     }
 
     return this.parseLocation(latInput, lonInput, timezoneInput);
+  }
+
+  private async handleAstronomyErrors<T>(
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      const astronomyError = findAstronomyProviderError(error);
+      if (astronomyError) {
+        throw new ServiceUnavailableException({
+          message: 'Astronomy data is currently unavailable',
+          provider: astronomyError.provider,
+          code: astronomyError.code,
+        });
+      }
+
+      throw error;
+    }
   }
 
   private parseCoordinateDateTime(

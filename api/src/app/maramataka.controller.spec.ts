@@ -2,6 +2,7 @@ import axios from 'axios';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AddressInfo } from 'node:net';
+import { AstronomyProviderError } from '@maramataka-calendar/astronomy';
 import {
   MaramatakaMonth,
   MaramatakaService,
@@ -205,6 +206,33 @@ describe('MaramatakaController', () => {
 
     expect(response.status).toBe(500);
     expect(response.data.message).toBe('Internal server error');
+  });
+
+  it('returns HTTP 503 for astronomy provider failures', async () => {
+    getMonthMock.mockRejectedValue(
+      new AstronomyProviderError(
+        'usno',
+        'request-timeout',
+        'USNO moonrise request timed out after 10000ms',
+      ),
+    );
+
+    const response = await axios.get(`${baseUrl}/maramataka/month`, {
+      params: {
+        date: '2026-01-01',
+        lat: '-41.2865',
+        lon: '174.7762',
+        timezone: 'Pacific/Auckland',
+      },
+      validateStatus: () => true,
+    });
+
+    expect(response.status).toBe(503);
+    expect(response.data).toEqual({
+      message: 'Astronomy data is currently unavailable',
+      provider: 'usno',
+      code: 'request-timeout',
+    });
   });
 
   describe('GET /maramataka/today', () => {

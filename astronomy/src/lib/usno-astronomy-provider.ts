@@ -14,8 +14,15 @@ import {
   getTimezoneOffsetHours,
   parseLocalDateTimeInTimezone,
 } from './timezone';
+import { AstronomyProviderError } from './astronomy-provider-error';
 
 type FetchFn = typeof fetch;
+
+export interface UsnoAstronomyProviderOptions {
+  timeoutMs?: number;
+}
+
+const DEFAULT_USNO_TIMEOUT_MS = 10_000;
 
 interface UsnoRiseSetTransitItem {
   phen: string;
@@ -47,18 +54,30 @@ interface UsnoMoonPhaseData {
 }
 
 export class UsnoAstronomyProvider implements AstronomyProvider {
-  constructor(private readonly fetchFn: FetchFn = fetch) {}
+  private readonly timeoutMs: number;
+
+  constructor(
+    private readonly fetchFn: FetchFn = fetch,
+    options: UsnoAstronomyProviderOptions = {},
+  ) {
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_USNO_TIMEOUT_MS;
+  }
 
   async getMoonPhases(year: number): Promise<MoonPhase[]> {
-    const response = await this.fetchFn(
+    const data = await this.fetchJson<UsnoMoonPhaseData>(
       `https://aa.usno.navy.mil/api/moon/phases/year?year=${year}`,
+      'moon phases',
     );
-    if (!response.ok) {
-      throw new Error(`USNO moon phases request failed: ${response.status}`);
-    }
-    const data = (await response.json()) as UsnoMoonPhaseData;
 
-    return (data.phasedata ?? []).map((phase) => this.parseMoonPhase(phase));
+    if (!this.isMoonPhaseData(data)) {
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
+        'USNO moon phases response did not match the expected shape',
+      );
+    }
+
+    return data.phasedata.map((phase) => this.parseMoonPhase(phase));
   }
 
   async getNewMoons(year: number): Promise<NewMoon[]> {
@@ -86,7 +105,11 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     );
 
     if (!moonrise) {
-      throw new Error(`No moonrise data found for ${date}`);
+      throw new AstronomyProviderError(
+        'usno',
+        'data-unavailable',
+        `No moonrise data found for ${date}`,
+      );
     }
 
     return {
@@ -112,7 +135,11 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     );
 
     if (!transit) {
-      throw new Error(`No moon transit data found for ${date}`);
+      throw new AstronomyProviderError(
+        'usno',
+        'data-unavailable',
+        `No moon transit data found for ${date}`,
+      );
     }
 
     return {
@@ -136,7 +163,11 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     const details = data.properties?.data;
 
     if (!details?.curphase) {
-      throw new Error(`No moon phase data found for ${date}`);
+      throw new AstronomyProviderError(
+        'usno',
+        'data-unavailable',
+        `No moon phase data found for ${date}`,
+      );
     }
 
     const moonrise = details.moondata?.find((item) => item.phen === 'Rise');
@@ -206,7 +237,11 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     );
 
     if (!moonrise) {
-      throw new Error(`No moonrise data found for ${date}`);
+      throw new AstronomyProviderError(
+        'usno',
+        'data-unavailable',
+        `No moonrise data found for ${date}`,
+      );
     }
 
     const risesAt = this.parseLocalUsnoTime(
@@ -245,7 +280,11 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
       .find((setsAt) => setsAt.getTime() > risesAt.getTime());
 
     if (!nextSet) {
-      throw new Error(`No moonset found after moonrise on ${date}`);
+      throw new AstronomyProviderError(
+        'usno',
+        'data-unavailable',
+        `No moonset found after moonrise on ${date}`,
+      );
     }
 
     return {
@@ -262,15 +301,69 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     label: string,
   ): Promise<UsnoRiseSetTransitData> {
     const timezoneOffset = this.getTimezoneOffsetForLocalDate(date, location);
-    const response = await this.fetchFn(
+    const data = await this.fetchJson<UsnoRiseSetTransitData>(
       `https://aa.usno.navy.mil/api/rstt/oneday?date=${date}&coords=${location.latitude},${location.longitude}&tz=${timezoneOffset}`,
+      label,
     );
 
-    if (!response.ok) {
-      throw new Error(`USNO ${label} request failed: ${response.status}`);
+    if (!this.isRiseSetTransitData(data)) {
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
+        `USNO ${label} response did not match the expected shape`,
+      );
     }
 
-    return response.json();
+    return data;
+  }
+
+  private async fetchJson<T>(url: string, label: string): Promise<T> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const response = await this.fetchFn(url, { signal: controller.signal });
+      if (!response.ok) {
+        throw new AstronomyProviderError(
+          'usno',
+          'request-failed',
+          `USNO ${label} request failed: ${response.status}`,
+        );
+      }
+
+      try {
+        return (await response.json()) as T;
+      } catch (error) {
+        throw new AstronomyProviderError(
+          'usno',
+          'invalid-response',
+          `USNO ${label} response was not valid JSON`,
+          { cause: error },
+        );
+      }
+    } catch (error) {
+      if (error instanceof AstronomyProviderError) {
+        throw error;
+      }
+
+      if (this.isAbortError(error)) {
+        throw new AstronomyProviderError(
+          'usno',
+          'request-timeout',
+          `USNO ${label} request timed out after ${this.timeoutMs}ms`,
+          { cause: error },
+        );
+      }
+
+      throw new AstronomyProviderError(
+        'usno',
+        'request-failed',
+        `USNO ${label} request failed: ${this.getErrorMessage(error)}`,
+        { cause: error },
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private parseLocalUsnoTime(
@@ -294,7 +387,9 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
       Number.isNaN(hour) ||
       Number.isNaN(minute)
     ) {
-      throw new Error(
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
         `Invalid USNO ${label} date/time: ${date} ${String(time)}`,
       );
     }
@@ -311,8 +406,11 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
         location.timezone,
       );
     } catch (error) {
-      throw new Error(
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
         `Invalid USNO ${label} local date/time for ${location.timezone}: ${this.getErrorMessage(error)}`,
+        { cause: error },
       );
     }
   }
@@ -332,7 +430,9 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
       Number.isNaN(moonHour) ||
       Number.isNaN(moonMinute)
     ) {
-      throw new Error(
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
         `Invalid USNO moon phase date/time: ${JSON.stringify(phase)}`,
       );
     }
@@ -367,7 +467,11 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     const day = Number.parseInt(dayPart, 10);
 
     if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
-      throw new Error(`Invalid USNO local date: ${date}`);
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
+        `Invalid USNO local date: ${date}`,
+      );
     }
 
     const localNoon = parseLocalDateTimeInTimezone(
@@ -397,7 +501,11 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     ];
 
     if (!validPhases.includes(phase as MoonPhaseName)) {
-      throw new Error(`Unknown USNO moon phase: ${phase}`);
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
+        `Unknown USNO moon phase: ${phase}`,
+      );
     }
 
     return phase as MoonPhaseName;
@@ -409,7 +517,9 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
   ): number {
     const match = value?.match(/^(\d+(?:\.\d+)?)%$/);
     if (!match) {
-      throw new Error(
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
         `Invalid USNO moon illumination for ${date}: ${String(value)}`,
       );
     }
@@ -433,5 +543,79 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
 
   private getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
+  }
+
+  private isMoonPhaseData(data: unknown): data is Required<UsnoMoonPhaseData> {
+    if (!this.isRecord(data) || !Array.isArray(data['phasedata'])) {
+      return false;
+    }
+
+    return data['phasedata'].every((phase) => this.isMoonPhase(phase));
+  }
+
+  private isMoonPhase(phase: unknown): phase is UsnoMoonPhase {
+    return (
+      this.isRecord(phase) &&
+      typeof phase['phase'] === 'string' &&
+      (typeof phase['year'] === 'number' ||
+        typeof phase['year'] === 'string') &&
+      (typeof phase['month'] === 'number' ||
+        typeof phase['month'] === 'string') &&
+      (typeof phase['day'] === 'number' || typeof phase['day'] === 'string') &&
+      typeof phase['time'] === 'string'
+    );
+  }
+
+  private isRiseSetTransitData(data: unknown): data is UsnoRiseSetTransitData {
+    if (!this.isRecord(data)) {
+      return false;
+    }
+
+    const properties = data['properties'];
+    if (!this.isRecord(properties)) {
+      return false;
+    }
+
+    const dayData = properties['data'];
+    if (!this.isRecord(dayData)) {
+      return false;
+    }
+
+    return (
+      this.isOptionalMoonPhase(dayData['closestphase']) &&
+      this.isOptionalString(dayData['curphase']) &&
+      this.isOptionalString(dayData['fracillum']) &&
+      this.isOptionalRiseSetTransitItems(dayData['moondata']) &&
+      this.isOptionalRiseSetTransitItems(dayData['sundata'])
+    );
+  }
+
+  private isOptionalMoonPhase(value: unknown): boolean {
+    return value === undefined || this.isMoonPhase(value);
+  }
+
+  private isOptionalRiseSetTransitItems(value: unknown): boolean {
+    return (
+      value === undefined ||
+      (Array.isArray(value) &&
+        value.every(
+          (item) =>
+            this.isRecord(item) &&
+            typeof item['phen'] === 'string' &&
+            typeof item['time'] === 'string',
+        ))
+    );
+  }
+
+  private isOptionalString(value: unknown): boolean {
+    return value === undefined || typeof value === 'string';
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private isAbortError(error: unknown): boolean {
+    return error instanceof Error && error.name === 'AbortError';
   }
 }
