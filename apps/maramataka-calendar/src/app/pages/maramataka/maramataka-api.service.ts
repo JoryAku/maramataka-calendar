@@ -5,10 +5,12 @@ import { NZ_TIMEZONE } from './maramataka.constants';
 import {
   ApiMaramatakaMonth,
   ApiMata,
+  ApiMoonDetails,
   LocationSummary,
   MaramatakaMonth,
   MaramatakaNight,
   MaramatakaToday,
+  MoonDetails,
 } from './maramataka.models';
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +46,16 @@ export class MaramatakaApiService {
       .pipe(map((response) => this.mapToday(response)));
   }
 
+  getMoonDetails(locationId: string, date: Date): Observable<MoonDetails> {
+    const params = new HttpParams()
+      .set('date', this.toYyyyMmDd(date))
+      .set('location', locationId);
+
+    return this.http
+      .get<ApiMoonDetails>('/api/maramataka/moon-details', { params })
+      .pipe(map((response) => this.mapMoonDetails(response)));
+  }
+
   private mapMonth(apiMonth: ApiMaramatakaMonth): MaramatakaMonth {
     return {
       version: apiMonth.version,
@@ -77,6 +89,36 @@ export class MaramatakaApiService {
       })),
       startsAt: new Date(night.startsAt),
       endsAt: new Date(night.endsAt),
+    };
+  }
+
+  private mapMoonDetails(apiDetails: ApiMoonDetails): MoonDetails {
+    return {
+      ...apiDetails,
+      closestPhase: apiDetails.closestPhase
+        ? {
+            ...apiDetails.closestPhase,
+            occursAt: new Date(apiDetails.closestPhase.occursAt),
+          }
+        : undefined,
+      moonrise: apiDetails.moonrise
+        ? {
+            ...apiDetails.moonrise,
+            occursAt: new Date(apiDetails.moonrise.occursAt),
+          }
+        : undefined,
+      moonset: apiDetails.moonset
+        ? {
+            ...apiDetails.moonset,
+            occursAt: new Date(apiDetails.moonset.occursAt),
+          }
+        : undefined,
+      transit: apiDetails.transit
+        ? {
+            ...apiDetails.transit,
+            occursAt: new Date(apiDetails.transit.occursAt),
+          }
+        : undefined,
     };
   }
 

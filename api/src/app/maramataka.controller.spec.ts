@@ -12,9 +12,11 @@ describe('MaramatakaController', () => {
   let app: INestApplication;
   let baseUrl: string;
   let getMonthMock: jest.Mock;
+  let getMoonDetailsMock: jest.Mock;
 
   beforeAll(async () => {
     getMonthMock = jest.fn();
+    getMoonDetailsMock = jest.fn();
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [MaramatakaController],
@@ -23,6 +25,7 @@ describe('MaramatakaController', () => {
           provide: MaramatakaService,
           useValue: {
             getMonth: getMonthMock,
+            getMoonDetails: getMoonDetailsMock,
           },
         },
       ],
@@ -780,6 +783,100 @@ describe('MaramatakaController', () => {
         longitude: 174.7762,
         timezoneOffset: 12,
       });
+    });
+  });
+
+  describe('GET /maramataka/moon-details', () => {
+    it('returns moon tracker details for a valid request', async () => {
+      getMoonDetailsMock.mockResolvedValue({
+        date: '2026-01-01',
+        phase: 'Waxing Gibbous',
+        fractionIlluminated: 0.91,
+        closestPhase: {
+          phase: 'Full Moon',
+          occursAt: new Date('2026-01-03T10:03:00.000Z'),
+          source: 'usno',
+        },
+        moonrise: {
+          date: '2026-01-01',
+          risesAt: new Date('2026-01-01T05:57:00.000Z'),
+          source: 'usno',
+        },
+        moonset: {
+          date: '2026-01-01',
+          setsAt: new Date('2025-12-31T13:50:00.000Z'),
+          source: 'usno',
+        },
+        transit: {
+          date: '2026-01-01',
+          transitsAt: new Date('2026-01-01T10:21:00.000Z'),
+          source: 'usno',
+        },
+        source: 'usno',
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/moon-details`, {
+        params: {
+          date: '2026-01-01',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({
+        date: '2026-01-01',
+        phase: 'Waxing Gibbous',
+        fractionIlluminated: 0.91,
+        lunarAgeDays: null,
+        distanceKm: null,
+        closestPhase: {
+          phase: 'Full Moon',
+          occursAt: '2026-01-03T10:03:00.000Z',
+          source: 'usno',
+        },
+        moonrise: {
+          occursAt: '2026-01-01T05:57:00.000Z',
+          source: 'usno',
+        },
+        moonset: {
+          occursAt: '2025-12-31T13:50:00.000Z',
+          source: 'usno',
+        },
+        transit: {
+          occursAt: '2026-01-01T10:21:00.000Z',
+          source: 'usno',
+        },
+        unavailable: ['lunarAgeDays', 'distanceKm'],
+        source: 'usno',
+      });
+      expect(getMoonDetailsMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg, dateArg] = getMoonDetailsMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezoneOffset: number },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 13,
+      });
+      expect(dateArg.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+    });
+
+    it('returns HTTP 400 for invalid moon details date', async () => {
+      const response = await axios.get(`${baseUrl}/maramataka/moon-details`, {
+        params: {
+          date: 'bad-date',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.message).toBe('date must be in YYYY-MM-DD format');
+      expect(getMoonDetailsMock).not.toHaveBeenCalled();
     });
   });
 });
