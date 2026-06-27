@@ -49,26 +49,6 @@ class StubAstronomyProvider implements AstronomyProvider {
       }));
   }
 
-  async getSunset(date: string, location: Location): Promise<Sunset> {
-    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) {
-      throw new Error(`Invalid sunset date format: ${date}`);
-    }
-
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-    const occursAt = new Date(
-      Date.UTC(year, month - 1, day, 18 - location.timezoneOffset, 0, 0),
-    );
-
-    return {
-      date,
-      occursAt,
-      source: 'stub',
-    };
-  }
-
   async getMoonRise(date: string, location: Location): Promise<MoonRise> {
     const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!match) {

@@ -68,23 +68,6 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     return request;
   }
 
-  async getSunset(date: string, location: Location): Promise<Sunset> {
-    const key = `${date}:${location.latitude}:${location.longitude}:${location.timezoneOffset}`;
-
-    const cachedRequest = this.sunsetCache.get(key);
-    if (cachedRequest) {
-      return cachedRequest;
-    }
-
-    const request = this.provider.getSunset(date, location).catch((error) => {
-      this.sunsetCache.delete(key);
-      throw error;
-    });
-
-    this.sunsetCache.set(key, request);
-    return request;
-  }
-
   async getMoonRise(date: string, location: Location): Promise<MoonRise> {
     const key = `${date}:${location.latitude}:${location.longitude}:${location.timezoneOffset}`;
 
