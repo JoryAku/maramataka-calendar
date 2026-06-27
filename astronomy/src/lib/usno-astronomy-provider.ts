@@ -1,6 +1,7 @@
 import {
   AstronomyProvider,
   Location,
+  MoonRise,
   MoonRiseSet,
   NewMoon,
   Sunset,
@@ -97,6 +98,28 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     return {
       date,
       occursAt,
+      source: 'usno',
+    };
+  }
+
+  async getMoonRise(date: string, location: Location): Promise<MoonRise> {
+    const data = await this.getRiseSetTransitData(date, location, 'moonrise');
+    const moonrise = data.properties?.data?.moondata?.find(
+      (item) => item.phen === 'Rise',
+    );
+
+    if (!moonrise) {
+      throw new Error(`No moonrise data found for ${date}`);
+    }
+
+    return {
+      date,
+      risesAt: this.parseLocalUsnoTime(
+        date,
+        moonrise.time,
+        location,
+        'moonrise',
+      ),
       source: 'usno',
     };
   }

@@ -22,8 +22,15 @@ export interface MoonRiseSet {
   source: string;
 }
 
+export interface MoonRise {
+  date: string;
+  risesAt: Date;
+  source: string;
+}
+
 export interface AstronomyProvider {
   getNewMoons(year: number): Promise<NewMoon[]>;
   getSunset(date: string, location: Location): Promise<Sunset>;
+  getMoonRise(date: string, location: Location): Promise<MoonRise>;
   getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet>;
 }

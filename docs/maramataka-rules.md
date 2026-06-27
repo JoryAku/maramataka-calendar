@@ -6,26 +6,28 @@ technical decisions can be reviewed together.
 
 ## MVP Mata Boundary Rule
 
-For the MVP, a mata is defined by moonrise-to-moonset, not sunset-to-sunset.
+For the MVP, a mata is defined by moonrise-to-next-moonrise, not
+sunset-to-sunset.
 
 1. Get the astronomical New Moon date from USNO New Moon data, interpreted in
    the selected location and timezone.
-2. Find the moonrise on that local New Moon date.
-3. Mark the interval from that moonrise to its following moonset as Whiro.
-4. Assign the remaining 29 mata to the next 29 moonrise-to-moonset intervals,
+2. Find the moonrise on that local New Moon date. If that date has no moonrise,
+   use the first moonrise after the exact New Moon instant.
+3. Mark the interval from that moonrise to the next moonrise as Whiro.
+4. Assign the remaining 29 mata to the next 29 moonrise-to-moonrise intervals,
    counting forward through the 30 mata sequence.
-5. Resolve a current timestamp to the mata whose moonrise-to-moonset interval
+5. Resolve a current timestamp to the mata whose moonrise-to-moonrise interval
    contains that timestamp.
 6. Treat every USNO New Moon date as a hard Whiro anchor. If the next New Moon
    date lands before the previous 30-mata cycle has finished, the matching
-   moonrise-to-moonset interval carries both meanings: its position in the
+   moonrise-to-moonrise interval carries both meanings: its position in the
    previous cycle and Whiro for the next cycle.
 
-This means Whiro is anchored to the New Moon date's moonrise and moonset. The New
-Moon date comes from USNO New Moon data, but the mata boundary is the local
-moonrise/moonset interval for that date. One maramataka cycle contains Whiro plus
-the next 29 moonrise-to-moonset intervals. Cycles may overlap rather than being
-forced into a clean cut between New Moons.
+This means Whiro is anchored to the New Moon date's moonrise. The New Moon date
+comes from USNO New Moon data, but the mata boundary is the local
+moonrise-to-next-moonrise interval for that date. One maramataka cycle contains
+Whiro plus the next 29 moonrise-to-moonrise intervals. Cycles may overlap rather
+than being forced into a clean cut between New Moons.
 
 ## Current MVP Scope
 
@@ -53,18 +55,17 @@ represented in the domain model. The working source is:
 
 The source is useful because it records a 30-night lunar sequence, Whiro as the
 first night, and fishing guidance linked to moon-age names. The MVP
-moonrise-to-moonset boundary is an application rule layered onto that reference.
+moonrise-to-moonrise boundary is an application rule layered onto that
+reference.
 
 ## Open Implementation Decisions
 
 These cases need explicit behaviour before the rule is implemented in code:
 
-- If there is no moonrise on the local New Moon date, decide whether Whiro uses
-  the nearest following moonrise or the nearest moonrise after the New Moon
-  instant.
-- If moonset occurs on the next local date, keep the interval intact as one mata.
-- If a timestamp falls outside a moonrise-to-moonset interval, decide whether the
-  app shows the next mata, the previous mata, or a transition state.
+- If there is no moonrise on the local New Moon date, Whiro uses the first
+  moonrise after the exact New Moon instant.
+- Since mata are moonrise-to-next-moonrise, every timestamp between fetched
+  moonrises belongs to one mata.
 - If the next astronomical New Moon arrives before Whiro plus 29 intervals are
   assigned, mark that interval with overlapping Whiro for the next cycle.
 - If Whiro plus 29 intervals complete before the next astronomical New Moon,

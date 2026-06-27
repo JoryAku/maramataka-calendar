@@ -1,6 +1,6 @@
-import { Mata, MaramatakaVersion } from './mata';
+import { MoonRise } from '@maramataka-calendar/astronomy';
 import { MaramatakaMonth, MaramatakaNightOverlap } from './maramataka';
-import { MoonRiseSet } from '@maramataka-calendar/astronomy';
+import { Mata, MaramatakaVersion } from './mata';
 
 interface GenerateMaramatakaOverlapInput {
   intervalDate: string;
@@ -11,56 +11,48 @@ interface GenerateMaramatakaMonthInput {
   version: MaramatakaVersion;
   whiroStartsAt: Date;
   mata: Mata[];
-  moonRiseSets: MoonRiseSet[];
+  moonRises: MoonRise[];
   overlaps?: GenerateMaramatakaOverlapInput[];
 }
 
 export function generateMaramatakaMonth(
   input: GenerateMaramatakaMonthInput,
 ): MaramatakaMonth {
-  if (input.moonRiseSets.length < input.mata.length) {
-    throw new Error(
-      'Not enough moonrise/moonset intervals to generate Maramataka month',
-    );
+  if (input.moonRises.length < input.mata.length + 1) {
+    throw new Error('Not enough moonrises to generate Maramataka month');
   }
 
   if (input.mata.some((mata) => mata.version !== input.version)) {
     throw new Error('All mata entries must match month version');
   }
 
-  for (let i = 0; i < input.moonRiseSets.length; i += 1) {
-    const interval = input.moonRiseSets[i];
-    if (interval.setsAt.getTime() <= interval.risesAt.getTime()) {
-      throw new Error('Moonset must be after moonrise');
-    }
-
+  for (let i = 1; i < input.moonRises.length; i += 1) {
     if (
-      i > 0 &&
-      interval.risesAt.getTime() <= input.moonRiseSets[i - 1].risesAt.getTime()
+      input.moonRises[i].risesAt.getTime() <=
+      input.moonRises[i - 1].risesAt.getTime()
     ) {
-      throw new Error('Moonrise intervals must be strictly increasing');
+      throw new Error('Moonrises must be strictly increasing');
     }
   }
 
-  if (
-    input.moonRiseSets[0].risesAt.getTime() !== input.whiroStartsAt.getTime()
-  ) {
+  if (input.moonRises[0].risesAt.getTime() !== input.whiroStartsAt.getTime()) {
     throw new Error('Whiro start must match first moonrise');
   }
   return {
     version: input.version,
     whiroStartsAt: input.whiroStartsAt,
     nights: input.mata.map((mata, index) => {
-      const interval = input.moonRiseSets[index];
+      const moonRise = input.moonRises[index];
+      const nextMoonRise = input.moonRises[index + 1];
       const overlappingMata = input.overlaps
-        ?.filter((overlap) => overlap.intervalDate === interval.date)
+        ?.filter((overlap) => overlap.intervalDate === moonRise.date)
         .map((overlap) => overlap.overlap);
 
       return {
         mata,
         ...(overlappingMata?.length ? { overlappingMata } : {}),
-        startsAt: interval.risesAt,
-        endsAt: interval.setsAt,
+        startsAt: moonRise.risesAt,
+        endsAt: nextMoonRise.risesAt,
       };
     }),
   };

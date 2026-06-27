@@ -1,6 +1,7 @@
 import {
   AstronomyProvider,
   Location,
+  MoonRise,
   MoonRiseSet,
   NewMoon,
   Sunset,
@@ -9,6 +10,7 @@ import {
 export class CachedAstronomyProvider implements AstronomyProvider {
   private newMoonCache = new Map<number, Promise<NewMoon[]>>();
   private sunsetCache = new Map<string, Promise<Sunset>>();
+  private moonRiseCache = new Map<string, Promise<MoonRise>>();
   private moonRiseSetCache = new Map<string, Promise<MoonRiseSet>>();
 
   constructor(private readonly provider: AstronomyProvider) {}
@@ -42,6 +44,23 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     });
 
     this.sunsetCache.set(key, request);
+    return request;
+  }
+
+  async getMoonRise(date: string, location: Location): Promise<MoonRise> {
+    const key = `${date}:${location.latitude}:${location.longitude}:${location.timezoneOffset}`;
+
+    const cachedRequest = this.moonRiseCache.get(key);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = this.provider.getMoonRise(date, location).catch((error) => {
+      this.moonRiseCache.delete(key);
+      throw error;
+    });
+
+    this.moonRiseCache.set(key, request);
     return request;
   }
 
