@@ -3,6 +3,7 @@ import {
   AstronomyProvider,
   CachedAstronomyProvider,
   Location,
+  MoonRise,
   MoonRiseSet,
   NewMoon,
   Sunset,
@@ -38,6 +39,25 @@ class StubAstronomyProvider implements AstronomyProvider {
     };
   }
 
+  async getMoonRise(date: string, location: Location): Promise<MoonRise> {
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+      throw new Error(`Invalid moonrise date format: ${date}`);
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+
+    return {
+      date,
+      risesAt: new Date(
+        Date.UTC(year, month - 1, day, 18 - location.timezoneOffset, 0, 0),
+      ),
+      source: 'stub',
+    };
+  }
+
   async getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet> {
     const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!match) {
@@ -47,16 +67,14 @@ class StubAstronomyProvider implements AstronomyProvider {
     const year = Number(match[1]);
     const month = Number(match[2]);
     const day = Number(match[3]);
-    const risesAt = new Date(
-      Date.UTC(year, month - 1, day, 18 - location.timezoneOffset, 0, 0),
-    );
+    const moonrise = await this.getMoonRise(date, location);
     const setsAt = new Date(
       Date.UTC(year, month - 1, day + 1, 6 - location.timezoneOffset, 0, 0),
     );
 
     return {
       date,
-      risesAt,
+      risesAt: moonrise.risesAt,
       setsAt,
       source: 'stub',
     };

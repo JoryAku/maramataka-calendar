@@ -1,7 +1,7 @@
 import {
   AstronomyProvider,
   Location,
-  MoonRiseSet,
+  MoonRise,
   NewMoon,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaMonth, MaramatakaNightOverlap } from './maramataka';
@@ -62,17 +62,14 @@ export class MaramatakaService {
       relevantNewMoon.occursAt,
       location.timezoneOffset,
     );
-    const moonRiseSets = await this.fetchMoonRiseSetsForMonth(
-      whiroDate,
-      location,
-    );
+    const moonRises = await this.fetchMoonRisesForMonth(whiroDate, location);
 
     let whiroStartsAt: Date;
     try {
       whiroStartsAt = this.calculateWhiroStartFn({
         newMoonAt: relevantNewMoon.occursAt,
         newMoonLocalDate: whiroDate,
-        moonRiseSets,
+        moonRises,
       });
     } catch (error) {
       throw new Error(
@@ -80,9 +77,8 @@ export class MaramatakaService {
       );
     }
 
-    const whiroStartIndex = moonRiseSets.findIndex(
-      (moonRiseSet) =>
-        moonRiseSet.risesAt.getTime() === whiroStartsAt.getTime(),
+    const whiroStartIndex = moonRises.findIndex(
+      (moonRise) => moonRise.risesAt.getTime() === whiroStartsAt.getTime(),
     );
 
     if (whiroStartIndex === -1) {
@@ -91,9 +87,9 @@ export class MaramatakaService {
       );
     }
 
-    const monthMoonRiseSets = moonRiseSets.slice(
+    const monthMoonRises = moonRises.slice(
       whiroStartIndex,
-      whiroStartIndex + this.mata.length,
+      whiroStartIndex + this.mata.length + 1,
     );
     const nextNewMoon = this.findNextNewMoon(
       [...previousYearNewMoons, ...requestedYearNewMoons, ...nextYearNewMoons],
@@ -101,7 +97,7 @@ export class MaramatakaService {
     );
     const overlaps = this.buildNewMoonOverlaps(
       nextNewMoon,
-      monthMoonRiseSets,
+      monthMoonRises,
       location,
     );
 
@@ -110,7 +106,7 @@ export class MaramatakaService {
         version: this.version,
         whiroStartsAt,
         mata: this.mata,
-        moonRiseSets: monthMoonRiseSets,
+        moonRises: monthMoonRises,
         overlaps,
       });
     } catch (error) {
@@ -140,7 +136,7 @@ export class MaramatakaService {
 
   private buildNewMoonOverlaps(
     nextNewMoon: NewMoon | undefined,
-    moonRiseSets: MoonRiseSet[],
+    moonRises: MoonRise[],
     location: Location,
   ): { intervalDate: string; overlap: MaramatakaNightOverlap }[] | undefined {
     if (!nextNewMoon) {
@@ -151,49 +147,69 @@ export class MaramatakaService {
       nextNewMoon.occursAt,
       location.timezoneOffset,
     );
-    const nextWhiroInterval = moonRiseSets.find(
-      (moonRiseSet) => moonRiseSet.date === nextWhiroDate,
-    );
+    const nextWhiroMoonRise =
+      moonRises.find((moonRise) => moonRise.date === nextWhiroDate) ??
+      moonRises
+        .filter(
+          (moonRise) =>
+            moonRise.risesAt.getTime() > nextNewMoon.occursAt.getTime(),
+        )
+        .sort((a, b) => a.risesAt.getTime() - b.risesAt.getTime())[0];
 
-    if (!nextWhiroInterval) {
+    if (!nextWhiroMoonRise) {
       return undefined;
     }
 
     return [
       {
-        intervalDate: nextWhiroDate,
+        intervalDate: nextWhiroMoonRise.date,
         overlap: {
           mata: this.mata[0],
-          cycleStartsAt: nextWhiroInterval.risesAt,
+          cycleStartsAt: nextWhiroMoonRise.risesAt,
           reason: 'new-moon-anchor',
         },
       },
     ];
   }
 
-  private async fetchMoonRiseSetsForMonth(
+  private async fetchMoonRisesForMonth(
     startDate: string,
     location: Location,
-  ): Promise<MoonRiseSet[]> {
-    const datesToFetch = Array.from({ length: this.mata.length }, (_, offset) =>
-      this.addIsoDateDays(startDate, offset),
+  ): Promise<MoonRise[]> {
+    const datesToFetch = Array.from(
+      { length: this.mata.length + 3 },
+      (_, offset) => this.addIsoDateDays(startDate, offset),
     );
 
     try {
-      const moonRiseSets = await Promise.all(
+      const moonRises = await Promise.all(
         datesToFetch.map(async (date) => {
-          return this.astronomyProvider.getMoonRiseSet(date, location);
+          try {
+            return await this.astronomyProvider.getMoonRise(date, location);
+          } catch (error) {
+            if (this.isMissingMoonriseError(error)) {
+              return undefined;
+            }
+
+            throw error;
+          }
         }),
       );
 
-      return moonRiseSets.sort(
-        (a, b) => a.risesAt.getTime() - b.risesAt.getTime(),
-      );
+      return moonRises
+        .filter((moonRise): moonRise is MoonRise => Boolean(moonRise))
+        .sort((a, b) => a.risesAt.getTime() - b.risesAt.getTime());
     } catch (error) {
       throw new Error(
-        `Failed to retrieve moonrise/moonset data: ${this.getErrorMessage(error)}`,
+        `Failed to retrieve moonrise data: ${this.getErrorMessage(error)}`,
       );
     }
+  }
+
+  private isMissingMoonriseError(error: unknown): boolean {
+    return this.getErrorMessage(error).startsWith(
+      'No moonrise data found for ',
+    );
   }
 
   private addIsoDateDays(date: string, days: number): string {

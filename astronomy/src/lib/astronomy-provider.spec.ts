@@ -1,4 +1,4 @@
-import { MoonRiseSet, NewMoon, Sunset } from './astronomy-provider';
+import { MoonRise, MoonRiseSet, NewMoon, Sunset } from './astronomy-provider';
 
 describe('AstronomyProvider', () => {
   it('defines a NewMoon shape', () => {
@@ -31,5 +31,16 @@ describe('AstronomyProvider', () => {
     expect(moonRiseSet.date).toBe('2026-01-01');
     expect(moonRiseSet.risesAt).toBeInstanceOf(Date);
     expect(moonRiseSet.setsAt).toBeInstanceOf(Date);
+  });
+
+  it('defines a MoonRise shape', () => {
+    const moonRise: MoonRise = {
+      date: '2026-01-01',
+      risesAt: new Date(),
+      source: 'usno',
+    };
+
+    expect(moonRise.date).toBe('2026-01-01');
+    expect(moonRise.risesAt).toBeInstanceOf(Date);
   });
 });
