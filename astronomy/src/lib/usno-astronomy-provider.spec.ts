@@ -56,6 +56,40 @@ describe('UsnoAstronomyProvider', () => {
     expect(result[0].occursAt.toISOString()).toBe('2026-01-09T04:05:00.000Z');
   });
 
+  it('returns Full Moon events as dates', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        phasedata: [
+          {
+            phase: 'Full Moon',
+            year: 2026,
+            month: 1,
+            day: 3,
+            time: '10:03',
+          },
+          {
+            phase: 'New Moon',
+            year: 2026,
+            month: 1,
+            day: 18,
+            time: '19:52',
+          },
+        ],
+      }),
+    });
+
+    const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
+    const result = await provider.getFullMoons(2026);
+
+    expect(result).toEqual([
+      {
+        occursAt: new Date('2026-01-03T10:03:00.000Z'),
+        source: 'usno',
+      },
+    ]);
+  });
+
   it('throws when USNO request fails', async () => {
     const fetchFn = jest.fn().mockResolvedValue({
       ok: false,
@@ -184,6 +218,94 @@ describe('UsnoAstronomyProvider', () => {
     expect(moonRise).toEqual({
       date: '2026-01-01',
       risesAt: new Date('2026-01-01T05:31:00.000Z'),
+      source: 'usno',
+    });
+  });
+
+  it('returns moon transit from USNO moon data', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        properties: {
+          data: {
+            moondata: [{ phen: 'Upper Transit', time: '23:21' }],
+          },
+        },
+      }),
+    });
+
+    const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
+
+    const transit = await provider.getMoonTransit('2026-01-01', {
+      latitude: -41.2865,
+      longitude: 174.7762,
+      timezoneOffset: 13,
+    });
+
+    expect(transit).toEqual({
+      date: '2026-01-01',
+      transitsAt: new Date('2026-01-01T10:21:00.000Z'),
+      source: 'usno',
+    });
+  });
+
+  it('returns daily moon details from USNO moon data', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        properties: {
+          data: {
+            closestphase: {
+              phase: 'Full Moon',
+              year: 2026,
+              month: 1,
+              day: 3,
+              time: '23:03',
+            },
+            curphase: 'Waxing Gibbous',
+            fracillum: '91%',
+            moondata: [
+              { phen: 'Set', time: '02:50' },
+              { phen: 'Rise', time: '18:57' },
+              { phen: 'Upper Transit', time: '23:21' },
+            ],
+          },
+        },
+      }),
+    });
+
+    const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
+
+    const details = await provider.getMoonDetails('2026-01-01', {
+      latitude: -41.2865,
+      longitude: 174.7762,
+      timezoneOffset: 13,
+    });
+
+    expect(details).toEqual({
+      date: '2026-01-01',
+      phase: 'Waxing Gibbous',
+      fractionIlluminated: 0.91,
+      closestPhase: {
+        phase: 'Full Moon',
+        occursAt: new Date('2026-01-03T23:03:00.000Z'),
+        source: 'usno',
+      },
+      moonrise: {
+        date: '2026-01-01',
+        risesAt: new Date('2026-01-01T05:57:00.000Z'),
+        source: 'usno',
+      },
+      moonset: {
+        date: '2026-01-01',
+        setsAt: new Date('2025-12-31T13:50:00.000Z'),
+        source: 'usno',
+      },
+      transit: {
+        date: '2026-01-01',
+        transitsAt: new Date('2026-01-01T10:21:00.000Z'),
+        source: 'usno',
+      },
       source: 'usno',
     });
   });

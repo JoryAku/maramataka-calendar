@@ -1,8 +1,13 @@
 import {
   AstronomyProvider,
+  FullMoon,
   Location,
+  MoonDetails,
+  MoonPhase,
+  MoonPhaseName,
   MoonRise,
   MoonRiseSet,
+  MoonTransit,
   NewMoon,
   Sunset,
 } from './astronomy-provider';
@@ -17,6 +22,9 @@ interface UsnoRiseSetTransitItem {
 interface UsnoRiseSetTransitData {
   properties?: {
     data?: {
+      closestphase?: UsnoMoonPhase;
+      curphase?: string;
+      fracillum?: string;
       sundata?: UsnoRiseSetTransitItem[];
       moondata?: UsnoRiseSetTransitItem[];
     };
@@ -38,7 +46,7 @@ interface UsnoMoonPhaseData {
 export class UsnoAstronomyProvider implements AstronomyProvider {
   constructor(private readonly fetchFn: FetchFn = fetch) {}
 
-  async getNewMoons(year: number): Promise<NewMoon[]> {
+  async getMoonPhases(year: number): Promise<MoonPhase[]> {
     const response = await this.fetchFn(
       `https://aa.usno.navy.mil/api/moon/phases/year?year=${year}`,
     );
@@ -47,35 +55,25 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     }
     const data = (await response.json()) as UsnoMoonPhaseData;
 
-    return (data.phasedata ?? [])
+    return (data.phasedata ?? []).map((phase) => this.parseMoonPhase(phase));
+  }
+
+  async getNewMoons(year: number): Promise<NewMoon[]> {
+    return (await this.getMoonPhases(year))
       .filter((phase) => phase.phase === 'New Moon')
-      .map((phase) => {
-        const moonYear = Number.parseInt(String(phase.year), 10);
-        const moonMonth = Number.parseInt(String(phase.month), 10);
-        const moonDay = Number.parseInt(String(phase.day), 10);
-        const [hoursPart, minutesPart] = String(phase.time).split(':');
-        const moonHour = Number.parseInt(hoursPart, 10);
-        const moonMinute = Number.parseInt(minutesPart, 10);
+      .map((phase) => ({
+        occursAt: phase.occursAt,
+        source: phase.source,
+      }));
+  }
 
-        if (
-          Number.isNaN(moonYear) ||
-          Number.isNaN(moonMonth) ||
-          Number.isNaN(moonDay) ||
-          Number.isNaN(moonHour) ||
-          Number.isNaN(moonMinute)
-        ) {
-          throw new Error(
-            `Invalid USNO moon phase date/time: ${JSON.stringify(phase)}`,
-          );
-        }
-
-        return {
-          occursAt: new Date(
-            Date.UTC(moonYear, moonMonth - 1, moonDay, moonHour, moonMinute),
-          ),
-          source: 'usno' as const,
-        };
-      });
+  async getFullMoons(year: number): Promise<FullMoon[]> {
+    return (await this.getMoonPhases(year))
+      .filter((phase) => phase.phase === 'Full Moon')
+      .map((phase) => ({
+        occursAt: phase.occursAt,
+        source: phase.source,
+      }));
   }
 
   async getSunset(date: string, location: Location): Promise<Sunset> {
@@ -120,6 +118,100 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
         location,
         'moonrise',
       ),
+      source: 'usno',
+    };
+  }
+
+  async getMoonTransit(date: string, location: Location): Promise<MoonTransit> {
+    const data = await this.getRiseSetTransitData(
+      date,
+      location,
+      'moon transit',
+    );
+    const transit = data.properties?.data?.moondata?.find(
+      (item) => item.phen === 'Upper Transit',
+    );
+
+    if (!transit) {
+      throw new Error(`No moon transit data found for ${date}`);
+    }
+
+    return {
+      date,
+      transitsAt: this.parseLocalUsnoTime(
+        date,
+        transit.time,
+        location,
+        'moon transit',
+      ),
+      source: 'usno',
+    };
+  }
+
+  async getMoonDetails(date: string, location: Location): Promise<MoonDetails> {
+    const data = await this.getRiseSetTransitData(
+      date,
+      location,
+      'moon details',
+    );
+    const details = data.properties?.data;
+
+    if (!details?.curphase) {
+      throw new Error(`No moon phase data found for ${date}`);
+    }
+
+    const moonrise = details.moondata?.find((item) => item.phen === 'Rise');
+    const moonset = details.moondata?.find((item) => item.phen === 'Set');
+    const transit = details.moondata?.find(
+      (item) => item.phen === 'Upper Transit',
+    );
+
+    return {
+      date,
+      phase: this.parseMoonPhaseName(details.curphase),
+      fractionIlluminated: this.parseFractionIlluminated(
+        details.fracillum,
+        date,
+      ),
+      closestPhase: details.closestphase
+        ? this.parseMoonPhase(details.closestphase)
+        : undefined,
+      moonrise: moonrise
+        ? {
+            date,
+            risesAt: this.parseLocalUsnoTime(
+              date,
+              moonrise.time,
+              location,
+              'moonrise',
+            ),
+            source: 'usno',
+          }
+        : undefined,
+      moonset: moonset
+        ? {
+            date,
+            setsAt: this.parseLocalUsnoTime(
+              date,
+              moonset.time,
+              location,
+              'moonset',
+            ),
+            source: 'usno',
+          }
+        : undefined,
+      transit: transit
+        ? {
+            date,
+            transitsAt: this.parseLocalUsnoTime(
+              date,
+              transit.time,
+              location,
+              'moon transit',
+            ),
+            source: 'usno',
+          }
+        : undefined,
       source: 'usno',
     };
   }
@@ -236,6 +328,68 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     );
 
     return new Date(occursAtUtcMs);
+  }
+
+  private parseMoonPhase(phase: UsnoMoonPhase): MoonPhase {
+    const moonYear = Number.parseInt(String(phase.year), 10);
+    const moonMonth = Number.parseInt(String(phase.month), 10);
+    const moonDay = Number.parseInt(String(phase.day), 10);
+    const [hoursPart, minutesPart] = String(phase.time).split(':');
+    const moonHour = Number.parseInt(hoursPart, 10);
+    const moonMinute = Number.parseInt(minutesPart, 10);
+
+    if (
+      Number.isNaN(moonYear) ||
+      Number.isNaN(moonMonth) ||
+      Number.isNaN(moonDay) ||
+      Number.isNaN(moonHour) ||
+      Number.isNaN(moonMinute)
+    ) {
+      throw new Error(
+        `Invalid USNO moon phase date/time: ${JSON.stringify(phase)}`,
+      );
+    }
+
+    return {
+      phase: this.parseMoonPhaseName(phase.phase),
+      occursAt: new Date(
+        Date.UTC(moonYear, moonMonth - 1, moonDay, moonHour, moonMinute),
+      ),
+      source: 'usno',
+    };
+  }
+
+  private parseMoonPhaseName(phase: string): MoonPhaseName {
+    const validPhases: MoonPhaseName[] = [
+      'New Moon',
+      'Waxing Crescent',
+      'First Quarter',
+      'Waxing Gibbous',
+      'Full Moon',
+      'Waning Gibbous',
+      'Last Quarter',
+      'Waning Crescent',
+    ];
+
+    if (!validPhases.includes(phase as MoonPhaseName)) {
+      throw new Error(`Unknown USNO moon phase: ${phase}`);
+    }
+
+    return phase as MoonPhaseName;
+  }
+
+  private parseFractionIlluminated(
+    value: string | undefined,
+    date: string,
+  ): number {
+    const match = value?.match(/^(\d+(?:\.\d+)?)%$/);
+    if (!match) {
+      throw new Error(
+        `Invalid USNO moon illumination for ${date}: ${String(value)}`,
+      );
+    }
+
+    return Number(match[1]) / 100;
   }
 
   private addIsoDateDays(date: string, days: number): string {

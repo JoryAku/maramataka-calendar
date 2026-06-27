@@ -57,9 +57,13 @@ describe('MaramatakaService', () => {
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
         getSunset: jest.fn(),
         getMoonRise,
         getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
       },
       calculateWhiroStartFn,
       generateMaramatakaMonthFn,
@@ -136,9 +140,13 @@ describe('MaramatakaService', () => {
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
         getSunset: jest.fn(),
         getMoonRise,
         getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
       },
       calculateWhiroStartFn: jest.fn().mockReturnValue(moonRises[0].risesAt),
       generateMaramatakaMonthFn,
@@ -201,9 +209,13 @@ describe('MaramatakaService', () => {
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
         getSunset: jest.fn(),
         getMoonRise,
         getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
       },
       generateMaramatakaMonthFn,
       mata: [
@@ -240,9 +252,13 @@ describe('MaramatakaService', () => {
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
         getSunset: jest.fn(),
         getMoonRise,
         getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
       },
       calculateWhiroStartFn: jest
         .fn()
@@ -273,9 +289,13 @@ describe('MaramatakaService', () => {
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons: jest.fn().mockResolvedValue([]),
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
         getSunset: jest.fn(),
         getMoonRise: jest.fn(),
         getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
       },
     });
 
@@ -294,11 +314,15 @@ describe('MaramatakaService', () => {
           ])
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
         getSunset: jest.fn(),
         getMoonRise: jest
           .fn()
           .mockRejectedValue(new Error('moon data unavailable')),
         getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
       },
     });
 
@@ -325,9 +349,13 @@ describe('MaramatakaService', () => {
           ])
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
         getSunset: jest.fn(),
         getMoonRise,
         getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
       },
       calculateWhiroStartFn: jest.fn().mockImplementation(() => {
         throw new Error('cannot calculate whiro');
@@ -357,9 +385,13 @@ describe('MaramatakaService', () => {
           ])
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
         getSunset: jest.fn(),
         getMoonRise,
         getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
       },
       calculateWhiroStartFn: jest
         .fn()
