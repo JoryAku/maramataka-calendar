@@ -9,7 +9,6 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
-  Sunset,
 } from './astronomy-provider';
 
 type FetchFn = typeof fetch;

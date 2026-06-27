@@ -10,7 +10,6 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
-  Sunset,
   UsnoAstronomyProvider,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';

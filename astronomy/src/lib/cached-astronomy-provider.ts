@@ -8,14 +8,12 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
-  Sunset,
 } from './astronomy-provider';
 
 export class CachedAstronomyProvider implements AstronomyProvider {
   private moonPhaseCache = new Map<number, Promise<MoonPhase[]>>();
   private newMoonCache = new Map<number, Promise<NewMoon[]>>();
   private fullMoonCache = new Map<number, Promise<FullMoon[]>>();
-  private sunsetCache = new Map<string, Promise<Sunset>>();
   private moonRiseCache = new Map<string, Promise<MoonRise>>();
   private moonRiseSetCache = new Map<string, Promise<MoonRiseSet>>();
   private moonTransitCache = new Map<string, Promise<MoonTransit>>();
