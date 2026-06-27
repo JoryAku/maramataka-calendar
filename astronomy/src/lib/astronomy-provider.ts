@@ -14,12 +14,6 @@ export interface FullMoon {
   source: string;
 }
 
-export interface Sunset {
-  date: string;
-  occursAt: Date;
-  source: string;
-}
-
 export interface MoonRiseSet {
   date: string;
   risesAt: Date;
@@ -74,7 +68,6 @@ export interface AstronomyProvider {
   getMoonPhases(year: number): Promise<MoonPhase[]>;
   getNewMoons(year: number): Promise<NewMoon[]>;
   getFullMoons(year: number): Promise<FullMoon[]>;
-  getSunset(date: string, location: Location): Promise<Sunset>;
   getMoonRise(date: string, location: Location): Promise<MoonRise>;
   getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet>;
   getMoonTransit(date: string, location: Location): Promise<MoonTransit>;

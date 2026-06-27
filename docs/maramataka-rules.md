@@ -6,8 +6,7 @@ technical decisions can be reviewed together.
 
 ## MVP Mata Boundary Rule
 
-For the MVP, a mata is defined by moonrise-to-next-moonrise, not
-sunset-to-sunset.
+For the MVP, a mata is defined by moonrise-to-next-moonrise.
 
 1. Get the astronomical New Moon date from USNO New Moon data, interpreted in
    the selected location and timezone.
