@@ -1,40 +1,53 @@
 import { Mata, MaramatakaVersion } from './mata';
 import { MaramatakaMonth } from './maramataka';
+import { MoonRiseSet } from '@maramataka-calendar/astronomy';
 
 interface GenerateMaramatakaMonthInput {
   version: MaramatakaVersion;
   whiroStartsAt: Date;
   mata: Mata[];
-  sunsets: Date[];
+  moonRiseSets: MoonRiseSet[];
 }
 
 export function generateMaramatakaMonth(
-  input: GenerateMaramatakaMonthInput
+  input: GenerateMaramatakaMonthInput,
 ): MaramatakaMonth {
-  if (input.sunsets.length < input.mata.length + 1) {
-    throw new Error('Not enough sunsets to generate Maramataka month');
+  if (input.moonRiseSets.length < input.mata.length) {
+    throw new Error(
+      'Not enough moonrise/moonset intervals to generate Maramataka month',
+    );
   }
 
   if (input.mata.some((mata) => mata.version !== input.version)) {
     throw new Error('All mata entries must match month version');
   }
 
-  for (let i = 1; i < input.sunsets.length; i += 1) {
-    if (input.sunsets[i].getTime() <= input.sunsets[i - 1].getTime()) {
-      throw new Error('Sunsets must be strictly increasing');
+  for (let i = 0; i < input.moonRiseSets.length; i += 1) {
+    const interval = input.moonRiseSets[i];
+    if (interval.setsAt.getTime() <= interval.risesAt.getTime()) {
+      throw new Error('Moonset must be after moonrise');
+    }
+
+    if (
+      i > 0 &&
+      interval.risesAt.getTime() <= input.moonRiseSets[i - 1].risesAt.getTime()
+    ) {
+      throw new Error('Moonrise intervals must be strictly increasing');
     }
   }
 
-  if (input.sunsets[0].getTime() !== input.whiroStartsAt.getTime()) {
-    throw new Error('Whiro start must match first sunset');
+  if (
+    input.moonRiseSets[0].risesAt.getTime() !== input.whiroStartsAt.getTime()
+  ) {
+    throw new Error('Whiro start must match first moonrise');
   }
   return {
     version: input.version,
     whiroStartsAt: input.whiroStartsAt,
     nights: input.mata.map((mata, index) => ({
       mata,
-      startsAt: input.sunsets[index],
-      endsAt: input.sunsets[index + 1],
+      startsAt: input.moonRiseSets[index].risesAt,
+      endsAt: input.moonRiseSets[index].setsAt,
     })),
   };
 }

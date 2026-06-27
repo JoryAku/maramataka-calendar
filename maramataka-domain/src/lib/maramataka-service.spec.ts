@@ -1,4 +1,4 @@
-import { Location } from '@maramataka-calendar/astronomy';
+import { Location, MoonRiseSet } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from './maramataka-service';
 
 describe('MaramatakaService', () => {
@@ -8,77 +8,107 @@ describe('MaramatakaService', () => {
     timezoneOffset: 13,
   };
 
+  const createMoonRiseSet = (date: string): MoonRiseSet => ({
+    date,
+    risesAt: new Date(`${date}T05:00:00Z`),
+    setsAt: new Date(`${date}T18:00:00Z`),
+    source: 'usno',
+  });
+
   it('orchestrates astronomy, Whiro calculation, and month generation', async () => {
     const mata = [
       { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
       { index: 2, name: 'Tirea', version: 'mita-te-tai-best' as const },
     ];
 
+    const whiroInterval = createMoonRiseSet('2025-12-30');
+    const tireaInterval = createMoonRiseSet('2025-12-31');
     const getNewMoons = jest
       .fn()
-      .mockResolvedValueOnce([{ occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' }])
-      .mockResolvedValueOnce([{ occursAt: new Date('2026-01-29T06:00:00Z'), source: 'usno' }]);
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+      ])
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2026-01-29T06:00:00Z'), source: 'usno' },
+      ]);
 
-    const getSunset = jest
+    const getMoonRiseSet = jest
       .fn()
-      .mockImplementation((date: string) => Promise.resolve({
-        date,
-        occursAt: new Date(`${date}T07:00:00Z`),
-        source: 'usno',
-      }));
+      .mockResolvedValueOnce(whiroInterval)
+      .mockResolvedValueOnce(tireaInterval);
 
     const calculateWhiroStartFn = jest
       .fn()
-      .mockReturnValue(new Date('2025-12-31T07:00:00Z'));
+      .mockReturnValue(whiroInterval.risesAt);
 
     const generatedMonth = {
       version: 'mita-te-tai-best' as const,
-      whiroStartsAt: new Date('2025-12-31T07:00:00Z'),
+      whiroStartsAt: whiroInterval.risesAt,
       nights: [],
     };
     const generateMaramatakaMonthFn = jest.fn().mockReturnValue(generatedMonth);
 
     const service = new MaramatakaService({
-      astronomyProvider: { getNewMoons, getSunset },
+      astronomyProvider: {
+        getNewMoons,
+        getSunset: jest.fn(),
+        getMoonRiseSet,
+      },
       calculateWhiroStartFn,
       generateMaramatakaMonthFn,
       mata,
     });
 
-    const result = await service.getMonth(location, new Date('2026-01-15T12:00:00Z'));
+    const result = await service.getMonth(
+      location,
+      new Date('2026-01-15T12:00:00Z'),
+    );
 
     expect(getNewMoons).toHaveBeenCalledWith(2025);
     expect(getNewMoons).toHaveBeenCalledWith(2026);
-    expect(getSunset).toHaveBeenCalledTimes(4);
-    expect(getSunset.mock.calls).toEqual([
+    expect(getMoonRiseSet).toHaveBeenCalledTimes(2);
+    expect(getMoonRiseSet.mock.calls).toEqual([
       ['2025-12-30', location],
       ['2025-12-31', location],
-      ['2026-01-01', location],
-      ['2026-01-02', location],
     ]);
-    expect(calculateWhiroStartFn).toHaveBeenCalled();
-    expect(generateMaramatakaMonthFn).toHaveBeenCalled();
+    expect(calculateWhiroStartFn).toHaveBeenCalledWith({
+      newMoonAt: new Date('2025-12-30T06:00:00Z'),
+      newMoonLocalDate: '2025-12-30',
+      moonRiseSets: [whiroInterval, tireaInterval],
+    });
+    expect(generateMaramatakaMonthFn).toHaveBeenCalledWith({
+      version: 'mita-te-tai-best',
+      whiroStartsAt: whiroInterval.risesAt,
+      mata,
+      moonRiseSets: [whiroInterval, tireaInterval],
+    });
     expect(result).toBe(generatedMonth);
   });
 
-  it('requests sunsets using the location calendar day across UTC boundaries', async () => {
+  it('requests moonrise/moonset using the New Moon local calendar day across UTC boundaries', async () => {
     const getNewMoons = jest
       .fn()
-      .mockResolvedValueOnce([{ occursAt: new Date('2025-12-31T23:30:00Z'), source: 'usno' }])
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2025-12-31T23:30:00Z'), source: 'usno' },
+      ])
       .mockResolvedValueOnce([]);
 
-    const getSunset = jest.fn().mockResolvedValue({
-      date: '2026-01-01',
-      occursAt: new Date('2026-01-01T07:00:00Z'),
-      source: 'usno',
-    });
+    const getMoonRiseSet = jest
+      .fn()
+      .mockResolvedValue(createMoonRiseSet('2026-01-01'));
 
     const service = new MaramatakaService({
-      astronomyProvider: { getNewMoons, getSunset },
-      calculateWhiroStartFn: jest.fn().mockReturnValue(new Date('2026-01-01T07:00:00Z')),
+      astronomyProvider: {
+        getNewMoons,
+        getSunset: jest.fn(),
+        getMoonRiseSet,
+      },
+      calculateWhiroStartFn: jest
+        .fn()
+        .mockReturnValue(new Date('2026-01-01T05:00:00Z')),
       generateMaramatakaMonthFn: jest.fn().mockReturnValue({
         version: 'mita-te-tai-best' as const,
-        whiroStartsAt: new Date('2026-01-01T07:00:00Z'),
+        whiroStartsAt: new Date('2026-01-01T05:00:00Z'),
         nights: [],
       }),
     });
@@ -89,12 +119,12 @@ describe('MaramatakaService', () => {
         longitude: 174.7762,
         timezoneOffset: 13,
       },
-      new Date('2026-01-01T12:00:00Z')
+      new Date('2026-01-01T12:00:00Z'),
     );
 
-    expect(getSunset).toHaveBeenCalledWith(
+    expect(getMoonRiseSet).toHaveBeenCalledWith(
       '2026-01-01',
-      expect.objectContaining({ timezoneOffset: 13 })
+      expect.objectContaining({ timezoneOffset: 13 }),
     );
   });
 
@@ -103,46 +133,55 @@ describe('MaramatakaService', () => {
       astronomyProvider: {
         getNewMoons: jest.fn().mockResolvedValue([]),
         getSunset: jest.fn(),
+        getMoonRiseSet: jest.fn(),
       },
     });
 
     await expect(
-      service.getMonth(location, new Date('2026-01-15T12:00:00Z'))
+      service.getMonth(location, new Date('2026-01-15T12:00:00Z')),
     ).rejects.toThrow('No New Moon found for requested period');
   });
 
-  it('throws meaningful error when sunset retrieval fails', async () => {
+  it('throws meaningful error when moonrise/moonset retrieval fails', async () => {
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons: jest
           .fn()
-          .mockResolvedValueOnce([{ occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' }])
+          .mockResolvedValueOnce([
+            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+          ])
           .mockResolvedValueOnce([]),
-        getSunset: jest.fn().mockRejectedValue(new Error('sunset unavailable')),
+        getSunset: jest.fn(),
+        getMoonRiseSet: jest
+          .fn()
+          .mockRejectedValue(new Error('moon data unavailable')),
       },
     });
 
     await expect(
-      service.getMonth(location, new Date('2026-01-15T12:00:00Z'))
-    ).rejects.toThrow('Failed to retrieve sunset data: sunset unavailable');
+      service.getMonth(location, new Date('2026-01-15T12:00:00Z')),
+    ).rejects.toThrow(
+      'Failed to retrieve moonrise/moonset data: moon data unavailable',
+    );
   });
 
   it('throws meaningful error when Whiro calculation fails', async () => {
-    const getSunset = jest
+    const getMoonRiseSet = jest
       .fn()
-      .mockImplementation((date: string) => Promise.resolve({
-        date,
-        occursAt: new Date(`${date}T07:00:00Z`),
-        source: 'usno',
-      }));
+      .mockImplementation((date: string) =>
+        Promise.resolve(createMoonRiseSet(date)),
+      );
 
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons: jest
           .fn()
-          .mockResolvedValueOnce([{ occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' }])
+          .mockResolvedValueOnce([
+            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+          ])
           .mockResolvedValueOnce([]),
-        getSunset,
+        getSunset: jest.fn(),
+        getMoonRiseSet,
       },
       calculateWhiroStartFn: jest.fn().mockImplementation(() => {
         throw new Error('cannot calculate whiro');
@@ -150,35 +189,40 @@ describe('MaramatakaService', () => {
     });
 
     await expect(
-      service.getMonth(location, new Date('2026-01-15T12:00:00Z'))
-    ).rejects.toThrow('Failed to calculate Whiro start: cannot calculate whiro');
+      service.getMonth(location, new Date('2026-01-15T12:00:00Z')),
+    ).rejects.toThrow(
+      'Failed to calculate Whiro start: cannot calculate whiro',
+    );
   });
 
   it('throws meaningful error when month generation fails', async () => {
-    const getSunset = jest
+    const getMoonRiseSet = jest
       .fn()
-      .mockImplementation((date: string) => Promise.resolve({
-        date,
-        occursAt: new Date(`${date}T07:00:00Z`),
-        source: 'usno',
-      }));
+      .mockImplementation((date: string) =>
+        Promise.resolve(createMoonRiseSet(date)),
+      );
 
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons: jest
           .fn()
-          .mockResolvedValueOnce([{ occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' }])
+          .mockResolvedValueOnce([
+            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+          ])
           .mockResolvedValueOnce([]),
-        getSunset,
+        getSunset: jest.fn(),
+        getMoonRiseSet,
       },
-      calculateWhiroStartFn: jest.fn().mockReturnValue(new Date('2025-12-31T07:00:00Z')),
+      calculateWhiroStartFn: jest
+        .fn()
+        .mockReturnValue(new Date('2025-12-30T05:00:00Z')),
       generateMaramatakaMonthFn: jest.fn().mockImplementation(() => {
         throw new Error('generator failed');
       }),
     });
 
     await expect(
-      service.getMonth(location, new Date('2026-01-15T12:00:00Z'))
+      service.getMonth(location, new Date('2026-01-15T12:00:00Z')),
     ).rejects.toThrow('Failed to generate Maramataka month: generator failed');
   });
 });

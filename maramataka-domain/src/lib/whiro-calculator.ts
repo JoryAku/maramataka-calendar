@@ -1,18 +1,21 @@
+import { MoonRiseSet } from '@maramataka-calendar/astronomy';
+
 export interface WhiroInput {
   newMoonAt: Date;
-  sunsets: Date[];
+  newMoonLocalDate: string;
+  moonRiseSets: MoonRiseSet[];
 }
 
 export function calculateWhiroStart(input: WhiroInput): Date {
-  const newMoonTime = input.newMoonAt.getTime();
-
-  const whiro = input.sunsets
-    .filter((sunset) => sunset.getTime() > newMoonTime)
-    .sort((a, b) => a.getTime() - b.getTime())[0];
+  const whiro = input.moonRiseSets.find(
+    (moonRiseSet) => moonRiseSet.date === input.newMoonLocalDate,
+  );
 
   if (!whiro) {
-    throw new Error('No sunset found after New Moon');
+    throw new Error(
+      `No moonrise/moonset interval found for Whiro date ${input.newMoonLocalDate}`,
+    );
   }
 
-  return whiro;
+  return whiro.risesAt;
 }

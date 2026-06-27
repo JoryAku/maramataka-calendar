@@ -27,7 +27,7 @@ describe('UsnoAstronomyProvider', () => {
     await provider.getNewMoons(2026);
 
     expect(fetchFn).toHaveBeenCalledWith(
-      expect.stringContaining('/moon/phases/year?year=2026')
+      expect.stringContaining('/moon/phases/year?year=2026'),
     );
   });
 
@@ -35,13 +35,15 @@ describe('UsnoAstronomyProvider', () => {
     const fetchFn = jest.fn().mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue({
-        phasedata: [{
-          phase: 'New Moon',
-          year: 2026,
-          month: 1,
-          day: 9,
-          time: '04:05',
-        }],
+        phasedata: [
+          {
+            phase: 'New Moon',
+            year: 2026,
+            month: 1,
+            day: 9,
+            time: '04:05',
+          },
+        ],
       }),
     });
 
@@ -63,7 +65,7 @@ describe('UsnoAstronomyProvider', () => {
     const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
 
     await expect(provider.getNewMoons(2026)).rejects.toThrow(
-      'USNO moon phases request failed'
+      'USNO moon phases request failed',
     );
   });
 
@@ -88,7 +90,7 @@ describe('UsnoAstronomyProvider', () => {
     });
 
     expect(fetchFn).toHaveBeenCalledWith(
-      expect.stringContaining('/rstt/oneday')
+      expect.stringContaining('/rstt/oneday'),
     );
     expect(sunset.occursAt.toISOString()).toBe('2026-01-01T07:47:00.000Z');
   });
@@ -104,7 +106,7 @@ describe('UsnoAstronomyProvider', () => {
             },
           },
         }),
-      }) as typeof fetch
+      }) as typeof fetch,
     );
 
     const sunset = await provider.getSunset('2026-01-01', {
@@ -121,7 +123,7 @@ describe('UsnoAstronomyProvider', () => {
       jest.fn().mockResolvedValue({
         ok: false,
         status: 503,
-      }) as typeof fetch
+      }) as typeof fetch,
     );
 
     await expect(
@@ -129,7 +131,7 @@ describe('UsnoAstronomyProvider', () => {
         latitude: -41.2865,
         longitude: 174.7762,
         timezoneOffset: 13,
-      })
+      }),
     ).rejects.toThrow('USNO sunset request failed: 503');
   });
 
@@ -144,7 +146,7 @@ describe('UsnoAstronomyProvider', () => {
             },
           },
         }),
-      }) as typeof fetch
+      }) as typeof fetch,
     );
 
     await expect(
@@ -152,7 +154,107 @@ describe('UsnoAstronomyProvider', () => {
         latitude: -41.2865,
         longitude: 174.7762,
         timezoneOffset: 13,
-      })
+      }),
     ).rejects.toThrow('No sunset data found');
+  });
+
+  it('returns moonrise and same-day moonset from USNO moon data', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        properties: {
+          data: {
+            moondata: [
+              { phen: 'Rise', time: '06:31' },
+              { phen: 'Set', time: '19:14' },
+            ],
+          },
+        },
+      }),
+    });
+
+    const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
+
+    const moonRiseSet = await provider.getMoonRiseSet('2026-01-01', {
+      latitude: -41.2865,
+      longitude: 174.7762,
+      timezoneOffset: 13,
+    });
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      expect.stringContaining('/rstt/oneday'),
+    );
+    expect(moonRiseSet).toEqual({
+      date: '2026-01-01',
+      risesAt: new Date('2025-12-31T17:31:00.000Z'),
+      setsAt: new Date('2026-01-01T06:14:00.000Z'),
+      source: 'usno',
+    });
+  });
+
+  it('uses the next day moonset when same-day moonset is before moonrise', async () => {
+    const fetchFn = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          properties: {
+            data: {
+              moondata: [
+                { phen: 'Set', time: '09:14' },
+                { phen: 'Rise', time: '18:31' },
+              ],
+            },
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          properties: {
+            data: {
+              moondata: [{ phen: 'Set', time: '09:45' }],
+            },
+          },
+        }),
+      });
+
+    const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
+
+    const moonRiseSet = await provider.getMoonRiseSet('2026-01-01', {
+      latitude: -41.2865,
+      longitude: 174.7762,
+      timezoneOffset: 13,
+    });
+
+    expect(fetchFn).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('date=2026-01-02'),
+    );
+    expect(moonRiseSet.risesAt.toISOString()).toBe('2026-01-01T05:31:00.000Z');
+    expect(moonRiseSet.setsAt.toISOString()).toBe('2026-01-01T20:45:00.000Z');
+  });
+
+  it('throws when moonrise data is missing', async () => {
+    const provider = new UsnoAstronomyProvider(
+      jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          properties: {
+            data: {
+              moondata: [{ phen: 'Set', time: '09:14' }],
+            },
+          },
+        }),
+      }) as typeof fetch,
+    );
+
+    await expect(
+      provider.getMoonRiseSet('2026-01-01', {
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezoneOffset: 13,
+      }),
+    ).rejects.toThrow('No moonrise data found for 2026-01-01');
   });
 });
