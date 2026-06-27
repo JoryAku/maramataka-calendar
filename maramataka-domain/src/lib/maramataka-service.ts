@@ -1,5 +1,6 @@
 import {
   AstronomyProvider,
+  formatIsoDateInTimezone,
   Location,
   MoonDetails,
   MoonRise,
@@ -61,7 +62,7 @@ export class MaramatakaService {
 
     const whiroDate = this.formatIsoDateForLocation(
       relevantNewMoon.occursAt,
-      location.timezoneOffset,
+      location,
     );
     const moonRises = await this.fetchMoonRisesForMonth(whiroDate, location);
 
@@ -118,10 +119,7 @@ export class MaramatakaService {
   }
 
   async getMoonDetails(location: Location, date: Date): Promise<MoonDetails> {
-    const localDate = this.formatIsoDateForLocation(
-      date,
-      location.timezoneOffset,
-    );
+    const localDate = this.formatIsoDateForLocation(date, location);
 
     return this.astronomyProvider.getMoonDetails(localDate, location);
   }
@@ -155,7 +153,7 @@ export class MaramatakaService {
 
     const nextWhiroDate = this.formatIsoDateForLocation(
       nextNewMoon.occursAt,
-      location.timezoneOffset,
+      location,
     );
     const nextWhiroMoonRise =
       moonRises.find((moonRise) => moonRise.date === nextWhiroDate) ??
@@ -235,14 +233,8 @@ export class MaramatakaService {
     ].join('-');
   }
 
-  private formatIsoDateForLocation(date: Date, timezoneOffset: number): string {
-    const localizedDate = new Date(
-      date.getTime() + timezoneOffset * 60 * 60 * 1000,
-    );
-    const year = localizedDate.getUTCFullYear();
-    const month = String(localizedDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(localizedDate.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  private formatIsoDateForLocation(date: Date, location: Location): string {
+    return formatIsoDateInTimezone(date, location.timezone);
   }
 
   private getErrorMessage(error: unknown): string {

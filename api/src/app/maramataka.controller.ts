@@ -2,11 +2,14 @@ import {
   BadRequestException,
   Controller,
   Get,
-  InternalServerErrorException,
   NotFoundException,
   Query,
 } from '@nestjs/common';
-import { Location } from '@maramataka-calendar/astronomy';
+import {
+  Location,
+  parseLocalDateTimeInTimezone,
+  validateIanaTimezone,
+} from '@maramataka-calendar/astronomy';
 import {
   MaramatakaMonth,
   MaramatakaNight,
@@ -67,6 +70,12 @@ interface LocalDateTimeParts {
   second: number;
 }
 
+interface LocalDateParts {
+  year: number;
+  month: number;
+  day: number;
+}
+
 @Controller('maramataka')
 export class MaramatakaController {
   constructor(private readonly maramatakaService: MaramatakaService) {}
@@ -77,12 +86,13 @@ export class MaramatakaController {
     @Query('location') locationInput?: string,
     @Query('lat') latInput?: string,
     @Query('lon') lonInput?: string,
-    @Query('tz') tzInput?: string,
+    @Query('timezone') timezoneInput?: string,
   ): Promise<MaramatakaMonth> {
-    const date = this.parseDate(dateInput);
+    const dateParts = this.parseDateParts(dateInput);
     const location = locationInput
-      ? this.parseNamedLocationForDate(locationInput, date)
-      : this.parseCoordinatesOrThrow(latInput, lonInput, tzInput);
+      ? this.parseNamedLocation(locationInput)
+      : this.parseCoordinatesOrThrow(latInput, lonInput, timezoneInput);
+    const date = this.parseLocalDateForTimezone(dateParts, location.timezone);
 
     return this.maramatakaService.getMonth(location, date);
   }
@@ -93,7 +103,7 @@ export class MaramatakaController {
     @Query('location') locationInput?: string,
     @Query('lat') latInput?: string,
     @Query('lon') lonInput?: string,
-    @Query('tz') tzInput?: string,
+    @Query('timezone') timezoneInput?: string,
   ): Promise<TodayMaramatakaNightResponse> {
     const { date, location } = locationInput
       ? this.parseNamedLocationDateTime(locationInput, dateTimeInput)
@@ -101,7 +111,7 @@ export class MaramatakaController {
           dateTimeInput,
           latInput,
           lonInput,
-          tzInput,
+          timezoneInput,
         );
     const month = await this.maramatakaService.getMonth(location, date);
     const night = this.findNightForDate(month.nights, date);
@@ -136,12 +146,13 @@ export class MaramatakaController {
     @Query('location') locationInput?: string,
     @Query('lat') latInput?: string,
     @Query('lon') lonInput?: string,
-    @Query('tz') tzInput?: string,
+    @Query('timezone') timezoneInput?: string,
   ): Promise<MoonDetailsResponse> {
-    const date = this.parseDate(dateInput);
+    const dateParts = this.parseDateParts(dateInput);
     const location = locationInput
-      ? this.parseNamedLocationForDate(locationInput, date)
-      : this.parseCoordinatesOrThrow(latInput, lonInput, tzInput);
+      ? this.parseNamedLocation(locationInput)
+      : this.parseCoordinatesOrThrow(latInput, lonInput, timezoneInput);
+    const date = this.parseLocalDateForTimezone(dateParts, location.timezone);
     const details = await this.maramatakaService.getMoonDetails(location, date);
 
     return {
@@ -183,25 +194,29 @@ export class MaramatakaController {
   private parseCoordinatesOrThrow(
     latInput?: string,
     lonInput?: string,
-    tzInput?: string,
+    timezoneInput?: string,
   ): Location {
-    if (!latInput || !lonInput || !tzInput) {
+    if (!latInput || !lonInput || !timezoneInput) {
       throw new BadRequestException(
-        'Either location parameter or all of lat, lon, and tz parameters are required',
+        'Either location parameter or all of lat, lon, and timezone parameters are required',
       );
     }
 
-    return this.parseLocation(latInput, lonInput, tzInput);
+    return this.parseLocation(latInput, lonInput, timezoneInput);
   }
 
   private parseCoordinateDateTime(
     dateTimeInput: string,
     latInput?: string,
     lonInput?: string,
-    tzInput?: string,
+    timezoneInput?: string,
   ): { date: Date; location: Location } {
-    const location = this.parseCoordinatesOrThrow(latInput, lonInput, tzInput);
-    const date = this.parseDateTime(dateTimeInput, location.timezoneOffset);
+    const location = this.parseCoordinatesOrThrow(
+      latInput,
+      lonInput,
+      timezoneInput,
+    );
+    const date = this.parseDateTime(dateTimeInput, location.timezone);
 
     return { date, location };
   }
@@ -210,50 +225,25 @@ export class MaramatakaController {
     locationInput: string,
     dateTimeInput: string,
   ): { date: Date; location: Location } {
-    const locationData = this.findNamedLocationOrThrow(locationInput);
+    const location = this.parseNamedLocation(locationInput);
     const date = this.parseDateTimeForTimezone(
       dateTimeInput,
-      locationData.timezone,
-    );
-    const timezoneOffset = this.getTimezoneOffsetForDate(
-      locationData.timezone,
-      date,
+      location.timezone,
     );
 
     return {
       date,
-      location: {
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-        timezoneOffset,
-      },
+      location,
     };
   }
 
-  private parseNamedLocationForDate(
-    locationInput: string,
-    date: Date,
-  ): Location {
+  private parseNamedLocation(locationInput: string): Location {
     const locationData = this.findNamedLocationOrThrow(locationInput);
-    const localMidday = new Date(
-      Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate(),
-        12,
-        0,
-        0,
-      ),
-    );
-    const timezoneOffset = this.getTimezoneOffsetForDate(
-      locationData.timezone,
-      localMidday,
-    );
 
     return {
       latitude: locationData.latitude,
       longitude: locationData.longitude,
-      timezoneOffset,
+      timezone: locationData.timezone,
     };
   }
 
@@ -273,26 +263,24 @@ export class MaramatakaController {
   private parseLocation(
     latInput: string,
     lonInput: string,
-    tzInput: string,
+    timezoneInput: string,
   ): Location {
     const latitude = this.parseNumber(latInput, 'lat');
     const longitude = this.parseNumber(lonInput, 'lon');
-    const timezoneOffset = this.parseNumber(tzInput, 'tz');
 
     this.validateLatitude(latitude);
     this.validateLongitude(longitude);
-    this.validateTimezoneOffset(timezoneOffset);
+    this.validateTimezone(timezoneInput);
 
     return {
       latitude,
       longitude,
-      timezoneOffset,
+      timezone: timezoneInput,
     };
   }
 
-  private parseDateTime(dateTimeInput: string, timezoneOffset: number): Date {
-    const dateTimeParts = this.parseDateTimeParts(dateTimeInput);
-    return this.parseDateTimeWithOffset(dateTimeParts, timezoneOffset);
+  private parseDateTime(dateTimeInput: string, timezone: string): Date {
+    return this.parseDateTimeForTimezone(dateTimeInput, timezone);
   }
 
   private parseDateTimeForTimezone(
@@ -300,35 +288,30 @@ export class MaramatakaController {
     timezone: string,
   ): Date {
     const dateTimeParts = this.parseDateTimeParts(dateTimeInput);
-    const hourMs = 60 * 60 * 1000;
-    const localDateTimeAsUtcMs = Date.UTC(
-      dateTimeParts.year,
-      dateTimeParts.month - 1,
-      dateTimeParts.day,
-      dateTimeParts.hour,
-      dateTimeParts.minute,
-      dateTimeParts.second,
-    );
-
-    const candidateOffsets = new Set<number>();
-    const probeTimes = [-24 * hourMs, 0, 24 * hourMs];
-    for (const probeTime of probeTimes) {
-      const probeDate = new Date(localDateTimeAsUtcMs + probeTime);
-      candidateOffsets.add(this.getTimezoneOffsetForDate(timezone, probeDate));
+    try {
+      return parseLocalDateTimeInTimezone(dateTimeParts, timezone);
+    } catch {
+      throw new BadRequestException('date must be a valid local date-time');
     }
+  }
 
-    for (const candidateOffset of candidateOffsets) {
-      const candidateDate = new Date(
-        localDateTimeAsUtcMs - candidateOffset * hourMs,
+  private parseLocalDateForTimezone(
+    dateParts: LocalDateParts,
+    timezone: string,
+  ): Date {
+    try {
+      return parseLocalDateTimeInTimezone(
+        {
+          ...dateParts,
+          hour: 12,
+          minute: 0,
+          second: 0,
+        },
+        timezone,
       );
-      if (
-        this.matchesLocalDateTimeParts(candidateDate, timezone, dateTimeParts)
-      ) {
-        return candidateDate;
-      }
+    } catch {
+      throw new BadRequestException('date must be a valid calendar date');
     }
-
-    throw new BadRequestException('date must be a valid local date-time');
   }
 
   private parseDateTimeParts(dateTimeInput: string): LocalDateTimeParts {
@@ -354,129 +337,7 @@ export class MaramatakaController {
     };
   }
 
-  private parseDateTimeWithOffset(
-    dateTimeParts: LocalDateTimeParts,
-    timezoneOffset: number,
-  ): Date {
-    const { year, month, day, hour, minute, second } = dateTimeParts;
-
-    const utcDate = new Date(
-      Date.UTC(year, month - 1, day, hour - timezoneOffset, minute, second),
-    );
-    const localizedDate = new Date(
-      utcDate.getTime() + timezoneOffset * 60 * 60 * 1000,
-    );
-
-    if (
-      Number.isNaN(utcDate.getTime()) ||
-      localizedDate.getUTCFullYear() !== year ||
-      localizedDate.getUTCMonth() !== month - 1 ||
-      localizedDate.getUTCDate() !== day ||
-      localizedDate.getUTCHours() !== hour ||
-      localizedDate.getUTCMinutes() !== minute ||
-      localizedDate.getUTCSeconds() !== second
-    ) {
-      throw new BadRequestException('date must be a valid local date-time');
-    }
-
-    return utcDate;
-  }
-
-  private matchesLocalDateTimeParts(
-    date: Date,
-    timezone: string,
-    dateTimeParts: LocalDateTimeParts,
-  ): boolean {
-    const formatter = new Intl.DateTimeFormat('en-NZ', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23',
-    });
-
-    const formattedParts = formatter.formatToParts(date);
-    const year = Number(
-      formattedParts.find((part) => part.type === 'year')?.value,
-    );
-    const month = Number(
-      formattedParts.find((part) => part.type === 'month')?.value,
-    );
-    const day = Number(
-      formattedParts.find((part) => part.type === 'day')?.value,
-    );
-    const hour = Number(
-      formattedParts.find((part) => part.type === 'hour')?.value,
-    );
-    const minute = Number(
-      formattedParts.find((part) => part.type === 'minute')?.value,
-    );
-    const second = Number(
-      formattedParts.find((part) => part.type === 'second')?.value,
-    );
-
-    return (
-      year === dateTimeParts.year &&
-      month === dateTimeParts.month &&
-      day === dateTimeParts.day &&
-      hour === dateTimeParts.hour &&
-      minute === dateTimeParts.minute &&
-      second === dateTimeParts.second
-    );
-  }
-
-  private getTimezoneOffsetForDate(timezone: string, date: Date): number {
-    try {
-      const formatter = new Intl.DateTimeFormat('en-NZ', {
-        timeZone: timezone,
-        timeZoneName: 'shortOffset',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23',
-      });
-      const timezoneName = formatter
-        .formatToParts(date)
-        .find((part) => part.type === 'timeZoneName')?.value;
-
-      if (!timezoneName) {
-        throw new InternalServerErrorException(
-          `Invalid location timezone configuration: ${timezone}`,
-        );
-      }
-
-      if (timezoneName === 'GMT') {
-        return 0;
-      }
-
-      const offsetMatch = timezoneName.match(
-        /^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/,
-      );
-      if (!offsetMatch) {
-        throw new InternalServerErrorException(
-          `Invalid location timezone offset configuration: ${timezoneName}`,
-        );
-      }
-
-      const sign = offsetMatch[1] === '+' ? 1 : -1;
-      const hours = Number(offsetMatch[2]);
-      const minutes = Number(offsetMatch[3] ?? '0');
-
-      return sign * (hours + minutes / 60);
-    } catch (error) {
-      if (error instanceof InternalServerErrorException) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException(
-        `Invalid location timezone configuration: ${timezone}`,
-      );
-    }
-  }
-
-  private parseDate(dateInput: string): Date {
+  private parseDateParts(dateInput: string): LocalDateParts {
     if (!dateInput) {
       throw new BadRequestException('date query parameter is required');
     }
@@ -500,10 +361,14 @@ export class MaramatakaController {
       throw new BadRequestException('date must be a valid calendar date');
     }
 
-    return date;
+    return {
+      year,
+      month,
+      day,
+    };
   }
 
-  private parseNumber(value: string, field: 'lat' | 'lon' | 'tz'): number {
+  private parseNumber(value: string, field: 'lat' | 'lon'): number {
     if (value === undefined || value === null || value === '') {
       throw new BadRequestException(`${field} query parameter is required`);
     }
@@ -528,13 +393,11 @@ export class MaramatakaController {
     }
   }
 
-  private validateTimezoneOffset(timezoneOffset: number): void {
-    if (timezoneOffset < -12 || timezoneOffset > 14) {
-      throw new BadRequestException('tz must be between -12 and 14');
-    }
-
-    if (!Number.isInteger(timezoneOffset)) {
-      throw new BadRequestException('tz must be a whole-hour offset');
+  private validateTimezone(timezone: string): void {
+    try {
+      validateIanaTimezone(timezone);
+    } catch {
+      throw new BadRequestException('timezone must be a valid IANA timezone');
     }
   }
 

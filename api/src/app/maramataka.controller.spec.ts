@@ -93,7 +93,7 @@ describe('MaramatakaController', () => {
         date: '2026-01-01',
         lat: '-41.2865',
         lon: '174.7762',
-        tz: '13',
+        timezone: 'Pacific/Auckland',
       },
       validateStatus: () => true,
     });
@@ -112,7 +112,7 @@ describe('MaramatakaController', () => {
         date: 'not-a-date',
         lat: 'oops',
         lon: '174.7762',
-        tz: '13',
+        timezone: 'Pacific/Auckland',
       },
       validateStatus: () => true,
     });
@@ -128,7 +128,7 @@ describe('MaramatakaController', () => {
         date: '2026-01-01T12:00:00+13:00',
         lat: '-41.2865',
         lon: '174.7762',
-        tz: '13',
+        timezone: 'Pacific/Auckland',
       },
       validateStatus: () => true,
     });
@@ -138,19 +138,21 @@ describe('MaramatakaController', () => {
     expect(getMonthMock).not.toHaveBeenCalled();
   });
 
-  it('returns HTTP 400 when tz is not a whole hour', async () => {
+  it('returns HTTP 400 when timezone is not an IANA timezone', async () => {
     const response = await axios.get(`${baseUrl}/maramataka/month`, {
       params: {
         date: '2026-01-01',
         lat: '-41.2865',
         lon: '174.7762',
-        tz: '5.5',
+        timezone: 'Not/AZone',
       },
       validateStatus: () => true,
     });
 
     expect(response.status).toBe(400);
-    expect(response.data.message).toBe('tz must be a whole-hour offset');
+    expect(response.data.message).toBe(
+      'timezone must be a valid IANA timezone',
+    );
     expect(getMonthMock).not.toHaveBeenCalled();
   });
 
@@ -166,7 +168,7 @@ describe('MaramatakaController', () => {
         date: '2026-01-01',
         lat: '-41.2865',
         lon: '174.7762',
-        tz: '13',
+        timezone: 'Pacific/Auckland',
       },
       validateStatus: () => true,
     });
@@ -175,17 +177,17 @@ describe('MaramatakaController', () => {
     expect(getMonthMock).toHaveBeenCalledTimes(1);
 
     const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
-      { latitude: number; longitude: number; timezoneOffset: number },
+      { latitude: number; longitude: number; timezone: string },
       Date,
     ];
 
     expect(locationArg).toEqual({
       latitude: -41.2865,
       longitude: 174.7762,
-      timezoneOffset: 13,
+      timezone: 'Pacific/Auckland',
     });
     expect(dateArg).toBeInstanceOf(Date);
-    expect(dateArg.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+    expect(dateArg.toISOString()).toBe('2025-12-31T23:00:00.000Z');
   });
 
   it('propagates service failures as HTTP 500', async () => {
@@ -196,7 +198,7 @@ describe('MaramatakaController', () => {
         date: '2026-01-01',
         lat: '-41.2865',
         lon: '174.7762',
-        tz: '13',
+        timezone: 'Pacific/Auckland',
       },
       validateStatus: () => true,
     });
@@ -214,7 +216,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-01T21:00:00',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -263,7 +265,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-02T20:46:00',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -295,7 +297,7 @@ describe('MaramatakaController', () => {
           dateTime: 'bad-date',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -315,7 +317,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-03T21:00:00',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -335,7 +337,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-01T20:47:00',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -355,7 +357,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-02T20:45:59',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -375,7 +377,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-02T20:46:00',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -395,7 +397,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-04T20:44:00',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -415,7 +417,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-01T20:47:00',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -424,14 +426,14 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       });
       expect(dateArg).toBeInstanceOf(Date);
       expect(dateArg.toISOString()).toBe('2026-01-01T07:47:00.000Z');
@@ -445,7 +447,7 @@ describe('MaramatakaController', () => {
           dateTime: '2026-01-01T21:00:00',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -473,14 +475,14 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       });
     });
 
@@ -499,18 +501,18 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -37.0082,
         longitude: 174.6645,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       });
     });
 
-    it('uses NZST offset (+12) for winter named-location requests', async () => {
+    it('parses winter named-location requests using the location timezone', async () => {
       getMonthMock.mockResolvedValue({
         version: 'mita-te-tai-best',
         whiroStartsAt: new Date('2026-06-01T07:00:00.000Z'),
@@ -539,14 +541,14 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 12,
+        timezone: 'Pacific/Auckland',
       });
       expect(dateArg.toISOString()).toBe('2026-06-01T08:00:00.000Z');
     });
@@ -593,7 +595,7 @@ describe('MaramatakaController', () => {
 
       expect(response.status).toBe(400);
       expect(response.data.message).toBe(
-        'Either location parameter or all of lat, lon, and tz parameters are required',
+        'Either location parameter or all of lat, lon, and timezone parameters are required',
       );
       expect(getMonthMock).not.toHaveBeenCalled();
     });
@@ -619,16 +621,16 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       });
-      expect(dateArg.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+      expect(dateArg.toISOString()).toBe('2025-12-31T23:00:00.000Z');
     });
 
     it('resolves christchurch location correctly', async () => {
@@ -650,14 +652,14 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -43.5321,
         longitude: 172.6362,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       });
     });
 
@@ -687,7 +689,7 @@ describe('MaramatakaController', () => {
 
       expect(response.status).toBe(400);
       expect(response.data.message).toBe(
-        'Either location parameter or all of lat, lon, and tz parameters are required',
+        'Either location parameter or all of lat, lon, and timezone parameters are required',
       );
       expect(getMonthMock).not.toHaveBeenCalled();
     });
@@ -705,7 +707,7 @@ describe('MaramatakaController', () => {
           location: 'auckland',
           lat: '-41.2865',
           lon: '174.7762',
-          tz: '13',
+          timezone: 'Pacific/Auckland',
         },
         validateStatus: () => true,
       });
@@ -714,14 +716,14 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -37.0082,
         longitude: 174.6645,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       });
     });
 
@@ -744,18 +746,18 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -38.6624,
         longitude: 178.0097,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       });
     });
 
-    it('uses NZST offset (+12) for winter month requests', async () => {
+    it('passes named-location timezone through for winter month requests', async () => {
       getMonthMock.mockResolvedValue({
         version: 'mita-te-tai-best',
         whiroStartsAt: new Date('2026-06-10T06:45:00Z'),
@@ -774,14 +776,14 @@ describe('MaramatakaController', () => {
       expect(getMonthMock).toHaveBeenCalledTimes(1);
 
       const [locationArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 12,
+        timezone: 'Pacific/Auckland',
       });
     });
   });
@@ -853,16 +855,16 @@ describe('MaramatakaController', () => {
       expect(getMoonDetailsMock).toHaveBeenCalledTimes(1);
 
       const [locationArg, dateArg] = getMoonDetailsMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezoneOffset: number },
+        { latitude: number; longitude: number; timezone: string },
         Date,
       ];
 
       expect(locationArg).toEqual({
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       });
-      expect(dateArg.toISOString()).toBe('2026-01-01T00:00:00.000Z');
+      expect(dateArg.toISOString()).toBe('2025-12-31T23:00:00.000Z');
     });
 
     it('returns HTTP 400 for invalid moon details date', async () => {

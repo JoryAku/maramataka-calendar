@@ -1,7 +1,7 @@
 export interface Location {
   latitude: number;
   longitude: number;
-  timezoneOffset: number;
+  timezone: string;
 }
 
 export interface NewMoon {

@@ -10,6 +10,10 @@ import {
   MoonTransit,
   NewMoon,
 } from './astronomy-provider';
+import {
+  getTimezoneOffsetHours,
+  parseLocalDateTimeInTimezone,
+} from './timezone';
 
 type FetchFn = typeof fetch;
 
@@ -149,7 +153,7 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
         date,
       ),
       closestPhase: details.closestphase
-        ? this.parseMoonPhase(details.closestphase, location.timezoneOffset)
+        ? this.parseMoonPhase(details.closestphase, location.timezone)
         : undefined,
       moonrise: moonrise
         ? {
@@ -257,8 +261,9 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     location: Location,
     label: string,
   ): Promise<UsnoRiseSetTransitData> {
+    const timezoneOffset = this.getTimezoneOffsetForLocalDate(date, location);
     const response = await this.fetchFn(
-      `https://aa.usno.navy.mil/api/rstt/oneday?date=${date}&coords=${location.latitude},${location.longitude}&tz=${location.timezoneOffset}`,
+      `https://aa.usno.navy.mil/api/rstt/oneday?date=${date}&coords=${location.latitude},${location.longitude}&tz=${timezoneOffset}`,
     );
 
     if (!response.ok) {
@@ -294,18 +299,25 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
       );
     }
 
-    const occursAtUtcMs = Date.UTC(
-      year,
-      month - 1,
-      day,
-      hour - location.timezoneOffset,
-      minute,
-    );
-
-    return new Date(occursAtUtcMs);
+    try {
+      return parseLocalDateTimeInTimezone(
+        {
+          year,
+          month,
+          day,
+          hour,
+          minute,
+        },
+        location.timezone,
+      );
+    } catch (error) {
+      throw new Error(
+        `Invalid USNO ${label} local date/time for ${location.timezone}: ${this.getErrorMessage(error)}`,
+      );
+    }
   }
 
-  private parseMoonPhase(phase: UsnoMoonPhase, timezoneOffset = 0): MoonPhase {
+  private parseMoonPhase(phase: UsnoMoonPhase, timezone?: string): MoonPhase {
     const moonYear = Number.parseInt(String(phase.year), 10);
     const moonMonth = Number.parseInt(String(phase.month), 10);
     const moonDay = Number.parseInt(String(phase.day), 10);
@@ -327,17 +339,49 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
 
     return {
       phase: this.parseMoonPhaseName(phase.phase),
-      occursAt: new Date(
-        Date.UTC(
-          moonYear,
-          moonMonth - 1,
-          moonDay,
-          moonHour - timezoneOffset,
-          moonMinute,
-        ),
-      ),
+      occursAt: timezone
+        ? parseLocalDateTimeInTimezone(
+            {
+              year: moonYear,
+              month: moonMonth,
+              day: moonDay,
+              hour: moonHour,
+              minute: moonMinute,
+            },
+            timezone,
+          )
+        : new Date(
+            Date.UTC(moonYear, moonMonth - 1, moonDay, moonHour, moonMinute),
+          ),
       source: 'usno',
     };
+  }
+
+  private getTimezoneOffsetForLocalDate(
+    date: string,
+    location: Location,
+  ): number {
+    const [yearPart, monthPart, dayPart] = date.split('-');
+    const year = Number.parseInt(yearPart, 10);
+    const month = Number.parseInt(monthPart, 10);
+    const day = Number.parseInt(dayPart, 10);
+
+    if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+      throw new Error(`Invalid USNO local date: ${date}`);
+    }
+
+    const localNoon = parseLocalDateTimeInTimezone(
+      {
+        year,
+        month,
+        day,
+        hour: 12,
+        minute: 0,
+      },
+      location.timezone,
+    );
+
+    return getTimezoneOffsetHours(location.timezone, localNoon);
   }
 
   private parseMoonPhaseName(phase: string): MoonPhaseName {
@@ -385,5 +429,9 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
       String(result.getUTCMonth() + 1).padStart(2, '0'),
       String(result.getUTCDate()).padStart(2, '0'),
     ].join('-');
+  }
+
+  private getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
   }
 }

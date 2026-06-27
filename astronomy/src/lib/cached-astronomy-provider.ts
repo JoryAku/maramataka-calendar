@@ -67,7 +67,7 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   }
 
   async getMoonRise(date: string, location: Location): Promise<MoonRise> {
-    const key = `${date}:${location.latitude}:${location.longitude}:${location.timezoneOffset}`;
+    const key = this.locationCacheKey(date, location);
 
     const cachedRequest = this.moonRiseCache.get(key);
     if (cachedRequest) {
@@ -84,7 +84,7 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   }
 
   async getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet> {
-    const key = `${date}:${location.latitude}:${location.longitude}:${location.timezoneOffset}`;
+    const key = this.locationCacheKey(date, location);
 
     const cachedRequest = this.moonRiseSetCache.get(key);
     if (cachedRequest) {
@@ -103,7 +103,7 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   }
 
   async getMoonTransit(date: string, location: Location): Promise<MoonTransit> {
-    const key = `${date}:${location.latitude}:${location.longitude}:${location.timezoneOffset}`;
+    const key = this.locationCacheKey(date, location);
 
     const cachedRequest = this.moonTransitCache.get(key);
     if (cachedRequest) {
@@ -122,7 +122,7 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   }
 
   async getMoonDetails(date: string, location: Location): Promise<MoonDetails> {
-    const key = `${date}:${location.latitude}:${location.longitude}:${location.timezoneOffset}`;
+    const key = this.locationCacheKey(date, location);
 
     const cachedRequest = this.moonDetailsCache.get(key);
     if (cachedRequest) {
@@ -138,5 +138,9 @@ export class CachedAstronomyProvider implements AstronomyProvider {
 
     this.moonDetailsCache.set(key, request);
     return request;
+  }
+
+  private locationCacheKey(date: string, location: Location): string {
+    return `${date}:${location.latitude}:${location.longitude}:${location.timezone}`;
   }
 }

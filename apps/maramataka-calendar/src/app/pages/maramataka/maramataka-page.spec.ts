@@ -26,15 +26,21 @@ describe('MaramatakaPage', () => {
   });
 
   function flushInitialRequests() {
-    return httpTestingController.expectOne((req) => req.url === '/api/locations');
+    return httpTestingController.expectOne(
+      (req) => req.url === '/api/locations',
+    );
   }
 
   function flushMaramatakaRequests(locationId = 'wellington') {
-    const monthRequest = httpTestingController.expectOne((req) =>
-      req.url === '/api/maramataka/month' && req.params.get('location') === locationId
+    const monthRequest = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/month' &&
+        req.params.get('location') === locationId,
     );
-    const todayRequest = httpTestingController.expectOne((req) =>
-      req.url === '/api/maramataka/today' && req.params.get('location') === locationId
+    const todayRequest = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/today' &&
+        req.params.get('location') === locationId,
     );
 
     return { monthRequest, todayRequest };
@@ -44,8 +50,16 @@ describe('MaramatakaPage', () => {
     const fixture = TestBed.createComponent(MaramatakaPage);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="month-loading-state"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="today-loading-state"]')).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="month-loading-state"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="today-loading-state"]',
+      ),
+    ).not.toBeNull();
 
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush([
@@ -84,8 +98,10 @@ describe('MaramatakaPage', () => {
     const { monthRequest, todayRequest } = flushMaramatakaRequests();
 
     expect(monthRequest.request.params.get('date')).toBe('2026-01-11');
-    expect(monthRequest.request.params.get('tz')).toBe('13');
-    expect(todayRequest.request.params.get('dateTime')).toBe('2026-01-11T01:00:00');
+    expect(monthRequest.request.params.has('tz')).toBe(false);
+    expect(todayRequest.request.params.get('dateTime')).toBe(
+      '2026-01-11T01:00:00',
+    );
 
     monthRequest.flush({
       version: 'mita-te-tai-best',
@@ -116,7 +132,9 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Wellington');
     expect(content).toContain('Whiro');
     expect(content).toContain('Tirea');
-    expect(fixture.nativeElement.querySelector('.night-card.current')?.textContent).toContain('Whiro');
+    expect(
+      fixture.nativeElement.querySelector('.night-card.current')?.textContent,
+    ).toContain('Whiro');
   });
 
   it('uses the selected location for API requests', () => {
@@ -149,11 +167,15 @@ describe('MaramatakaPage', () => {
     };
     page.onLocationChange('auckland');
 
-    const monthRequest = httpTestingController.expectOne((req) =>
-      req.url === '/api/maramataka/month' && req.params.get('location') === 'auckland'
+    const monthRequest = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/month' &&
+        req.params.get('location') === 'auckland',
     );
-    const todayRequest = httpTestingController.expectOne((req) =>
-      req.url === '/api/maramataka/today' && req.params.get('location') === 'auckland'
+    const todayRequest = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/today' &&
+        req.params.get('location') === 'auckland',
     );
 
     monthRequest.flush({
@@ -187,7 +209,9 @@ describe('MaramatakaPage', () => {
       { id: 'gisborne', name: 'Gisborne' },
     ]);
     const firstRequests = flushMaramatakaRequests();
-    expect(firstRequests.monthRequest.request.params.get('date')).toBe('2026-01-01');
+    expect(firstRequests.monthRequest.request.params.get('date')).toBe(
+      '2026-01-01',
+    );
 
     firstRequests.monthRequest.flush({
       version: 'mita-te-tai-best',
@@ -204,8 +228,12 @@ describe('MaramatakaPage', () => {
     window.dispatchEvent(new Event('focus'));
 
     const secondRequests = flushMaramatakaRequests();
-    expect(secondRequests.monthRequest.request.params.get('date')).toBe('2026-01-02');
-    expect(secondRequests.todayRequest.request.params.get('dateTime')).toBe('2026-01-02T02:30:00');
+    expect(secondRequests.monthRequest.request.params.get('date')).toBe(
+      '2026-01-02',
+    );
+    expect(secondRequests.todayRequest.request.params.get('dateTime')).toBe(
+      '2026-01-02T02:30:00',
+    );
 
     secondRequests.monthRequest.flush({
       version: 'mita-te-tai-best',
@@ -236,7 +264,9 @@ describe('MaramatakaPage', () => {
 
     const { monthRequest, todayRequest } = flushMaramatakaRequests();
 
-    expect(todayRequest.request.params.get('dateTime')).toBe('2026-01-02T00:00:00');
+    expect(todayRequest.request.params.get('dateTime')).toBe(
+      '2026-01-02T00:00:00',
+    );
 
     monthRequest.flush({
       version: 'mita-te-tai-best',
@@ -272,8 +302,12 @@ describe('MaramatakaPage', () => {
 
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="month-empty-state"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="today-error-state"]')).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="month-empty-state"]'),
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="today-error-state"]'),
+    ).not.toBeNull();
   });
 
   it('shows location, month, and today errors when locations fail to load', () => {
@@ -281,14 +315,29 @@ describe('MaramatakaPage', () => {
     fixture.detectChanges();
 
     const locationsRequest = flushInitialRequests();
-    locationsRequest.flush('Failure', { status: 500, statusText: 'Server Error' });
+    locationsRequest.flush('Failure', {
+      status: 500,
+      statusText: 'Server Error',
+    });
 
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('[data-testid="locations-error-state"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="month-error-state"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="today-error-state"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="month-empty-state"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="today-empty-state"]')).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="locations-error-state"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="month-error-state"]'),
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="today-error-state"]'),
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="month-empty-state"]'),
+    ).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="today-empty-state"]'),
+    ).toBeNull();
   });
 });
