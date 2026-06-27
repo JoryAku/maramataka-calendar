@@ -174,7 +174,7 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
         date,
       ),
       closestPhase: details.closestphase
-        ? this.parseMoonPhase(details.closestphase)
+        ? this.parseMoonPhase(details.closestphase, location.timezoneOffset)
         : undefined,
       moonrise: moonrise
         ? {
@@ -330,7 +330,7 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     return new Date(occursAtUtcMs);
   }
 
-  private parseMoonPhase(phase: UsnoMoonPhase): MoonPhase {
+  private parseMoonPhase(phase: UsnoMoonPhase, timezoneOffset = 0): MoonPhase {
     const moonYear = Number.parseInt(String(phase.year), 10);
     const moonMonth = Number.parseInt(String(phase.month), 10);
     const moonDay = Number.parseInt(String(phase.day), 10);
@@ -353,7 +353,13 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     return {
       phase: this.parseMoonPhaseName(phase.phase),
       occursAt: new Date(
-        Date.UTC(moonYear, moonMonth - 1, moonDay, moonHour, moonMinute),
+        Date.UTC(
+          moonYear,
+          moonMonth - 1,
+          moonDay,
+          moonHour - timezoneOffset,
+          moonMinute,
+        ),
       ),
       source: 'usno',
     };

@@ -40,6 +40,31 @@ export interface MaramatakaTodayMata {
   name: string;
 }
 
+export interface MoonDetails<TDate = Date> {
+  date: string;
+  phase: string;
+  fractionIlluminated: number;
+  lunarAgeDays: null;
+  distanceKm: null;
+  closestPhase?: MoonDetailsPhase<TDate>;
+  moonrise?: MoonDetailsEvent<TDate>;
+  moonset?: MoonDetailsEvent<TDate>;
+  transit?: MoonDetailsEvent<TDate>;
+  unavailable: Array<'lunarAgeDays' | 'distanceKm'>;
+  source: string;
+}
+
+export interface MoonDetailsPhase<TDate = Date> {
+  phase: string;
+  occursAt: TDate;
+  source: string;
+}
+
+export interface MoonDetailsEvent<TDate = Date> {
+  occursAt: TDate;
+  source: string;
+}
+
 export interface ApiMaramatakaNight {
   mata: string | ApiMata;
   overlappingMata?: ApiMaramatakaNightOverlap[];
@@ -64,3 +89,5 @@ export interface ApiMaramatakaMonth {
   whiroStartsAt: string;
   nights: ApiMaramatakaNight[];
 }
+
+export type ApiMoonDetails = MoonDetails<string>;

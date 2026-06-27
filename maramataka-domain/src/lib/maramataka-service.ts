@@ -1,6 +1,7 @@
 import {
   AstronomyProvider,
   Location,
+  MoonDetails,
   MoonRise,
   NewMoon,
 } from '@maramataka-calendar/astronomy';
@@ -114,6 +115,15 @@ export class MaramatakaService {
         `Failed to generate Maramataka month: ${this.getErrorMessage(error)}`,
       );
     }
+  }
+
+  async getMoonDetails(location: Location, date: Date): Promise<MoonDetails> {
+    const localDate = this.formatIsoDateForLocation(
+      date,
+      location.timezoneOffset,
+    );
+
+    return this.astronomyProvider.getMoonDetails(localDate, location);
   }
 
   private findRelevantNewMoon(
