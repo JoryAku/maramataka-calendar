@@ -4,7 +4,7 @@ import {
   MoonRiseSet,
   NewMoon,
 } from '@maramataka-calendar/astronomy';
-import { MaramatakaMonth } from './maramataka';
+import { MaramatakaMonth, MaramatakaNightOverlap } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
 import { generateMaramatakaMonth } from './maramataka-month-generator';
 import { MITA_TE_TAI_BEST_MATA } from './mita-te-tai-best';
@@ -42,13 +42,15 @@ export class MaramatakaService {
     const requestedYear = date.getUTCFullYear();
     const requestedTime = date.getTime();
 
-    const [previousYearNewMoons, requestedYearNewMoons] = await Promise.all([
-      this.astronomyProvider.getNewMoons(requestedYear - 1),
-      this.astronomyProvider.getNewMoons(requestedYear),
-    ]);
+    const [previousYearNewMoons, requestedYearNewMoons, nextYearNewMoons] =
+      await Promise.all([
+        this.astronomyProvider.getNewMoons(requestedYear - 1),
+        this.astronomyProvider.getNewMoons(requestedYear),
+        this.astronomyProvider.getNewMoons(requestedYear + 1),
+      ]);
 
     const relevantNewMoon = this.findRelevantNewMoon(
-      [...previousYearNewMoons, ...requestedYearNewMoons],
+      [...previousYearNewMoons, ...requestedYearNewMoons, ...nextYearNewMoons],
       requestedTime,
     );
 
@@ -93,6 +95,15 @@ export class MaramatakaService {
       whiroStartIndex,
       whiroStartIndex + this.mata.length,
     );
+    const nextNewMoon = this.findNextNewMoon(
+      [...previousYearNewMoons, ...requestedYearNewMoons, ...nextYearNewMoons],
+      relevantNewMoon.occursAt.getTime(),
+    );
+    const overlaps = this.buildNewMoonOverlaps(
+      nextNewMoon,
+      monthMoonRiseSets,
+      location,
+    );
 
     try {
       return this.generateMaramatakaMonthFn({
@@ -100,6 +111,7 @@ export class MaramatakaService {
         whiroStartsAt,
         mata: this.mata,
         moonRiseSets: monthMoonRiseSets,
+        overlaps,
       });
     } catch (error) {
       throw new Error(
@@ -115,6 +127,48 @@ export class MaramatakaService {
     return newMoons
       .filter((newMoon) => newMoon.occursAt.getTime() <= requestedTime)
       .sort((a, b) => b.occursAt.getTime() - a.occursAt.getTime())[0];
+  }
+
+  private findNextNewMoon(
+    newMoons: NewMoon[],
+    currentNewMoonTime: number,
+  ): NewMoon | undefined {
+    return newMoons
+      .filter((newMoon) => newMoon.occursAt.getTime() > currentNewMoonTime)
+      .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime())[0];
+  }
+
+  private buildNewMoonOverlaps(
+    nextNewMoon: NewMoon | undefined,
+    moonRiseSets: MoonRiseSet[],
+    location: Location,
+  ): { intervalDate: string; overlap: MaramatakaNightOverlap }[] | undefined {
+    if (!nextNewMoon) {
+      return undefined;
+    }
+
+    const nextWhiroDate = this.formatIsoDateForLocation(
+      nextNewMoon.occursAt,
+      location.timezoneOffset,
+    );
+    const nextWhiroInterval = moonRiseSets.find(
+      (moonRiseSet) => moonRiseSet.date === nextWhiroDate,
+    );
+
+    if (!nextWhiroInterval) {
+      return undefined;
+    }
+
+    return [
+      {
+        intervalDate: nextWhiroDate,
+        overlap: {
+          mata: this.mata[0],
+          cycleStartsAt: nextWhiroInterval.risesAt,
+          reason: 'new-moon-anchor',
+        },
+      },
+    ];
   }
 
   private async fetchMoonRiseSetsForMonth(

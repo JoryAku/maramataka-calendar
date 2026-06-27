@@ -1,7 +1,14 @@
 export interface MaramatakaNight {
   mata: string;
+  overlappingMata?: MaramatakaNightOverlap[];
   startsAt: Date;
   endsAt: Date;
+}
+
+export interface MaramatakaNightOverlap {
+  mata: string;
+  cycleStartsAt: Date;
+  reason: 'new-moon-anchor';
 }
 
 export interface LocationSummary {
@@ -17,8 +24,15 @@ export interface MaramatakaMonth {
 
 export interface MaramatakaToday<TDate = Date> {
   mata: MaramatakaTodayMata;
+  overlappingMata?: MaramatakaTodayOverlap<TDate>[];
   startsAt: TDate;
   endsAt: TDate;
+}
+
+export interface MaramatakaTodayOverlap<TDate = Date> {
+  mata: MaramatakaTodayMata;
+  cycleStartsAt: TDate;
+  reason: 'new-moon-anchor';
 }
 
 export interface MaramatakaTodayMata {
@@ -28,8 +42,15 @@ export interface MaramatakaTodayMata {
 
 export interface ApiMaramatakaNight {
   mata: string | ApiMata;
+  overlappingMata?: ApiMaramatakaNightOverlap[];
   startsAt: string;
   endsAt: string;
+}
+
+export interface ApiMaramatakaNightOverlap {
+  mata: string | ApiMata;
+  cycleStartsAt: string;
+  reason: 'new-moon-anchor';
 }
 
 export interface ApiMata {

@@ -1,12 +1,18 @@
 import { Mata, MaramatakaVersion } from './mata';
-import { MaramatakaMonth } from './maramataka';
+import { MaramatakaMonth, MaramatakaNightOverlap } from './maramataka';
 import { MoonRiseSet } from '@maramataka-calendar/astronomy';
+
+interface GenerateMaramatakaOverlapInput {
+  intervalDate: string;
+  overlap: MaramatakaNightOverlap;
+}
 
 interface GenerateMaramatakaMonthInput {
   version: MaramatakaVersion;
   whiroStartsAt: Date;
   mata: Mata[];
   moonRiseSets: MoonRiseSet[];
+  overlaps?: GenerateMaramatakaOverlapInput[];
 }
 
 export function generateMaramatakaMonth(
@@ -44,10 +50,18 @@ export function generateMaramatakaMonth(
   return {
     version: input.version,
     whiroStartsAt: input.whiroStartsAt,
-    nights: input.mata.map((mata, index) => ({
-      mata,
-      startsAt: input.moonRiseSets[index].risesAt,
-      endsAt: input.moonRiseSets[index].setsAt,
-    })),
+    nights: input.mata.map((mata, index) => {
+      const interval = input.moonRiseSets[index];
+      const overlappingMata = input.overlaps
+        ?.filter((overlap) => overlap.intervalDate === interval.date)
+        .map((overlap) => overlap.overlap);
+
+      return {
+        mata,
+        ...(overlappingMata?.length ? { overlappingMata } : {}),
+        startsAt: interval.risesAt,
+        endsAt: interval.setsAt,
+      };
+    }),
   };
 }

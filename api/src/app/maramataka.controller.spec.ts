@@ -227,6 +227,65 @@ describe('MaramatakaController', () => {
       });
     });
 
+    it('returns overlapping mata when the current interval starts a new cycle', async () => {
+      getMonthMock.mockResolvedValue({
+        version: 'mita-te-tai-best',
+        whiroStartsAt: new Date('2026-01-01T07:47:00.000Z'),
+        nights: [
+          {
+            mata: {
+              index: 30,
+              name: 'Mutu',
+              version: 'mita-te-tai-best',
+            },
+            overlappingMata: [
+              {
+                mata: {
+                  index: 1,
+                  name: 'Whiro',
+                  version: 'mita-te-tai-best',
+                },
+                cycleStartsAt: new Date('2026-01-02T07:46:00.000Z'),
+                reason: 'new-moon-anchor',
+              },
+            ],
+            startsAt: new Date('2026-01-02T07:46:00.000Z'),
+            endsAt: new Date('2026-01-03T07:45:00.000Z'),
+          },
+        ],
+      });
+
+      const response = await axios.get(`${baseUrl}/maramataka/today`, {
+        params: {
+          dateTime: '2026-01-02T20:46:00',
+          lat: '-41.2865',
+          lon: '174.7762',
+          tz: '13',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({
+        mata: {
+          index: 30,
+          name: 'Mutu',
+        },
+        overlappingMata: [
+          {
+            mata: {
+              index: 1,
+              name: 'Whiro',
+            },
+            cycleStartsAt: '2026-01-02T07:46:00.000Z',
+            reason: 'new-moon-anchor',
+          },
+        ],
+        startsAt: '2026-01-02T07:46:00.000Z',
+        endsAt: '2026-01-03T07:45:00.000Z',
+      });
+    });
+
     it('returns HTTP 400 for invalid query parameters', async () => {
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
         params: {
@@ -240,7 +299,7 @@ describe('MaramatakaController', () => {
 
       expect(response.status).toBe(400);
       expect(response.data.message).toBe(
-        'dateTime must be in YYYY-MM-DDTHH:mm:ss format'
+        'dateTime must be in YYYY-MM-DDTHH:mm:ss format',
       );
       expect(getMonthMock).not.toHaveBeenCalled();
     });
@@ -340,7 +399,7 @@ describe('MaramatakaController', () => {
 
       expect(response.status).toBe(400);
       expect(response.data.message).toBe(
-        'No Maramataka night found for supplied date and location'
+        'No Maramataka night found for supplied date and location',
       );
       expect(getMonthMock).toHaveBeenCalledTimes(1);
     });
@@ -499,7 +558,9 @@ describe('MaramatakaController', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(response.data.message).toBe('date must be a valid local date-time');
+      expect(response.data.message).toBe(
+        'date must be a valid local date-time',
+      );
       expect(getMonthMock).not.toHaveBeenCalled();
     });
 
@@ -529,7 +590,7 @@ describe('MaramatakaController', () => {
 
       expect(response.status).toBe(400);
       expect(response.data.message).toBe(
-        'Either location parameter or all of lat, lon, and tz parameters are required'
+        'Either location parameter or all of lat, lon, and tz parameters are required',
       );
       expect(getMonthMock).not.toHaveBeenCalled();
     });
@@ -623,7 +684,7 @@ describe('MaramatakaController', () => {
 
       expect(response.status).toBe(400);
       expect(response.data.message).toBe(
-        'Either location parameter or all of lat, lon, and tz parameters are required'
+        'Either location parameter or all of lat, lon, and tz parameters are required',
       );
       expect(getMonthMock).not.toHaveBeenCalled();
     });

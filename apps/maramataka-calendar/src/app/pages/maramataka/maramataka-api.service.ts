@@ -55,14 +55,26 @@ export class MaramatakaApiService {
   private mapToday(apiToday: MaramatakaToday<string>): MaramatakaToday {
     return {
       mata: apiToday.mata,
+      overlappingMata: apiToday.overlappingMata?.map((overlap) => ({
+        mata: overlap.mata,
+        cycleStartsAt: new Date(overlap.cycleStartsAt),
+        reason: overlap.reason,
+      })),
       startsAt: new Date(apiToday.startsAt),
       endsAt: new Date(apiToday.endsAt),
     };
   }
 
-  private mapNight(night: ApiMaramatakaMonth['nights'][number]): MaramatakaNight {
+  private mapNight(
+    night: ApiMaramatakaMonth['nights'][number],
+  ): MaramatakaNight {
     return {
       mata: this.mataName(night.mata),
+      overlappingMata: night.overlappingMata?.map((overlap) => ({
+        mata: this.mataName(overlap.mata),
+        cycleStartsAt: new Date(overlap.cycleStartsAt),
+        reason: overlap.reason,
+      })),
       startsAt: new Date(night.startsAt),
       endsAt: new Date(night.endsAt),
     };

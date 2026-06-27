@@ -16,6 +16,13 @@ h3 {
   font-size: 1.1rem;
 }
 
+.overlap-label {
+  margin: -0.35rem 0 0.75rem;
+  color: #35664b;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 dl {
   margin: 0;
   display: grid;

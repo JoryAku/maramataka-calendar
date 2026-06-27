@@ -4,20 +4,24 @@
   <section class="location-panel">
     <label class="location-label" for="location-select">Location</label>
     @if (locationsLoading()) {
-      <p class="state" data-testid="locations-loading-state">Loading locations...</p>
+    <p class="state" data-testid="locations-loading-state">
+      Loading locations...
+    </p>
     } @else if (locationsError()) {
-      <p class="state error" data-testid="locations-error-state">{{ locationsError() }}</p>
+    <p class="state error" data-testid="locations-error-state">
+      {{ locationsError() }}
+    </p>
     } @else {
-      <select
-        id="location-select"
-        class="location-select"
-        [value]="selectedLocationId()"
-        (change)="onLocationChange($any($event.target).value)"
-      >
-        @for (location of locations(); track location.id) {
-          <option [value]="location.id">{{ location.name }}</option>
-        }
-      </select>
+    <select
+      id="location-select"
+      class="location-select"
+      [value]="selectedLocationId()"
+      (change)="onLocationChange($any($event.target).value)"
+    >
+      @for (location of locations(); track location.id) {
+      <option [value]="location.id">{{ location.name }}</option>
+      }
+    </select>
     }
   </section>
 
@@ -28,28 +32,37 @@
     </div>
 
     @if (todayLoading()) {
-      <p class="state" data-testid="today-loading-state">Loading today's maramataka...</p>
+    <p class="state" data-testid="today-loading-state">
+      Loading today's maramataka...
+    </p>
     } @else if (todayError()) {
-      <p class="state error" data-testid="today-error-state">{{ todayError() }}</p>
+    <p class="state error" data-testid="today-error-state">
+      {{ todayError() }}
+    </p>
     } @else if (!today()) {
-      <p class="state" data-testid="today-empty-state">
-        No maramataka night is available for today.
-      </p>
+    <p class="state" data-testid="today-empty-state">
+      No maramataka night is available for today.
+    </p>
     } @else {
-      <article class="today-card" data-testid="today-card">
-        <p class="eyebrow">Current night</p>
-        <h3>{{ today()!.mata.name }}</h3>
-        <dl>
-          <div>
-            <dt>Starts</dt>
-            <dd>{{ today()!.startsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
-          </div>
-          <div>
-            <dt>Ends</dt>
-            <dd>{{ today()!.endsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
-          </div>
-        </dl>
-      </article>
+    <article class="today-card" data-testid="today-card">
+      <p class="eyebrow">Current night</p>
+      <h3>{{ today()!.mata.name }}</h3>
+      @if (today()!.overlappingMata?.length) {
+      <p class="overlap-label">
+        Also {{ today()!.overlappingMata![0].mata.name }} for the next cycle
+      </p>
+      }
+      <dl>
+        <div>
+          <dt>Moonrise</dt>
+          <dd>{{ today()!.startsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
+        </div>
+        <div>
+          <dt>Moonset</dt>
+          <dd>{{ today()!.endsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
+        </div>
+      </dl>
+    </article>
     }
   </section>
 
@@ -60,18 +73,22 @@
     </div>
 
     @if (monthLoading()) {
-      <p class="state" data-testid="month-loading-state">Loading maramataka month...</p>
+    <p class="state" data-testid="month-loading-state">
+      Loading maramataka month...
+    </p>
     } @else if (monthError()) {
-      <p class="state error" data-testid="month-error-state">{{ monthError() }}</p>
+    <p class="state error" data-testid="month-error-state">
+      {{ monthError() }}
+    </p>
     } @else if (!month() || !hasNights()) {
-      <p class="state" data-testid="month-empty-state">
-        No maramataka nights are available for this month.
-      </p>
+    <p class="state" data-testid="month-empty-state">
+      No maramataka nights are available for this month.
+    </p>
     } @else {
-      <app-maramataka-month-view
-        [month]="month()!"
-        [now]="now()"
-      ></app-maramataka-month-view>
+    <app-maramataka-month-view
+      [month]="month()!"
+      [now]="now()"
+    ></app-maramataka-month-view>
     }
   </section>
 </section>

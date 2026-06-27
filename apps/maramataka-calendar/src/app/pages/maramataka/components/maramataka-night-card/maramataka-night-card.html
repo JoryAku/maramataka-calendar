@@ -1,8 +1,13 @@
 <article class="night-card" [class.current]="isCurrent()">
   <h3>{{ night().mata }}</h3>
+  @if (night().overlappingMata?.length) {
+  <p class="overlap-label">
+    Also {{ night().overlappingMata![0].mata }} for the next cycle
+  </p>
+  }
 
   <dl>
-    <dt>Start sunset</dt>
+    <dt>Moonrise</dt>
     <dd>{{ night().startsAt | date: 'EEE d MMM y, h:mm a' : nzTimeZone }}</dd>
   </dl>
 </article>

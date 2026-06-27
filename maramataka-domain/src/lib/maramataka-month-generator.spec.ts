@@ -143,6 +143,50 @@ describe('generateMaramatakaMonth', () => {
     expect(month.nights[1].mata.name).toBe('Tirea');
   });
 
+  it('adds overlapping mata to the matching moonrise interval', () => {
+    const moonRiseSets = [
+      {
+        date: '2026-01-01',
+        risesAt: new Date('2026-01-01T18:00:00+13:00'),
+        setsAt: new Date('2026-01-02T06:00:00+13:00'),
+        source: 'usno',
+      },
+      {
+        date: '2026-01-02',
+        risesAt: new Date('2026-01-02T18:50:00+13:00'),
+        setsAt: new Date('2026-01-03T06:50:00+13:00'),
+        source: 'usno',
+      },
+    ];
+
+    const month = generateMaramatakaMonth({
+      version: 'mita-te-tai-best',
+      whiroStartsAt: moonRiseSets[0].risesAt,
+      mata: MITA_TE_TAI_BEST_MATA.slice(0, 2),
+      moonRiseSets,
+      overlaps: [
+        {
+          intervalDate: '2026-01-02',
+          overlap: {
+            mata: MITA_TE_TAI_BEST_MATA[0],
+            cycleStartsAt: moonRiseSets[1].risesAt,
+            reason: 'new-moon-anchor',
+          },
+        },
+      ],
+    });
+
+    expect(month.nights[0].overlappingMata).toBeUndefined();
+    expect(month.nights[1].mata.name).toBe('Tirea');
+    expect(month.nights[1].overlappingMata).toEqual([
+      {
+        mata: MITA_TE_TAI_BEST_MATA[0],
+        cycleStartsAt: moonRiseSets[1].risesAt,
+        reason: 'new-moon-anchor',
+      },
+    ]);
+  });
+
   it('throws when moonset is not after moonrise', () => {
     expect(() =>
       generateMaramatakaMonth({
