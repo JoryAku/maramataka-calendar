@@ -11,7 +11,6 @@ import {
   MoonTransit,
   NewMoon,
   parseLocalDateTimeInTimezone,
-  Sunset,
   UsnoAstronomyProvider,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
@@ -48,24 +47,6 @@ class StubAstronomyProvider implements AstronomyProvider {
         occursAt: phase.occursAt,
         source: phase.source,
       }));
-  }
-
-  async getSunset(date: string, location: Location): Promise<Sunset> {
-    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) {
-      throw new Error(`Invalid sunset date format: ${date}`);
-    }
-
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-    const occursAt = this.localDateTimeToUtc(year, month, day, 18, location);
-
-    return {
-      date,
-      occursAt,
-      source: 'stub',
-    };
   }
 
   async getMoonRise(date: string, location: Location): Promise<MoonRise> {

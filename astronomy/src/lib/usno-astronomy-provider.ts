@@ -9,7 +9,6 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
-  Sunset,
 } from './astronomy-provider';
 import {
   getTimezoneOffsetHours,
@@ -78,30 +77,6 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
         occursAt: phase.occursAt,
         source: phase.source,
       }));
-  }
-
-  async getSunset(date: string, location: Location): Promise<Sunset> {
-    const data = await this.getRiseSetTransitData(date, location, 'sunset');
-    const sunset = data.properties?.data?.sundata?.find(
-      (item) => item.phen === 'Set',
-    );
-
-    if (!sunset) {
-      throw new Error('No sunset data found');
-    }
-
-    const occursAt = this.parseLocalUsnoTime(
-      date,
-      sunset.time,
-      location,
-      'sunset',
-    );
-
-    return {
-      date,
-      occursAt,
-      source: 'usno',
-    };
   }
 
   async getMoonRise(date: string, location: Location): Promise<MoonRise> {

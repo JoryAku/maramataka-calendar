@@ -14,7 +14,6 @@ describe('CachedAstronomyProvider', () => {
     getMoonPhases: jest.fn(),
     getNewMoons: jest.fn(),
     getFullMoons: jest.fn(),
-    getSunset: jest.fn(),
     getMoonRise: jest.fn(),
     getMoonRiseSet: jest.fn(),
     getMoonTransit: jest.fn(),
@@ -73,37 +72,6 @@ describe('CachedAstronomyProvider', () => {
     await cached.getFullMoons(2026);
 
     expect(provider.getFullMoons).toHaveBeenCalledTimes(1);
-  });
-
-  it('caches sunset results by date and location', async () => {
-    const provider = createProvider({
-      getSunset: jest.fn().mockResolvedValue({
-        date: '2026-01-01',
-        occursAt: new Date('2026-01-01T20:47:00+13:00'),
-        source: 'usno',
-      }),
-    });
-
-    const cached = new CachedAstronomyProvider(provider);
-
-    await cached.getSunset('2026-01-01', location);
-    await cached.getSunset('2026-01-01', location);
-
-    expect(provider.getSunset).toHaveBeenCalledTimes(1);
-  });
-
-  it('deduplicates concurrent sunset requests by date and location', async () => {
-    const deferred = new Promise<never>(() => undefined);
-    const provider = createProvider({
-      getSunset: jest.fn().mockReturnValue(deferred),
-    });
-
-    const cached = new CachedAstronomyProvider(provider);
-
-    void cached.getSunset('2026-01-01', location);
-    void cached.getSunset('2026-01-01', location);
-
-    expect(provider.getSunset).toHaveBeenCalledTimes(1);
   });
 
   it('caches moonrise results by date and location', async () => {
