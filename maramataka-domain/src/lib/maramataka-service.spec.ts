@@ -1,4 +1,8 @@
-import { Location, MoonRise } from '@maramataka-calendar/astronomy';
+import {
+  AstronomyProviderError,
+  Location,
+  MoonRise,
+} from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from './maramataka-service';
 
 describe('MaramatakaService', () => {
@@ -325,6 +329,43 @@ describe('MaramatakaService', () => {
     ).rejects.toThrow(
       'Failed to retrieve moonrise data: moon data unavailable',
     );
+  });
+
+  it('preserves astronomy provider errors when moonrise retrieval fails', async () => {
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons: jest
+          .fn()
+          .mockResolvedValueOnce([
+            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+          ])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]),
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
+        getMoonRise: jest
+          .fn()
+          .mockRejectedValue(
+            new AstronomyProviderError(
+              'usno',
+              'request-timeout',
+              'USNO moonrise request timed out after 10000ms',
+            ),
+          ),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
+    });
+
+    await expect(
+      service.getMonth(location, new Date('2026-01-15T12:00:00Z')),
+    ).rejects.toMatchObject({
+      provider: 'usno',
+      code: 'request-timeout',
+      message:
+        'Failed to retrieve moonrise data: USNO moonrise request timed out after 10000ms',
+    });
   });
 
   it('throws meaningful error when Whiro calculation fails', async () => {

@@ -28,6 +28,7 @@ describe('UsnoAstronomyProvider', () => {
 
     expect(fetchFn).toHaveBeenCalledWith(
       expect.stringContaining('/moon/phases/year?year=2026'),
+      expect.objectContaining({ signal: expect.any(Object) }),
     );
   });
 
@@ -90,7 +91,7 @@ describe('UsnoAstronomyProvider', () => {
     ]);
   });
 
-  it('throws when USNO request fails', async () => {
+  it('throws a provider error when USNO request fails', async () => {
     const fetchFn = jest.fn().mockResolvedValue({
       ok: false,
       status: 500,
@@ -98,9 +99,42 @@ describe('UsnoAstronomyProvider', () => {
 
     const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
 
-    await expect(provider.getNewMoons(2026)).rejects.toThrow(
-      'USNO moon phases request failed',
-    );
+    await expect(provider.getNewMoons(2026)).rejects.toMatchObject({
+      provider: 'usno',
+      code: 'request-failed',
+      message: 'USNO moon phases request failed: 500',
+    });
+  });
+
+  it('throws a provider timeout error when USNO request is aborted', async () => {
+    const abortError = new Error('aborted');
+    abortError.name = 'AbortError';
+    const fetchFn = jest.fn().mockRejectedValue(abortError);
+
+    const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch, {
+      timeoutMs: 1,
+    });
+
+    await expect(provider.getNewMoons(2026)).rejects.toMatchObject({
+      provider: 'usno',
+      code: 'request-timeout',
+      message: 'USNO moon phases request timed out after 1ms',
+    });
+  });
+
+  it('throws a provider error when moon phase response shape changes', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ phases: [] }),
+    });
+
+    const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
+
+    await expect(provider.getNewMoons(2026)).rejects.toMatchObject({
+      provider: 'usno',
+      code: 'invalid-response',
+      message: 'USNO moon phases response did not match the expected shape',
+    });
   });
 
   it('returns moonrise from USNO moon data', async () => {
@@ -125,6 +159,7 @@ describe('UsnoAstronomyProvider', () => {
 
     expect(fetchFn).toHaveBeenCalledWith(
       expect.stringContaining('/rstt/oneday'),
+      expect.objectContaining({ signal: expect.any(Object) }),
     );
     expect(moonRise).toEqual({
       date: '2026-01-01',
@@ -246,6 +281,7 @@ describe('UsnoAstronomyProvider', () => {
 
     expect(fetchFn).toHaveBeenCalledWith(
       expect.stringContaining('/rstt/oneday'),
+      expect.objectContaining({ signal: expect.any(Object) }),
     );
     expect(moonRiseSet).toEqual({
       date: '2026-01-01',
@@ -293,6 +329,7 @@ describe('UsnoAstronomyProvider', () => {
     expect(fetchFn).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining('date=2026-01-02'),
+      expect.objectContaining({ signal: expect.any(Object) }),
     );
     expect(moonRiseSet.risesAt.toISOString()).toBe('2026-01-01T05:31:00.000Z');
     expect(moonRiseSet.setsAt.toISOString()).toBe('2026-01-01T20:45:00.000Z');
@@ -318,6 +355,37 @@ describe('UsnoAstronomyProvider', () => {
         longitude: 174.7762,
         timezone: 'Pacific/Auckland',
       }),
-    ).rejects.toThrow('No moonrise data found for 2026-01-01');
+    ).rejects.toMatchObject({
+      provider: 'usno',
+      code: 'data-unavailable',
+      message: 'No moonrise data found for 2026-01-01',
+    });
+  });
+
+  it('throws a provider error when rise/set response shape changes', async () => {
+    const provider = new UsnoAstronomyProvider(
+      jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          properties: {
+            data: {
+              moondata: [{ phen: 'Rise' }],
+            },
+          },
+        }),
+      }) as typeof fetch,
+    );
+
+    await expect(
+      provider.getMoonRise('2026-01-01', {
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezone: 'Pacific/Auckland',
+      }),
+    ).rejects.toMatchObject({
+      provider: 'usno',
+      code: 'invalid-response',
+      message: 'USNO moonrise response did not match the expected shape',
+    });
   });
 });

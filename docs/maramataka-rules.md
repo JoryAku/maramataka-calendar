@@ -43,6 +43,25 @@ prioritise:
 Tide, weather, wind, year view, and three-year intercalation views are future
 state until the core moon tracking is trusted.
 
+## Astronomy Provider Resilience
+
+The MVP treats USNO as the authoritative astronomy provider for New Moon,
+Full Moon, moonrise, moonset, transit, phase, and illumination data.
+
+Provider calls must fail predictably:
+
+- Every USNO request has a timeout.
+- HTTP failures, request timeouts, invalid JSON, and response-shape changes are
+  surfaced as typed astronomy provider errors.
+- Missing moon events, for example a date with no moonrise, are explicit
+  data-unavailable errors rather than implicit nulls.
+- API responses map provider failures to a stable unavailable response instead
+  of leaking provider internals.
+
+The next resilience step is a persistent astronomy cache. The cache should store
+validated provider responses or normalized astronomy events, so the app can keep
+serving known data when USNO is slow or unavailable.
+
 ## Source Reference
 
 The current mata sequence uses the Mita Te Tai / Elsdon Best reference already
