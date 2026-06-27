@@ -120,7 +120,7 @@ describe('UsnoAstronomyProvider', () => {
     const sunset = await provider.getSunset('2026-01-01', {
       latitude: -41.2865,
       longitude: 174.7762,
-      timezoneOffset: 13,
+      timezone: 'Pacific/Auckland',
     });
 
     expect(fetchFn).toHaveBeenCalledWith(
@@ -146,7 +146,7 @@ describe('UsnoAstronomyProvider', () => {
     const sunset = await provider.getSunset('2026-01-01', {
       latitude: 40.7128,
       longitude: -74.006,
-      timezoneOffset: -5,
+      timezone: 'America/New_York',
     });
 
     expect(sunset.occursAt.toISOString()).toBe('2026-01-01T23:30:00.000Z');
@@ -164,7 +164,7 @@ describe('UsnoAstronomyProvider', () => {
       provider.getSunset('2026-01-01', {
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       }),
     ).rejects.toThrow('USNO sunset request failed: 503');
   });
@@ -187,7 +187,7 @@ describe('UsnoAstronomyProvider', () => {
       provider.getSunset('2026-01-01', {
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       }),
     ).rejects.toThrow('No sunset data found');
   });
@@ -209,7 +209,7 @@ describe('UsnoAstronomyProvider', () => {
     const moonRise = await provider.getMoonRise('2026-01-01', {
       latitude: -41.2865,
       longitude: 174.7762,
-      timezoneOffset: 13,
+      timezone: 'Pacific/Auckland',
     });
 
     expect(fetchFn).toHaveBeenCalledWith(
@@ -239,7 +239,7 @@ describe('UsnoAstronomyProvider', () => {
     const transit = await provider.getMoonTransit('2026-01-01', {
       latitude: -41.2865,
       longitude: 174.7762,
-      timezoneOffset: 13,
+      timezone: 'Pacific/Auckland',
     });
 
     expect(transit).toEqual({
@@ -279,7 +279,7 @@ describe('UsnoAstronomyProvider', () => {
     const details = await provider.getMoonDetails('2026-01-01', {
       latitude: -41.2865,
       longitude: 174.7762,
-      timezoneOffset: 13,
+      timezone: 'Pacific/Auckland',
     });
 
     expect(details).toEqual({
@@ -330,7 +330,7 @@ describe('UsnoAstronomyProvider', () => {
     const moonRiseSet = await provider.getMoonRiseSet('2026-01-01', {
       latitude: -41.2865,
       longitude: 174.7762,
-      timezoneOffset: 13,
+      timezone: 'Pacific/Auckland',
     });
 
     expect(fetchFn).toHaveBeenCalledWith(
@@ -376,7 +376,7 @@ describe('UsnoAstronomyProvider', () => {
     const moonRiseSet = await provider.getMoonRiseSet('2026-01-01', {
       latitude: -41.2865,
       longitude: 174.7762,
-      timezoneOffset: 13,
+      timezone: 'Pacific/Auckland',
     });
 
     expect(fetchFn).toHaveBeenNthCalledWith(
@@ -405,7 +405,7 @@ describe('UsnoAstronomyProvider', () => {
       provider.getMoonRiseSet('2026-01-01', {
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       }),
     ).rejects.toThrow('No moonrise data found for 2026-01-01');
   });

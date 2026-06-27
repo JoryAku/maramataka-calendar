@@ -10,6 +10,7 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  parseLocalDateTimeInTimezone,
   Sunset,
   UsnoAstronomyProvider,
 } from '@maramataka-calendar/astronomy';
@@ -58,9 +59,7 @@ class StubAstronomyProvider implements AstronomyProvider {
     const year = Number(match[1]);
     const month = Number(match[2]);
     const day = Number(match[3]);
-    const occursAt = new Date(
-      Date.UTC(year, month - 1, day, 18 - location.timezoneOffset, 0, 0),
-    );
+    const occursAt = this.localDateTimeToUtc(year, month, day, 18, location);
 
     return {
       date,
@@ -81,9 +80,7 @@ class StubAstronomyProvider implements AstronomyProvider {
 
     return {
       date,
-      risesAt: new Date(
-        Date.UTC(year, month - 1, day, 18 - location.timezoneOffset, 0, 0),
-      ),
+      risesAt: this.localDateTimeToUtc(year, month, day, 18, location),
       source: 'stub',
     };
   }
@@ -98,9 +95,7 @@ class StubAstronomyProvider implements AstronomyProvider {
     const month = Number(match[2]);
     const day = Number(match[3]);
     const moonrise = await this.getMoonRise(date, location);
-    const setsAt = new Date(
-      Date.UTC(year, month - 1, day + 1, 6 - location.timezoneOffset, 0, 0),
-    );
+    const setsAt = this.localDateTimeToUtc(year, month, day + 1, 6, location);
 
     return {
       date,
@@ -122,9 +117,7 @@ class StubAstronomyProvider implements AstronomyProvider {
 
     return {
       date,
-      transitsAt: new Date(
-        Date.UTC(year, month - 1, day, 0 - location.timezoneOffset, 0, 0),
-      ),
+      transitsAt: this.localDateTimeToUtc(year, month, day, 0, location),
       source: 'stub',
     };
   }
@@ -155,6 +148,25 @@ class StubAstronomyProvider implements AstronomyProvider {
       transit,
       source: 'stub',
     };
+  }
+
+  private localDateTimeToUtc(
+    year: number,
+    month: number,
+    day: number,
+    hour: number,
+    location: Location,
+  ): Date {
+    return parseLocalDateTimeInTimezone(
+      {
+        year,
+        month,
+        day,
+        hour,
+        minute: 0,
+      },
+      location.timezone,
+    );
   }
 }
 

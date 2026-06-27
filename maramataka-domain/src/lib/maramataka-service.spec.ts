@@ -5,7 +5,7 @@ describe('MaramatakaService', () => {
   const location: Location = {
     latitude: -41.2865,
     longitude: 174.7762,
-    timezoneOffset: 13,
+    timezone: 'Pacific/Auckland',
   };
 
   const createMoonRise = (date: string): MoonRise => ({
@@ -274,14 +274,14 @@ describe('MaramatakaService', () => {
       {
         latitude: -41.2865,
         longitude: 174.7762,
-        timezoneOffset: 13,
+        timezone: 'Pacific/Auckland',
       },
       new Date('2026-01-01T12:00:00Z'),
     );
 
     expect(getMoonRise).toHaveBeenCalledWith(
       '2026-01-01',
-      expect.objectContaining({ timezoneOffset: 13 }),
+      expect.objectContaining({ timezone: 'Pacific/Auckland' }),
     );
   });
 

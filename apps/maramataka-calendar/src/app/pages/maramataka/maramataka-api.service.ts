@@ -28,8 +28,7 @@ export class MaramatakaApiService {
   getMonth(locationId: string, date: Date): Observable<MaramatakaMonth> {
     const params = new HttpParams()
       .set('date', this.toYyyyMmDd(date))
-      .set('location', locationId)
-      .set('tz', String(this.getNzTimezoneOffset(date)));
+      .set('location', locationId);
 
     return this.http
       .get<ApiMaramatakaMonth>('/api/maramataka/month', { params })
@@ -173,30 +172,5 @@ export class MaramatakaApiService {
     const normalizedHour = hour === '24' ? '00' : hour;
 
     return `${year}-${month}-${day}T${normalizedHour}:${minute}:${second}`;
-  }
-
-  private getNzTimezoneOffset(date: Date): number {
-    const formatter = new Intl.DateTimeFormat('en-NZ', {
-      timeZone: NZ_TIMEZONE,
-      timeZoneName: 'shortOffset',
-    });
-    const timezonePart = formatter
-      .formatToParts(date)
-      .find((part) => part.type === 'timeZoneName')?.value;
-
-    const match = timezonePart?.match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
-    if (!match) {
-      return 12;
-    }
-
-    const sign = match[1] === '-' ? -1 : 1;
-    const hours = Number(match[2]);
-    const minutes = Number(match[3] ?? '0');
-
-    if (minutes !== 0 || !Number.isFinite(hours)) {
-      return 12;
-    }
-
-    return sign * hours;
   }
 }
