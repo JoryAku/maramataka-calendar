@@ -42,8 +42,9 @@ interface MoonDetailsResponse {
   date: string;
   phase: string;
   fractionIlluminated: number;
-  lunarAgeDays: null;
-  distanceKm: null;
+  lunarAgeDays: number | null;
+  distanceKm: number | null;
+  lunarAgeSource?: string;
   closestPhase?: {
     phase: string;
     occursAt: Date;
@@ -197,8 +198,9 @@ export class MaramatakaController {
       date: details.date,
       phase: details.phase,
       fractionIlluminated: details.fractionIlluminated,
-      lunarAgeDays: null,
+      lunarAgeDays: details.lunarAgeDays ?? null,
       distanceKm: null,
+      lunarAgeSource: details.lunarAgeSource,
       closestPhase: details.closestPhase
         ? {
             phase: details.closestPhase.phase,
@@ -224,7 +226,10 @@ export class MaramatakaController {
             source: details.transit.source,
           }
         : undefined,
-      unavailable: ['lunarAgeDays', 'distanceKm'],
+      unavailable: [
+        ...(details.lunarAgeDays === undefined ? ['lunarAgeDays' as const] : []),
+        'distanceKm' as const,
+      ],
       source: details.source,
     };
   }

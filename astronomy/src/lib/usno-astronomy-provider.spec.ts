@@ -196,28 +196,54 @@ describe('UsnoAstronomyProvider', () => {
   });
 
   it('returns daily moon details from USNO moon data', async () => {
-    const fetchFn = jest.fn().mockResolvedValue({
-      ok: true,
-      json: jest.fn().mockResolvedValue({
-        properties: {
-          data: {
-            closestphase: {
-              phase: 'Full Moon',
-              year: 2026,
-              month: 1,
-              day: 3,
-              time: '23:03',
-            },
-            curphase: 'Waxing Gibbous',
-            fracillum: '91%',
-            moondata: [
-              { phen: 'Set', time: '02:50' },
-              { phen: 'Rise', time: '18:57' },
-              { phen: 'Upper Transit', time: '23:21' },
+    const fetchFn = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/moon/phases/year')) {
+        return Promise.resolve({
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            phasedata: [
+              {
+                phase: 'New Moon',
+                year: 2025,
+                month: 12,
+                day: 20,
+                time: '01:43',
+              },
+              {
+                phase: 'Full Moon',
+                year: 2026,
+                month: 1,
+                day: 3,
+                time: '10:03',
+              },
             ],
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          properties: {
+            data: {
+              closestphase: {
+                phase: 'Full Moon',
+                year: 2026,
+                month: 1,
+                day: 3,
+                time: '23:03',
+              },
+              curphase: 'Waxing Gibbous',
+              fracillum: '91%',
+              moondata: [
+                { phen: 'Set', time: '02:50' },
+                { phen: 'Rise', time: '18:57' },
+                { phen: 'Upper Transit', time: '23:21' },
+              ],
+            },
           },
-        },
-      }),
+        }),
+      });
     });
 
     const provider = new UsnoAstronomyProvider(fetchFn as typeof fetch);
@@ -232,6 +258,8 @@ describe('UsnoAstronomyProvider', () => {
       date: '2026-01-01',
       phase: 'Waxing Gibbous',
       fractionIlluminated: 0.91,
+      lunarAgeDays: 11.89,
+      lunarAgeSource: 'usno moon phases',
       closestPhase: {
         phase: 'Full Moon',
         occursAt: new Date('2026-01-03T10:03:00.000Z'),

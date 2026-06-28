@@ -1001,6 +1001,8 @@ describe('MaramatakaController', () => {
         date: '2026-01-01',
         phase: 'Waxing Gibbous',
         fractionIlluminated: 0.91,
+        lunarAgeDays: 11.89,
+        lunarAgeSource: 'usno moon phases',
         closestPhase: {
           phase: 'Full Moon',
           occursAt: new Date('2026-01-03T10:03:00.000Z'),
@@ -1037,7 +1039,8 @@ describe('MaramatakaController', () => {
         date: '2026-01-01',
         phase: 'Waxing Gibbous',
         fractionIlluminated: 0.91,
-        lunarAgeDays: null,
+        lunarAgeDays: 11.89,
+        lunarAgeSource: 'usno moon phases',
         distanceKm: null,
         closestPhase: {
           phase: 'Full Moon',
@@ -1056,7 +1059,7 @@ describe('MaramatakaController', () => {
           occursAt: '2026-01-01T10:21:00.000Z',
           source: 'usno',
         },
-        unavailable: ['lunarAgeDays', 'distanceKm'],
+        unavailable: ['distanceKm'],
         source: 'usno',
       });
       expect(getMoonDetailsMock).toHaveBeenCalledTimes(1);

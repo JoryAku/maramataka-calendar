@@ -15,6 +15,10 @@ import {
   parseLocalDateTimeInTimezone,
 } from './timezone';
 import { AstronomyProviderError } from './astronomy-provider-error';
+import {
+  calculateLunarAgeDays,
+  LUNAR_AGE_SOURCE,
+} from './moon-metrics';
 
 type FetchFn = typeof fetch;
 
@@ -175,6 +179,9 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
     const transit = details.moondata?.find(
       (item) => item.phen === 'Upper Transit',
     );
+    const detailsAt = this.parseLocalDateAtNoon(date, location);
+    const phases = await this.getMoonPhasesForSurroundingYears(detailsAt);
+    const lunarAgeDays = calculateLunarAgeDays(detailsAt, phases);
 
     return {
       date,
@@ -183,6 +190,12 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
         details.fracillum,
         date,
       ),
+      ...(lunarAgeDays !== undefined
+        ? {
+            lunarAgeDays,
+            lunarAgeSource: LUNAR_AGE_SOURCE,
+          }
+        : {}),
       closestPhase: details.closestphase
         ? this.parseMoonPhase(details.closestphase, location.timezone)
         : undefined,
@@ -413,6 +426,45 @@ export class UsnoAstronomyProvider implements AstronomyProvider {
         { cause: error },
       );
     }
+  }
+
+  private parseLocalDateAtNoon(date: string, location: Location): Date {
+    const [yearPart, monthPart, dayPart] = date.split('-');
+    const year = Number.parseInt(yearPart, 10);
+    const month = Number.parseInt(monthPart, 10);
+    const day = Number.parseInt(dayPart, 10);
+
+    if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+      throw new AstronomyProviderError(
+        'usno',
+        'invalid-response',
+        `Invalid USNO local date: ${date}`,
+      );
+    }
+
+    return parseLocalDateTimeInTimezone(
+      {
+        year,
+        month,
+        day,
+        hour: 12,
+        minute: 0,
+      },
+      location.timezone,
+    );
+  }
+
+  private async getMoonPhasesForSurroundingYears(
+    date: Date,
+  ): Promise<MoonPhase[]> {
+    const year = date.getUTCFullYear();
+    const [previousYear, requestedYear, nextYear] = await Promise.all([
+      this.getMoonPhases(year - 1),
+      this.getMoonPhases(year),
+      this.getMoonPhases(year + 1),
+    ]);
+
+    return [...previousYear, ...requestedYear, ...nextYear];
   }
 
   private parseMoonPhase(phase: UsnoMoonPhase, timezone?: string): MoonPhase {

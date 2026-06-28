@@ -84,8 +84,9 @@ export interface MoonDetails<TDate = Date> {
   date: string;
   phase: string;
   fractionIlluminated: number;
-  lunarAgeDays: null;
-  distanceKm: null;
+  lunarAgeDays: number | null;
+  distanceKm: number | null;
+  lunarAgeSource?: string;
   closestPhase?: MoonDetailsPhase<TDate>;
   moonrise?: MoonDetailsEvent<TDate>;
   moonset?: MoonDetailsEvent<TDate>;
@@ -122,6 +123,25 @@ export interface ApiMata {
   index: number;
   name: string;
   version: string;
+  moonWeek?: MataMoonWeek;
+  contentLayers?: MataContentLayer[];
+}
+
+export interface MataMoonWeek {
+  id: string;
+  name: string;
+  sequence: number;
+}
+
+export interface MataContentLayer {
+  id: string;
+  name: string;
+  source: string;
+  version: string;
+  status: 'available' | 'unavailable';
+  description?: string;
+  recommendations?: string[];
+  unavailableReason?: string;
 }
 
 export interface ApiMaramatakaMonth {
