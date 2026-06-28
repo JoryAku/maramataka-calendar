@@ -2,6 +2,7 @@ import { Provider } from '@nestjs/common';
 import {
   AstronomyProvider,
   CachedAstronomyProvider,
+  FileAstronomyCacheStore,
   FullMoon,
   Location,
   MoonDetails,
@@ -10,10 +11,12 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  PersistentCachedAstronomyProvider,
   parseLocalDateTimeInTimezone,
   UsnoAstronomyProvider,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
+import { join } from 'node:path';
 
 class StubAstronomyProvider implements AstronomyProvider {
   async getMoonPhases(year: number): Promise<MoonPhase[]> {
@@ -157,8 +160,15 @@ const createAstronomyProvider = (): AstronomyProvider => {
     return new StubAstronomyProvider();
   }
 
-  return new UsnoAstronomyProvider();
+  return new PersistentCachedAstronomyProvider(
+    new UsnoAstronomyProvider(),
+    new FileAstronomyCacheStore(getAstronomyCachePath()),
+  );
 };
+
+const getAstronomyCachePath = (): string =>
+  process.env.MARAMATAKA_ASTRONOMY_CACHE_PATH ??
+  join(process.cwd(), '.cache', 'astronomy.json');
 
 export const maramatakaServiceProvider: Provider = {
   provide: MaramatakaService,
