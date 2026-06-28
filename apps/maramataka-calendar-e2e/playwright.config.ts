@@ -1,10 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 // For CI, you may want to set BASE_URL to the deployed application.
 const e2ePort = process.env['E2E_PORT'] || '4200';
 const baseURL = process.env['BASE_URL'] || `http://localhost:${e2ePort}`;
-const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url));
+const workspaceRoot = join(__dirname, '../..');
 
 /**
  * Read environment variables from file.
@@ -15,12 +15,8 @@ const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url));
 /**
  * See https://playwright.dev/docs/test-configuration.
  *
- * Generated as a .mts file so Node forces ESM regardless of workspace
- * `type`. Playwright routes `.mts` through its ESM loader (dynamic import,
- * bypassing the pirates CJS-compile path), and Nx's native TS strip loads
- * `.mts` directly. Playwright's configLoader auto-discovers
- * `playwright.config.mts` via its extension list
- * (.ts/.js/.mts/.mjs/.cts/.cjs).
+ * Keep this file as plain `.ts`; Nx reads Playwright configs while building
+ * the project graph, and `.mts` is not supported by its local loader here.
  */
 export default defineConfig({
   testDir: './src',
@@ -36,22 +32,22 @@ export default defineConfig({
     command: `npx nx run maramataka-calendar:serve --port=${e2ePort}`,
     url: baseURL,
     reuseExistingServer: true,
-    cwd: workspaceRoot
+    cwd: workspaceRoot,
   },
   projects: [
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
     },
 
     {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
     },
 
     {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
 
     // Uncomment for mobile browsers support
