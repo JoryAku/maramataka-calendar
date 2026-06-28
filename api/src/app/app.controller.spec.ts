@@ -18,4 +18,14 @@ describe('AppController', () => {
       expect(appController.getData()).toEqual({ message: 'Hello API' });
     });
   });
+
+  describe('getHealth', () => {
+    it('should return the health status', () => {
+      const appController = app.get<AppController>(AppController);
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'maramataka-api',
+      });
+    });
+  });
 });
