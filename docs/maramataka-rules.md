@@ -58,9 +58,17 @@ Provider calls must fail predictably:
 - API responses map provider failures to a stable unavailable response instead
   of leaking provider internals.
 
-The next resilience step is a persistent astronomy cache. The cache should store
-validated provider responses or normalized astronomy events, so the app can keep
-serving known data when USNO is slow or unavailable.
+The API also uses a persistent astronomy cache in non-stub mode. The first cache
+slice is file-backed and dependency-free:
+
+- Default path: `.cache/astronomy.json`.
+- Deployment override: `MARAMATAKA_ASTRONOMY_CACHE_PATH`.
+- Cached values are normalized astronomy results, not raw USNO responses.
+- Cached date strings are revived as `Date` values before reaching domain code.
+
+This file-backed cache is the current persistence boundary. It can later be
+swapped for SQLite, Postgres, or object storage without changing the
+Maramataka domain service.
 
 ## Source Reference
 
