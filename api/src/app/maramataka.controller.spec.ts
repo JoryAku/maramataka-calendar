@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AddressInfo } from 'node:net';
 import { AstronomyProviderError } from '@maramataka-calendar/astronomy';
 import {
+  CurrentMaramatakaNight,
   MaramatakaMonth,
   MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET,
   MaramatakaService,
@@ -15,10 +16,32 @@ describe('MaramatakaController', () => {
   let app: INestApplication;
   let baseUrl: string;
   let getMonthMock: jest.Mock;
+  let getCurrentNightMock: jest.Mock;
   let getMoonDetailsMock: jest.Mock;
+
+  const useMonthBackedCurrentNightMock = () => {
+    getCurrentNightMock.mockImplementation(async (location, date: Date) => {
+      const month = (await getMonthMock(location, date)) as MaramatakaMonth;
+      const night = month.nights.find(
+        (candidate) =>
+          candidate.startsAt.getTime() <= date.getTime() &&
+          date.getTime() < candidate.endsAt.getTime(),
+      );
+
+      return night
+        ? ({
+            version: month.version,
+            ruleSet: month.ruleSet,
+            night,
+          } satisfies CurrentMaramatakaNight)
+        : undefined;
+    });
+  };
 
   beforeAll(async () => {
     getMonthMock = jest.fn();
+    getCurrentNightMock = jest.fn();
+    useMonthBackedCurrentNightMock();
     getMoonDetailsMock = jest.fn();
 
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -28,6 +51,7 @@ describe('MaramatakaController', () => {
           provide: MaramatakaService,
           useValue: {
             getMonth: getMonthMock,
+            getCurrentNight: getCurrentNightMock,
             getMoonDetails: getMoonDetailsMock,
           },
         },
@@ -43,7 +67,10 @@ describe('MaramatakaController', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    getMonthMock.mockReset();
+    getCurrentNightMock.mockReset();
+    getMoonDetailsMock.mockReset();
+    useMonthBackedCurrentNightMock();
   });
 
   afterAll(async () => {
@@ -268,32 +295,19 @@ describe('MaramatakaController', () => {
       });
     });
 
-    it('returns overlapping mata when the current interval starts a new cycle', async () => {
-      getMonthMock.mockResolvedValue({
+    it('returns Whiro without overlap at the next Whiro boundary', async () => {
+      getCurrentNightMock.mockResolvedValue({
         version: 'mita-te-tai-best',
-        whiroStartsAt: new Date('2026-01-01T07:47:00.000Z'),
-        nights: [
-          {
-            mata: {
-              index: 30,
-              name: 'Mutu',
-              version: 'mita-te-tai-best',
-            },
-            overlappingMata: [
-              {
-                mata: {
-                  index: 1,
-                  name: 'Whiro',
-                  version: 'mita-te-tai-best',
-                },
-                cycleStartsAt: new Date('2026-01-02T07:46:00.000Z'),
-                reason: 'new-moon-anchor',
-              },
-            ],
-            startsAt: new Date('2026-01-02T07:46:00.000Z'),
-            endsAt: new Date('2026-01-03T07:45:00.000Z'),
+        ruleSet,
+        night: {
+          mata: {
+            index: 1,
+            name: 'Whiro',
+            version: 'mita-te-tai-best',
           },
-        ],
+          startsAt: new Date('2026-01-02T07:46:00.000Z'),
+          endsAt: new Date('2026-01-03T07:45:00.000Z'),
+        },
       });
 
       const response = await axios.get(`${baseUrl}/maramataka/today`, {
@@ -308,20 +322,11 @@ describe('MaramatakaController', () => {
 
       expect(response.status).toBe(200);
       expect(response.data).toEqual({
+        ruleSet,
         mata: {
-          index: 30,
-          name: 'Mutu',
+          index: 1,
+          name: 'Whiro',
         },
-        overlappingMata: [
-          {
-            mata: {
-              index: 1,
-              name: 'Whiro',
-            },
-            cycleStartsAt: '2026-01-02T07:46:00.000Z',
-            reason: 'new-moon-anchor',
-          },
-        ],
         startsAt: '2026-01-02T07:46:00.000Z',
         endsAt: '2026-01-03T07:45:00.000Z',
       });
@@ -459,9 +464,9 @@ describe('MaramatakaController', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(getMonthMock).toHaveBeenCalledTimes(1);
+      expect(getCurrentNightMock).toHaveBeenCalledTimes(1);
 
-      const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
+      const [locationArg, dateArg] = getCurrentNightMock.mock.calls[0] as [
         { latitude: number; longitude: number; timezone: string },
         Date,
       ];

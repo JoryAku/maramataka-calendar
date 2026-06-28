@@ -178,6 +178,75 @@ describe('MaramatakaService', () => {
     );
   });
 
+  it('resolves current night immediately before, at, and after moonrise boundaries', async () => {
+    const mata = [
+      { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
+      { index: 2, name: 'Tirea', version: 'mita-te-tai-best' as const },
+      { index: 3, name: 'Ohoata', version: 'mita-te-tai-best' as const },
+    ];
+    const moonRises = [
+      createMoonRise('2026-01-01'),
+      createMoonRise('2026-01-02'),
+      createMoonRise('2026-01-03'),
+      createMoonRise('2026-01-04'),
+    ];
+    const createService = () =>
+      new MaramatakaService({
+        astronomyProvider: {
+          getNewMoons: jest
+            .fn()
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([
+              { occursAt: new Date('2026-01-01T01:00:00Z'), source: 'usno' },
+              { occursAt: new Date('2026-01-04T01:00:00Z'), source: 'usno' },
+            ])
+            .mockResolvedValueOnce([]),
+          getMoonPhases: jest.fn(),
+          getFullMoons: jest.fn(),
+          getMoonRise: jest
+            .fn()
+            .mockImplementation((date: string) =>
+              Promise.resolve(
+                moonRises.find((moonRise) => moonRise.date === date),
+              ),
+            ),
+          getMoonRiseSet: jest.fn(),
+          getMoonTransit: jest.fn(),
+          getMoonDetails: jest.fn(),
+        },
+        calculateWhiroStartFn: jest.fn().mockReturnValue(moonRises[0].risesAt),
+        mata,
+      });
+
+    await expect(
+      createService().getCurrentNight(
+        location,
+        new Date('2026-01-02T04:59:59.999Z'),
+      ),
+    ).resolves.toMatchObject({
+      night: {
+        mata: { name: 'Whiro' },
+      },
+    });
+    await expect(
+      createService().getCurrentNight(location, new Date('2026-01-02T05:00:00Z')),
+    ).resolves.toMatchObject({
+      night: {
+        mata: { name: 'Tirea' },
+      },
+    });
+    await expect(
+      createService().getCurrentNight(
+        location,
+        new Date('2026-01-02T05:00:00.001Z'),
+      ),
+    ).resolves.toMatchObject({
+      night: {
+        mata: { name: 'Tirea' },
+      },
+    });
+  });
+
   it('keeps the normal sequence when Full Moon occurs on the 15th interval', async () => {
     const moonRises = Array.from({ length: 34 }, (_, index) =>
       createMoonRiseAtOffset('2026-01-01', index),

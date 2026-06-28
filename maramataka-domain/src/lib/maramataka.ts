@@ -20,3 +20,9 @@ export interface MaramatakaMonth {
   whiroStartsAt: Date;
   nights: MaramatakaNight[];
 }
+
+export interface CurrentMaramatakaNight {
+  version: MaramatakaVersion;
+  ruleSet: MaramatakaRuleSetSummary;
+  night: MaramatakaNight;
+}

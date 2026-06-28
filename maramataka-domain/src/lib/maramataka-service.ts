@@ -9,7 +9,11 @@ import {
   MoonRise,
   NewMoon,
 } from '@maramataka-calendar/astronomy';
-import { MaramatakaMonth } from './maramataka';
+import {
+  CurrentMaramatakaNight,
+  MaramatakaMonth,
+  MaramatakaNight,
+} from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
 import {
   MaramatakaRuleSet,
@@ -166,6 +170,51 @@ export class MaramatakaService {
     return this.astronomyProvider.getMoonDetails(localDate, location);
   }
 
+  async getCurrentNight(
+    location: Location,
+    date: Date,
+  ): Promise<CurrentMaramatakaNight | undefined> {
+    const month = await this.getMonth(location, date);
+    const night = this.findNightForDate(month.nights, date);
+
+    if (night) {
+      return {
+        version: month.version,
+        ruleSet: month.ruleSet,
+        night,
+      };
+    }
+
+    const firstNight = month.nights[0];
+    const lastNight = month.nights[month.nights.length - 1];
+    if (!firstNight || !lastNight) {
+      return undefined;
+    }
+
+    const requestedTime = date.getTime();
+    const adjacentDate =
+      requestedTime < firstNight.startsAt.getTime()
+        ? this.addMilliseconds(date, -24 * 60 * 60 * 1000)
+        : requestedTime >= lastNight.endsAt.getTime()
+          ? this.addMilliseconds(date, 24 * 60 * 60 * 1000)
+          : undefined;
+
+    if (!adjacentDate) {
+      return undefined;
+    }
+
+    const adjacentMonth = await this.getMonth(location, adjacentDate);
+    const adjacentNight = this.findNightForDate(adjacentMonth.nights, date);
+
+    return adjacentNight
+      ? {
+          version: adjacentMonth.version,
+          ruleSet: adjacentMonth.ruleSet,
+          night: adjacentNight,
+        }
+      : undefined;
+  }
+
   private findRelevantNewMoon(
     newMoons: NewMoon[],
     requestedTime: number,
@@ -249,6 +298,23 @@ export class MaramatakaService {
 
   private formatIsoDateForLocation(date: Date, location: Location): string {
     return formatIsoDateInTimezone(date, location.timezone);
+  }
+
+  private findNightForDate(
+    nights: MaramatakaNight[],
+    date: Date,
+  ): MaramatakaNight | undefined {
+    const requestedTime = date.getTime();
+
+    return nights.find(
+      (night) =>
+        night.startsAt.getTime() <= requestedTime &&
+        requestedTime < night.endsAt.getTime(),
+    );
+  }
+
+  private addMilliseconds(date: Date, milliseconds: number): Date {
+    return new Date(date.getTime() + milliseconds);
   }
 
   private findMonthEndMoonRiseIndex(

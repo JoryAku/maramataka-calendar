@@ -14,7 +14,6 @@ import {
 } from '@maramataka-calendar/astronomy';
 import {
   MaramatakaMonth,
-  MaramatakaNight,
   MaramatakaRuleSetSummary,
   MaramatakaService,
 } from '@maramataka-calendar/maramataka-domain';
@@ -119,19 +118,20 @@ export class MaramatakaController {
           lonInput,
           timezoneInput,
         );
-    const month = await this.handleAstronomyErrors(() =>
-      this.maramatakaService.getMonth(location, date),
+    const currentNight = await this.handleAstronomyErrors(() =>
+      this.maramatakaService.getCurrentNight(location, date),
     );
-    const night = this.findNightForDate(month.nights, date);
 
-    if (!night) {
+    if (!currentNight) {
       throw new BadRequestException(
         'No Maramataka night found for supplied date and location',
       );
     }
 
+    const { night } = currentNight;
+
     return {
-      ruleSet: month.ruleSet,
+      ruleSet: currentNight.ruleSet,
       mata: {
         index: night.mata.index,
         name: night.mata.name,
@@ -431,16 +431,4 @@ export class MaramatakaController {
     }
   }
 
-  private findNightForDate(
-    nights: MaramatakaNight[],
-    date: Date,
-  ): MaramatakaNight | undefined {
-    const requestedTime = date.getTime();
-
-    return nights.find(
-      (night) =>
-        night.startsAt.getTime() <= requestedTime &&
-        requestedTime < night.endsAt.getTime(),
-    );
-  }
 }
