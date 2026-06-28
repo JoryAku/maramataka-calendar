@@ -47,6 +47,7 @@ export interface MaramatakaRuleSet {
   name: string;
   version: string;
   source: string;
+  sourceQuote?: string;
   tradition: string;
   maramaStart: string;
   mataBoundary: string;

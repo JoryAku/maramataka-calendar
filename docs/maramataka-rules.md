@@ -48,10 +48,18 @@ the existing MVP behaviour while making the source and assumptions explicit:
 - Ohua/Huanga is the full-moon calibration point.
 - Late full moon balancing may duplicate Ohua and drop final mata names.
 
-The balancing behaviour is intentionally represented in the rule-set metadata
-before being fully implemented. The next implementation step is to make the
-month generator actively calibrate Ohua/Huanga against the observed Full Moon
-and flex final names before the next Whiro.
+The exact source passage used for this balancing rule is:
+
+> "In the original, No. 1 (the Whiro night) is marked "kohititanga" a word employed to denote the appearance of the new moon. Nos. 15, 16, and 17 are marked "huanga," denoting full moon. Apparently the commencement of the lunar month was not always precisely fixed, for Metara's notebook contained a statement to the effect that sometimes the full moon (Ohua) appeared on the 16th night, or even on the 17th, in which latter case the 15th, 16th, and 17th nights would all be called Ohua, and several of the final night names of the list would be dropped for that month. This would be for the purpose of balancing the lunar month."
+
+The implementation now calibrates Ohua against the observed Full Moon:
+
+- If the Full Moon falls in the 15th interval, the normal sequence is used.
+- If the Full Moon falls in the 16th interval, the 15th and 16th intervals are
+  both named Ohua and the final mata name is dropped.
+- If the Full Moon falls in the 17th interval, the 15th, 16th, and 17th
+  intervals are all named Ohua and the final two mata names are dropped.
+- The next Whiro moonrise closes the current marama and begins the next.
 
 ## Current MVP Scope
 
@@ -105,9 +113,10 @@ represented in the domain model. The working source is:
   https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html
 
 The source is useful because it records a 30-night lunar sequence, Whiro as the
-first night, and fishing guidance linked to moon-age names. The MVP
-moonrise-to-moonrise boundary is an application rule layered onto that
-reference.
+first night, the kohititanga/new-moon marker, the huanga/full-moon marker, and
+the balancing behaviour where late Ohua can duplicate and final names can be
+dropped. The MVP moonrise-to-moonrise boundary is an application rule layered
+onto that reference.
 
 ## Open Implementation Decisions
 
@@ -117,10 +126,8 @@ These cases need explicit behaviour before the rule is implemented in code:
   moonrise after the exact New Moon instant.
 - Since mata are moonrise-to-next-moonrise, every timestamp between fetched
   moonrises belongs to one mata.
-- If the next astronomical New Moon arrives before Whiro plus 29 intervals are
-  assigned, mark that interval with overlapping Whiro for the next cycle.
-- If Whiro plus 29 intervals complete before the next astronomical New Moon,
-  decide whether the app waits for the next Whiro anchor or continues cyclically.
+- The next astronomical New Moon date's moonrise closes the current marama and
+  begins the next Whiro.
 
 The historical source notes that lunar-month naming could be adjusted in
 practice. The app should avoid hiding those adjustments inside implicit code.
