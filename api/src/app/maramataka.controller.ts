@@ -15,11 +15,13 @@ import {
 import {
   MaramatakaMonth,
   MaramatakaNight,
+  MaramatakaRuleSetSummary,
   MaramatakaService,
 } from '@maramataka-calendar/maramataka-domain';
 import { findLocationById } from './locations';
 
 interface TodayMaramatakaNightResponse {
+  ruleSet: MaramatakaRuleSetSummary;
   mata: {
     index: number;
     name: string;
@@ -129,6 +131,7 @@ export class MaramatakaController {
     }
 
     return {
+      ruleSet: month.ruleSet,
       mata: {
         index: night.mata.index,
         name: night.mata.name,

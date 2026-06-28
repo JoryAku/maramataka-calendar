@@ -1,4 +1,5 @@
 import { Mata } from './mata';
+import { MaramatakaRuleSet } from './maramataka-rule-set';
 
 export const MITA_TE_TAI_BEST_MATA: Mata[] = [
   { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
@@ -32,3 +33,18 @@ export const MITA_TE_TAI_BEST_MATA: Mata[] = [
   { index: 29, name: 'Maurea', version: 'mita-te-tai-best' },
   { index: 30, name: 'Mutu', version: 'mita-te-tai-best' },
 ];
+
+export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
+  id: 'mita-te-tai-best-observational-v1',
+  name: 'Mita Te Tai / Best observational maramataka',
+  version: '1',
+  source:
+    'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+  tradition: 'Mita Te Tai / Best',
+  maramaStart: 'new-moon-moonrise',
+  mataBoundary: 'moonrise-to-moonrise',
+  calibration: 'full-moon-ohua',
+  balancing: 'duplicate-ohua-drop-final-mata',
+  mataVersion: 'mita-te-tai-best',
+  mata: MITA_TE_TAI_BEST_MATA,
+};

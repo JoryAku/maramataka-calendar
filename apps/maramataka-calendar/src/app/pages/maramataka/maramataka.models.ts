@@ -18,11 +18,13 @@ export interface LocationSummary {
 
 export interface MaramatakaMonth {
   version: string;
+  ruleSet: MaramatakaRuleSet;
   whiroStartsAt: Date;
   nights: MaramatakaNight[];
 }
 
 export interface MaramatakaToday<TDate = Date> {
+  ruleSet: MaramatakaRuleSet;
   mata: MaramatakaTodayMata;
   overlappingMata?: MaramatakaTodayOverlap<TDate>[];
   startsAt: TDate;
@@ -38,6 +40,18 @@ export interface MaramatakaTodayOverlap<TDate = Date> {
 export interface MaramatakaTodayMata {
   index: number;
   name: string;
+}
+
+export interface MaramatakaRuleSet {
+  id: string;
+  name: string;
+  version: string;
+  source: string;
+  tradition: string;
+  maramaStart: string;
+  mataBoundary: string;
+  calibration: string;
+  balancing: string;
 }
 
 export interface MoonDetails<TDate = Date> {
@@ -86,6 +100,7 @@ export interface ApiMata {
 
 export interface ApiMaramatakaMonth {
   version: string;
+  ruleSet: MaramatakaRuleSet;
   whiroStartsAt: string;
   nights: ApiMaramatakaNight[];
 }

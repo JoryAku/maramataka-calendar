@@ -1,4 +1,5 @@
 import { Mata, MaramatakaVersion } from './mata';
+import { MaramatakaRuleSetSummary } from './maramataka-rule-set';
 
 export interface MaramatakaNight {
   mata: Mata;
@@ -15,6 +16,7 @@ export interface MaramatakaNightOverlap {
 
 export interface MaramatakaMonth {
   version: MaramatakaVersion;
+  ruleSet: MaramatakaRuleSetSummary;
   whiroStartsAt: Date;
   nights: MaramatakaNight[];
 }

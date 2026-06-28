@@ -5,7 +5,9 @@ import { AddressInfo } from 'node:net';
 import { AstronomyProviderError } from '@maramataka-calendar/astronomy';
 import {
   MaramatakaMonth,
+  MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET,
   MaramatakaService,
+  summarizeRuleSet,
 } from '@maramataka-calendar/maramataka-domain';
 import { MaramatakaController } from './maramataka.controller';
 
@@ -48,8 +50,11 @@ describe('MaramatakaController', () => {
     await app.close();
   });
 
+  const ruleSet = summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET);
+
   const createMonthFixture = (): MaramatakaMonth => ({
     version: 'mita-te-tai-best',
+    ruleSet,
     whiroStartsAt: new Date('2026-01-01T07:47:00.000Z'),
     nights: [
       {
@@ -85,6 +90,7 @@ describe('MaramatakaController', () => {
   it('returns HTTP 200 for a valid request', async () => {
     getMonthMock.mockResolvedValue({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: new Date('2026-01-10T06:45:00Z'),
       nights: [],
     });
@@ -100,10 +106,11 @@ describe('MaramatakaController', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(response.data).toEqual({
-      version: 'mita-te-tai-best',
-      whiroStartsAt: '2026-01-10T06:45:00.000Z',
-      nights: [],
+      expect(response.data).toEqual({
+        version: 'mita-te-tai-best',
+        ruleSet,
+        whiroStartsAt: '2026-01-10T06:45:00.000Z',
+        nights: [],
     });
   });
 
@@ -251,6 +258,7 @@ describe('MaramatakaController', () => {
 
       expect(response.status).toBe(200);
       expect(response.data).toEqual({
+        ruleSet,
         mata: {
           index: 1,
           name: 'Whiro',

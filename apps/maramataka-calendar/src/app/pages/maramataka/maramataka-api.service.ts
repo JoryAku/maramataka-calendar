@@ -58,6 +58,7 @@ export class MaramatakaApiService {
   private mapMonth(apiMonth: ApiMaramatakaMonth): MaramatakaMonth {
     return {
       version: apiMonth.version,
+      ruleSet: apiMonth.ruleSet,
       whiroStartsAt: new Date(apiMonth.whiroStartsAt),
       nights: apiMonth.nights.map((night) => this.mapNight(night)),
     };
@@ -65,6 +66,7 @@ export class MaramatakaApiService {
 
   private mapToday(apiToday: MaramatakaToday<string>): MaramatakaToday {
     return {
+      ruleSet: apiToday.ruleSet,
       mata: apiToday.mata,
       overlappingMata: apiToday.overlappingMata?.map((overlap) => ({
         mata: overlap.mata,

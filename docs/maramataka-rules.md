@@ -28,6 +28,31 @@ moonrise-to-next-moonrise interval for that date. One maramataka cycle contains
 Whiro plus the next 29 moonrise-to-moonrise intervals. Cycles may overlap rather
 than being forced into a clean cut between New Moons.
 
+## Rule Set Model
+
+The app does not treat this rule as a universal maramataka algorithm. Domain
+code depends on a `MaramatakaRuleSet`, which records:
+
+- how the marama begins
+- how mata boundaries are calculated
+- which mata names are used
+- which astronomical event calibrates the middle of the marama
+- how balancing is expected to work
+- which source, tradition, and rule-set version produced the result
+
+The current default rule set is `mita-te-tai-best-observational-v1`. It keeps
+the existing MVP behaviour while making the source and assumptions explicit:
+
+- Whiro/Kohititanga is anchored to the New Moon date's moonrise.
+- Mata boundaries are moonrise-to-next-moonrise.
+- Ohua/Huanga is the full-moon calibration point.
+- Late full moon balancing may duplicate Ohua and drop final mata names.
+
+The balancing behaviour is intentionally represented in the rule-set metadata
+before being fully implemented. The next implementation step is to make the
+month generator actively calibrate Ohua/Huanga against the observed Full Moon
+and flex final names before the next Whiro.
+
 ## Current MVP Scope
 
 The first product goal is to become a very accurate moon tracker. The MVP should
