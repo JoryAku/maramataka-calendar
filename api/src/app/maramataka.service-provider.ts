@@ -114,6 +114,8 @@ class StubAstronomyProvider implements AstronomyProvider {
       date,
       phase: 'Waxing Crescent',
       fractionIlluminated: 0.25,
+      lunarAgeDays: 2.5,
+      lunarAgeSource: 'stub',
       closestPhase: {
         phase: 'Full Moon',
         occursAt: new Date(`${date}T12:00:00.000Z`),

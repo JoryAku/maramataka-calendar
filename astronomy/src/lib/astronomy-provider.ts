@@ -53,6 +53,8 @@ export interface MoonDetails {
   date: string;
   phase: MoonPhaseName;
   fractionIlluminated: number;
+  lunarAgeDays?: number;
+  lunarAgeSource?: string;
   closestPhase?: MoonPhase;
   moonrise?: MoonRise;
   moonset?: {
