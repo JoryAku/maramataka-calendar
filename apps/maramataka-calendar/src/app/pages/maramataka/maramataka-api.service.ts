@@ -3,10 +3,12 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { NZ_TIMEZONE } from './maramataka.constants';
 import {
+  ApiMaramatakaCycleDetails,
   ApiMaramatakaMonth,
   ApiMata,
   ApiMoonDetails,
   LocationSummary,
+  MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaNight,
   MaramatakaToday,
@@ -33,6 +35,19 @@ export class MaramatakaApiService {
     return this.http
       .get<ApiMaramatakaMonth>('/api/maramataka/month', { params })
       .pipe(map((response) => this.mapMonth(response)));
+  }
+
+  getCycleDetails(
+    locationId: string,
+    date: Date,
+  ): Observable<MaramatakaCycleDetails> {
+    const params = new HttpParams()
+      .set('date', this.toYyyyMmDd(date))
+      .set('location', locationId);
+
+    return this.http
+      .get<ApiMaramatakaCycleDetails>('/api/maramataka/cycle', { params })
+      .pipe(map((response) => this.mapCycleDetails(response)));
   }
 
   getToday(locationId: string, date: Date): Observable<MaramatakaToday> {
@@ -75,6 +90,35 @@ export class MaramatakaApiService {
       })),
       startsAt: new Date(apiToday.startsAt),
       endsAt: new Date(apiToday.endsAt),
+    };
+  }
+
+  private mapCycleDetails(
+    apiCycle: ApiMaramatakaCycleDetails,
+  ): MaramatakaCycleDetails {
+    return {
+      version: apiCycle.version,
+      ruleSet: apiCycle.ruleSet,
+      timezone: apiCycle.timezone,
+      currentMataIndex: apiCycle.currentMataIndex,
+      currentNight: this.mapNight(apiCycle.currentNight),
+      anchors: {
+        whiro: {
+          ...apiCycle.anchors.whiro,
+          occursAt: new Date(apiCycle.anchors.whiro.occursAt),
+        },
+        fullMoon: apiCycle.anchors.fullMoon
+          ? {
+              ...apiCycle.anchors.fullMoon,
+              occursAt: new Date(apiCycle.anchors.fullMoon.occursAt),
+            }
+          : undefined,
+        nextWhiro: {
+          ...apiCycle.anchors.nextWhiro,
+          occursAt: new Date(apiCycle.anchors.nextWhiro.occursAt),
+        },
+      },
+      nights: apiCycle.nights.map((night) => this.mapNight(night)),
     };
   }
 

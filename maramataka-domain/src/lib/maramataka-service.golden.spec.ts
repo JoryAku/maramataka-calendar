@@ -147,4 +147,57 @@ describe('MaramatakaService golden date fixtures', () => {
     );
     expect(currentNight?.night.overlappingMata).toBeUndefined();
   });
+
+  it('returns cycle details with Whiro, Full Moon, next Whiro, and current mata anchors', async () => {
+    const fixture = getGoldenFixture('gisborne-dst-start-late-full-moon');
+    const service = new MaramatakaService({
+      astronomyProvider: createGoldenFixtureProvider(fixture),
+    });
+
+    const cycle = await service.getCycleDetails(
+      fixture.location,
+      new Date(fixture.fullMoons[0]),
+    );
+
+    expect(cycle).toMatchObject({
+      timezone: 'Pacific/Auckland',
+      currentMataIndex: 16,
+      currentNight: {
+        mata: { name: 'Ohua' },
+      },
+      anchors: {
+        whiro: {
+          type: 'whiro',
+          label: 'Whiro / Kohititanga',
+          occursAt: new Date(fixture.expected.whiroStartsAt),
+          localDate: '2026-09-11',
+          localTime: '06:03:00',
+          timezone: 'Pacific/Auckland',
+          source: 'usno moonrise',
+          mata: { name: 'Whiro' },
+        },
+        fullMoon: {
+          type: 'full-moon',
+          label: 'Rakaunui / Full Moon',
+          occursAt: new Date(fixture.fullMoons[0]),
+          localDate: '2026-09-27',
+          localTime: '05:49:00',
+          timezone: 'Pacific/Auckland',
+          source: 'usno',
+          mata: { name: 'Ohua' },
+        },
+        nextWhiro: {
+          type: 'next-whiro',
+          label: 'Next Whiro / Kohititanga',
+          occursAt: new Date(fixture.expected.nextWhiroStartsAt),
+          localDate: '2026-10-11',
+          localTime: '06:17:00',
+          timezone: 'Pacific/Auckland',
+          source: 'usno moonrise',
+          mata: { name: 'Whiro' },
+        },
+      },
+    });
+    expect(cycle?.nights).toHaveLength(fixture.expected.nightCount);
+  });
 });

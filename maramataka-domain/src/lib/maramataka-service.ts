@@ -11,6 +11,8 @@ import {
 } from '@maramataka-calendar/astronomy';
 import {
   CurrentMaramatakaNight,
+  MaramatakaCycleAnchor,
+  MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaNight,
 } from './maramataka';
@@ -28,6 +30,10 @@ import { calculateWhiroStart } from './whiro-calculator';
 
 type WhiroCalculatorFn = typeof calculateWhiroStart;
 type MonthGeneratorFn = typeof generateMaramatakaMonth;
+
+interface CurrentMaramatakaNightContext extends CurrentMaramatakaNight {
+  month: MaramatakaMonth;
+}
 
 export interface MaramatakaServiceDependencies {
   astronomyProvider: AstronomyProvider;
@@ -174,6 +180,90 @@ export class MaramatakaService {
     location: Location,
     date: Date,
   ): Promise<CurrentMaramatakaNight | undefined> {
+    const context = await this.getCurrentNightContext(location, date);
+
+    return context
+      ? {
+          version: context.version,
+          ruleSet: context.ruleSet,
+          night: context.night,
+        }
+      : undefined;
+  }
+
+  async getCycleDetails(
+    location: Location,
+    date: Date,
+  ): Promise<MaramatakaCycleDetails | undefined> {
+    const currentNight = await this.getCurrentNightContext(location, date);
+    if (!currentNight) {
+      return undefined;
+    }
+
+    const { month } = currentNight;
+    const currentMataIndex =
+      month.nights.findIndex(
+        (night) =>
+          night.startsAt.getTime() === currentNight.night.startsAt.getTime() &&
+          night.endsAt.getTime() === currentNight.night.endsAt.getTime(),
+      ) + 1;
+    if (currentMataIndex === 0) {
+      return undefined;
+    }
+
+    const fullMoon = await this.findFullMoonForCycle(month, date);
+    const fullMoonNight = fullMoon
+      ? this.findNightForDate(month.nights, fullMoon.occursAt)
+      : undefined;
+    const nextWhiroStartsAt = month.nights[month.nights.length - 1]?.endsAt;
+    if (!nextWhiroStartsAt) {
+      return undefined;
+    }
+
+    return {
+      version: month.version,
+      ruleSet: month.ruleSet,
+      timezone: location.timezone,
+      currentMataIndex,
+      currentNight: currentNight.night,
+      anchors: {
+        whiro: this.createCycleAnchor({
+          type: 'whiro',
+          label: 'Whiro / Kohititanga',
+          occursAt: month.whiroStartsAt,
+          location,
+          source: 'usno moonrise',
+          mata: month.nights[0]?.mata,
+        }),
+        ...(fullMoon
+          ? {
+              fullMoon: this.createCycleAnchor({
+                type: 'full-moon',
+                label: 'Rakaunui / Full Moon',
+                occursAt: fullMoon.occursAt,
+                location,
+                source: fullMoon.source,
+                mata: fullMoonNight?.mata,
+              }),
+            }
+          : {}),
+        nextWhiro: this.createCycleAnchor({
+          type: 'next-whiro',
+          label: 'Next Whiro / Kohititanga',
+          occursAt: nextWhiroStartsAt,
+          location,
+          source: 'usno moonrise',
+          mata: this.ruleSet.mata[0],
+        }),
+      },
+      nights: month.nights,
+    };
+  }
+
+  private async getCurrentNightContext(
+    location: Location,
+    date: Date,
+  ): Promise<CurrentMaramatakaNightContext | undefined> {
     const month = await this.getMonth(location, date);
     const night = this.findNightForDate(month.nights, date);
 
@@ -181,6 +271,7 @@ export class MaramatakaService {
       return {
         version: month.version,
         ruleSet: month.ruleSet,
+        month,
         night,
       };
     }
@@ -210,6 +301,7 @@ export class MaramatakaService {
       ? {
           version: adjacentMonth.version,
           ruleSet: adjacentMonth.ruleSet,
+          month: adjacentMonth,
           night: adjacentNight,
         }
       : undefined;
@@ -298,6 +390,80 @@ export class MaramatakaService {
 
   private formatIsoDateForLocation(date: Date, location: Location): string {
     return formatIsoDateInTimezone(date, location.timezone);
+  }
+
+  private async findFullMoonForCycle(
+    month: MaramatakaMonth,
+    date: Date,
+  ): Promise<FullMoon | undefined> {
+    const requestedYear = date.getUTCFullYear();
+    const [previousYearFullMoons, requestedYearFullMoons, nextYearFullMoons] =
+      await Promise.all([
+        this.astronomyProvider.getFullMoons(requestedYear - 1),
+        this.astronomyProvider.getFullMoons(requestedYear),
+        this.astronomyProvider.getFullMoons(requestedYear + 1),
+      ]);
+    const cycleStartsAt = month.whiroStartsAt.getTime();
+    const cycleEndsAt = month.nights[month.nights.length - 1]?.endsAt.getTime();
+
+    if (!cycleEndsAt) {
+      return undefined;
+    }
+
+    return [
+      ...this.asArray(previousYearFullMoons),
+      ...this.asArray(requestedYearFullMoons),
+      ...this.asArray(nextYearFullMoons),
+    ]
+      .filter(
+        (fullMoon) =>
+          fullMoon.occursAt.getTime() >= cycleStartsAt &&
+          fullMoon.occursAt.getTime() < cycleEndsAt,
+      )
+      .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime())[0];
+  }
+
+  private createCycleAnchor(input: {
+    type: MaramatakaCycleAnchor['type'];
+    label: string;
+    occursAt: Date;
+    location: Location;
+    source: string;
+    mata?: Mata;
+  }): MaramatakaCycleAnchor {
+    return {
+      type: input.type,
+      label: input.label,
+      occursAt: input.occursAt,
+      ...this.formatLocalDateTime(input.occursAt, input.location),
+      timezone: input.location.timezone,
+      source: input.source,
+      ...(input.mata ? { mata: input.mata } : {}),
+    };
+  }
+
+  private formatLocalDateTime(
+    date: Date,
+    location: Location,
+  ): { localDate: string; localTime: string } {
+    const parts = new Intl.DateTimeFormat('en-NZ', {
+      timeZone: location.timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const valueFor = (type: Intl.DateTimeFormatPartTypes): string =>
+      parts.find((part) => part.type === type)?.value ?? '00';
+    const hour = valueFor('hour');
+
+    return {
+      localDate: `${valueFor('year')}-${valueFor('month')}-${valueFor('day')}`,
+      localTime: `${hour === '24' ? '00' : hour}:${valueFor('minute')}:${valueFor('second')}`,
+    };
   }
 
   private findNightForDate(

@@ -23,6 +23,31 @@ export interface MaramatakaMonth {
   nights: MaramatakaNight[];
 }
 
+export interface MaramatakaCycleDetails<TDate = Date> {
+  version: string;
+  ruleSet: MaramatakaRuleSet;
+  timezone: string;
+  currentMataIndex: number;
+  currentNight: MaramatakaNight;
+  anchors: {
+    whiro: MaramatakaCycleAnchor<TDate>;
+    fullMoon?: MaramatakaCycleAnchor<TDate>;
+    nextWhiro: MaramatakaCycleAnchor<TDate>;
+  };
+  nights: MaramatakaNight[];
+}
+
+export interface MaramatakaCycleAnchor<TDate = Date> {
+  type: 'whiro' | 'full-moon' | 'next-whiro';
+  label: string;
+  occursAt: TDate;
+  localDate: string;
+  localTime: string;
+  timezone: string;
+  source: string;
+  mata?: ApiMata;
+}
+
 export interface MaramatakaToday<TDate = Date> {
   ruleSet: MaramatakaRuleSet;
   mata: MaramatakaTodayMata;
@@ -105,5 +130,13 @@ export interface ApiMaramatakaMonth {
   whiroStartsAt: string;
   nights: ApiMaramatakaNight[];
 }
+
+export type ApiMaramatakaCycleDetails = Omit<
+  MaramatakaCycleDetails<string>,
+  'currentNight' | 'nights'
+> & {
+  currentNight: ApiMaramatakaNight;
+  nights: ApiMaramatakaNight[];
+};
 
 export type ApiMoonDetails = MoonDetails<string>;
