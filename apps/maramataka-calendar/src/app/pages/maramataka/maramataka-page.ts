@@ -8,10 +8,17 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter, fromEvent, merge } from 'rxjs';
+import { filter, fromEvent, interval, merge } from 'rxjs';
 import { MaramatakaMonthView } from './components/maramataka-month-view/maramataka-month-view';
 import { MaramatakaApiService } from './maramataka-api.service';
-import { LocationSummary, MaramatakaMonth, MaramatakaToday } from './maramataka.models';
+import {
+  LocationSummary,
+  MaramatakaCycleDetails,
+  MaramatakaMonth,
+  MaramatakaToday,
+  MoonDetails,
+} from './maramataka.models';
+import { NZ_TIMEZONE } from './maramataka.constants';
 
 @Component({
   selector: 'app-maramataka-page',
@@ -25,6 +32,7 @@ export class MaramatakaPage implements OnInit {
   private requestGeneration = 0;
   private lastRequestedNzDate: string | null = null;
 
+  protected readonly nzTimeZone = NZ_TIMEZONE;
   protected readonly locationsLoading = signal(true);
   protected readonly locationsError = signal<string | null>(null);
   protected readonly locations = signal<LocationSummary[]>([]);
@@ -32,9 +40,15 @@ export class MaramatakaPage implements OnInit {
   protected readonly monthLoading = signal(true);
   protected readonly monthError = signal<string | null>(null);
   protected readonly month = signal<MaramatakaMonth | null>(null);
+  protected readonly cycleLoading = signal(true);
+  protected readonly cycleError = signal<string | null>(null);
+  protected readonly cycle = signal<MaramatakaCycleDetails | null>(null);
   protected readonly todayLoading = signal(true);
   protected readonly todayError = signal<string | null>(null);
   protected readonly today = signal<MaramatakaToday | null>(null);
+  protected readonly moonDetailsLoading = signal(true);
+  protected readonly moonDetailsError = signal<string | null>(null);
+  protected readonly moonDetails = signal<MoonDetails | null>(null);
   protected readonly now = signal(new Date());
   protected readonly hasNights = computed(
     () => (this.month()?.nights.length ?? 0) > 0
@@ -46,9 +60,41 @@ export class MaramatakaPage implements OnInit {
 
     return selectedLocation?.name ?? 'Selected location';
   });
+  protected readonly countdownToNextMata = computed(() => {
+    const today = this.today();
+    if (!today) {
+      return null;
+    }
+
+    const remainingMs = today.endsAt.getTime() - this.now().getTime();
+    if (remainingMs <= 0) {
+      return 'Now';
+    }
+
+    const totalMinutes = Math.ceil(remainingMs / 60_000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours <= 0) {
+      return `${minutes}m`;
+    }
+
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  });
+  protected readonly illuminationPercent = computed(() => {
+    const fraction = this.moonDetails()?.fractionIlluminated;
+
+    return fraction === undefined ? null : Math.round(fraction * 100);
+  });
 
   ngOnInit(): void {
     this.loadLocations();
+
+    interval(1000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.now.set(new Date());
+      });
 
     merge(fromEvent(window, 'focus'), fromEvent(document, 'visibilitychange'))
       .pipe(
@@ -91,12 +137,20 @@ export class MaramatakaPage implements OnInit {
           this.selectedLocationId.set(null);
           this.locationsLoading.set(false);
           this.monthLoading.set(false);
+          this.cycleLoading.set(false);
           this.todayLoading.set(false);
+          this.moonDetailsLoading.set(false);
           this.monthError.set(
             'Unable to load maramataka month because locations could not be loaded.'
           );
+          this.cycleError.set(
+            'Unable to load maramataka cycle because locations could not be loaded.'
+          );
           this.todayError.set(
             'Unable to load today\'s maramataka because locations could not be loaded.'
+          );
+          this.moonDetailsError.set(
+            'Unable to load moon details because locations could not be loaded.'
           );
           this.locationsError.set('Unable to load locations. Please try again.');
         },
@@ -113,11 +167,17 @@ export class MaramatakaPage implements OnInit {
     this.now.set(now);
     this.lastRequestedNzDate = this.api.formatDate(now);
     this.monthLoading.set(true);
+    this.cycleLoading.set(true);
     this.todayLoading.set(true);
+    this.moonDetailsLoading.set(true);
     this.monthError.set(null);
+    this.cycleError.set(null);
     this.todayError.set(null);
+    this.moonDetailsError.set(null);
     this.month.set(null);
+    this.cycle.set(null);
     this.today.set(null);
+    this.moonDetails.set(null);
 
     const generation = ++this.requestGeneration;
 
@@ -145,6 +205,29 @@ export class MaramatakaPage implements OnInit {
       });
 
     this.api
+      .getCycleDetails(locationId, now)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cycle) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.cycle.set(cycle);
+          this.cycleLoading.set(false);
+        },
+        error: () => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.cycle.set(null);
+          this.cycleLoading.set(false);
+          this.cycleError.set('Unable to load maramataka cycle anchors.');
+        },
+      });
+
+    this.api
       .getToday(locationId, now)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -164,6 +247,29 @@ export class MaramatakaPage implements OnInit {
           this.today.set(null);
           this.todayLoading.set(false);
           this.todayError.set('Unable to load today\'s maramataka. Please try again.');
+        },
+      });
+
+    this.api
+      .getMoonDetails(locationId, now)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (details) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.moonDetails.set(details);
+          this.moonDetailsLoading.set(false);
+        },
+        error: () => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.moonDetails.set(null);
+          this.moonDetailsLoading.set(false);
+          this.moonDetailsError.set('Unable to load moon details.');
         },
       });
   }

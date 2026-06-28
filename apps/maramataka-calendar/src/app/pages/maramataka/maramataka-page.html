@@ -1,33 +1,41 @@
 <section class="maramataka-page">
-  <h1>Maramataka Calendar</h1>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Maramataka</p>
+      <h1>Moon tracker</h1>
+    </div>
 
-  <section class="location-panel">
-    <label class="location-label" for="location-select">Location</label>
-    @if (locationsLoading()) {
-    <p class="state" data-testid="locations-loading-state">
-      Loading locations...
-    </p>
-    } @else if (locationsError()) {
-    <p class="state error" data-testid="locations-error-state">
-      {{ locationsError() }}
-    </p>
-    } @else {
-    <select
-      id="location-select"
-      class="location-select"
-      [value]="selectedLocationId()"
-      (change)="onLocationChange($any($event.target).value)"
-    >
-      @for (location of locations(); track location.id) {
-      <option [value]="location.id">{{ location.name }}</option>
+    <section class="location-panel" aria-label="Location">
+      <label class="location-label" for="location-select">Location</label>
+      @if (locationsLoading()) {
+      <p class="state compact" data-testid="locations-loading-state">
+        Loading locations...
+      </p>
+      } @else if (locationsError()) {
+      <p class="state error compact" data-testid="locations-error-state">
+        {{ locationsError() }}
+      </p>
+      } @else {
+      <select
+        id="location-select"
+        class="location-select"
+        [value]="selectedLocationId()"
+        (change)="onLocationChange($any($event.target).value)"
+      >
+        @for (location of locations(); track location.id) {
+        <option [value]="location.id">{{ location.name }}</option>
+        }
+      </select>
       }
-    </select>
-    }
-  </section>
+    </section>
+  </header>
 
-  <section class="today-section">
+  <section class="today-section" aria-labelledby="today-heading">
     <div class="section-header">
-      <h2>Today</h2>
+      <div>
+        <p class="eyebrow">1. Today</p>
+        <h2 id="today-heading">What is happening now?</h2>
+      </div>
       <p>{{ selectedLocationName() }}</p>
     </div>
 
@@ -44,31 +52,91 @@
       No maramataka night is available for today.
     </p>
     } @else {
-    <article class="today-card" data-testid="today-card">
-      <p class="eyebrow">Current night</p>
-      <h3>{{ today()!.mata.name }}</h3>
-      @if (today()!.overlappingMata?.length) {
-      <p class="overlap-label">
-        Also {{ today()!.overlappingMata![0].mata.name }} for the next cycle
-      </p>
-      }
-      <dl>
+    <article class="moon-tracker" data-testid="today-card">
+      <div class="moon-visual" aria-hidden="true">
+        <div class="moon-disc">
+          <span></span>
+        </div>
+      </div>
+
+      <div class="mata-panel">
+        <p class="eyebrow">Current mata</p>
+        <h3>{{ today()!.mata.name }}</h3>
+        @if (today()!.overlappingMata?.length) {
+        <p class="overlap-label" data-testid="today-overlap-state">
+          Also {{ today()!.overlappingMata![0].mata.name }} for the next cycle
+        </p>
+        }
+        <p class="countdown" data-testid="next-mata-countdown">
+          {{ countdownToNextMata() }} until next mata
+        </p>
+
+        @if (moonDetailsLoading()) {
+        <p class="state compact" data-testid="moon-details-loading-state">
+          Loading moon details...
+        </p>
+        } @else if (moonDetailsError()) {
+        <p class="state error compact" data-testid="moon-details-error-state">
+          {{ moonDetailsError() }}
+        </p>
+        } @else if (moonDetails()) {
+        <dl class="moon-facts" data-testid="moon-details-panel">
+          <div>
+            <dt>Phase</dt>
+            <dd>{{ moonDetails()!.phase }}</dd>
+          </div>
+          @if (illuminationPercent() !== null) {
+          <div>
+            <dt>Illumination</dt>
+            <dd>{{ illuminationPercent() }}%</dd>
+          </div>
+          }
+          @if (!moonDetails()!.unavailable.includes('lunarAgeDays')) {
+          <div>
+            <dt>Age</dt>
+            <dd>{{ moonDetails()!.lunarAgeDays }} days</dd>
+          </div>
+          }
+        </dl>
+        }
+      </div>
+
+      <dl class="timing-panel" aria-label="Moon timings">
         <div>
           <dt>Moonrise</dt>
-          <dd>{{ today()!.startsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
+          <dd>{{ today()!.startsAt | date: 'h:mm a' : nzTimeZone }}</dd>
         </div>
+        @if (moonDetails()?.transit) {
+        <div>
+          <dt>Meridian</dt>
+          <dd>
+            {{ moonDetails()!.transit!.occursAt | date: 'h:mm a' : nzTimeZone }}
+          </dd>
+        </div>
+        }
+        @if (moonDetails()?.moonset) {
+        <div>
+          <dt>Moonset</dt>
+          <dd>
+            {{ moonDetails()!.moonset!.occursAt | date: 'h:mm a' : nzTimeZone }}
+          </dd>
+        </div>
+        }
         <div>
           <dt>Next moonrise</dt>
-          <dd>{{ today()!.endsAt | date: 'EEE d MMM y, h:mm a' }}</dd>
+          <dd>{{ today()!.endsAt | date: 'h:mm a' : nzTimeZone }}</dd>
         </div>
       </dl>
     </article>
     }
   </section>
 
-  <section class="month-section">
+  <section class="month-section" aria-labelledby="cycle-heading">
     <div class="section-header">
-      <h2>This Month</h2>
+      <div>
+        <p class="eyebrow">2. Cycle</p>
+        <h2 id="cycle-heading">Where am I in this lunar cycle?</h2>
+      </div>
       <p>Based on {{ selectedLocationName() }}</p>
     </div>
 
@@ -85,8 +153,18 @@
       No maramataka nights are available for this month.
     </p>
     } @else {
+    @if (cycleLoading()) {
+    <p class="state compact" data-testid="cycle-loading-state">
+      Loading cycle anchors...
+    </p>
+    } @else if (cycleError()) {
+    <p class="state compact" data-testid="cycle-error-state">
+      Cycle anchors are unavailable. The generated marama is still shown.
+    </p>
+    }
     <app-maramataka-month-view
       [month]="month()!"
+      [cycle]="cycle()"
       [now]="now()"
     ></app-maramataka-month-view>
     }

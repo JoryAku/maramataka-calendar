@@ -1,17 +1,102 @@
-<section class="month-summary">
-  <p><strong>Rule set:</strong> {{ month().ruleSet.name }}</p>
-  <p><strong>Source:</strong> {{ month().ruleSet.tradition }}</p>
-  <p>
-    <strong>Whiro starts:</strong>
-    {{ month().whiroStartsAt | date: 'EEE d MMM y, h:mm a' : nzTimeZone }}
-  </p>
-</section>
+<section class="cycle-shell" aria-labelledby="cycle-heading">
+  <div class="cycle-summary">
+    <div>
+      <h3 id="cycle-heading">Lunar cycle</h3>
+      <p>{{ month().ruleSet.name }}</p>
+    </div>
+    <dl>
+      <div>
+        <dt>Whiro</dt>
+        <dd>{{ month().whiroStartsAt | date: 'd MMM, h:mm a' : nzTimeZone }}</dd>
+      </div>
+      @if (cycle()?.anchors?.fullMoon) {
+      <div>
+        <dt>Rakaunui</dt>
+        <dd>
+          {{
+            cycle()!.anchors.fullMoon!.occursAt
+              | date: 'd MMM, h:mm a' : nzTimeZone
+          }}
+        </dd>
+      </div>
+      }
+      @if (cycle()?.anchors?.nextWhiro) {
+      <div>
+        <dt>Next Whiro</dt>
+        <dd>
+          {{
+            cycle()!.anchors.nextWhiro.occursAt
+              | date: 'd MMM, h:mm a' : nzTimeZone
+          }}
+        </dd>
+      </div>
+      }
+    </dl>
+  </div>
 
-<section class="nights-grid" aria-label="Maramataka nights">
-  @for (night of month().nights; track night.startsAt.toISOString()) {
-    <app-maramataka-night-card
-      [night]="night"
-      [isCurrent]="isCurrentNight(night)"
-    ></app-maramataka-night-card>
+  @if (hasBalancedLength()) {
+  <p class="balance-note" data-testid="balance-note">
+    @if (repeatedMata().length) {
+      Repeated mata: {{ repeatedMata().join(', ') }}.
+    }
+    @if (month().nights.length !== 30) {
+      {{ month().nights.length }} moonrise intervals are shown; final names may be omitted.
+    }
+  </p>
   }
+
+  <div class="wheel-layout">
+    <div
+      class="cycle-wheel"
+      role="list"
+      aria-label="Generated marama wheel"
+      [style.--segment-count]="month().nights.length"
+    >
+      <div class="wheel-core" aria-hidden="true">
+        <span>{{ month().nights.length }}</span>
+        <small>mata</small>
+      </div>
+      @for (item of wheelNights(); track item.night.startsAt.toISOString()) {
+      <button
+        type="button"
+        role="listitem"
+        class="wheel-segment"
+        [class.current]="item.isCurrent"
+        [class.full-moon]="item.isFullMoonAnchor"
+        [class.overlap]="item.hasOverlap"
+        [style.--rotation.deg]="item.rotation"
+        [attr.aria-current]="item.isCurrent ? 'true' : null"
+        [attr.aria-label]="
+          item.night.mata +
+          ', moonrise ' +
+          (item.night.startsAt | date: 'd MMM, h:mm a' : nzTimeZone) +
+          (anchorLabel(item.night) ? ', ' + anchorLabel(item.night) : '')
+        "
+      >
+        <span [style.--label-rotation.deg]="item.labelRotation">
+          <strong>{{ item.index + 1 }}</strong>
+          {{ item.night.mata }}
+        </span>
+      </button>
+      }
+    </div>
+
+    <ol class="cycle-list" aria-label="Generated marama intervals">
+      @for (night of month().nights; track night.startsAt.toISOString(); let i = $index) {
+      <li [class.current]="isCurrentNight(night)">
+        <span class="night-number">{{ i + 1 }}</span>
+        <span>
+          <strong>{{ night.mata }}</strong>
+          @if (anchorLabel(night)) {
+          <em>{{ anchorLabel(night) }}</em>
+          }
+          @if (night.overlappingMata?.length) {
+          <em>Also {{ night.overlappingMata![0].mata }}</em>
+          }
+        </span>
+        <time>{{ night.startsAt | date: 'd MMM, h:mm a' : nzTimeZone }}</time>
+      </li>
+      }
+    </ol>
+  </div>
 </section>
