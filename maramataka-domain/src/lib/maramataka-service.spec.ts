@@ -96,6 +96,11 @@ describe('MaramatakaService', () => {
     });
     expect(generateMaramatakaMonthFn).toHaveBeenCalledWith({
       version: 'mita-te-tai-best',
+      ruleSet: expect.objectContaining({
+        id: 'mita-te-tai-best-observational-v1',
+        mataBoundary: 'moonrise-to-moonrise',
+        name: 'Mita Te Tai / Best observational maramataka (custom mata)',
+      }),
       whiroStartsAt: moonRises[0].risesAt,
       mata,
       moonRises: moonRises.slice(0, 3),
@@ -159,6 +164,11 @@ describe('MaramatakaService', () => {
 
     expect(generateMaramatakaMonthFn).toHaveBeenCalledWith({
       version: 'mita-te-tai-best',
+      ruleSet: expect.objectContaining({
+        id: 'mita-te-tai-best-observational-v1',
+        balancing: 'duplicate-ohua-drop-final-mata',
+        name: 'Mita Te Tai / Best observational maramataka (custom mata)',
+      }),
       whiroStartsAt: moonRises[0].risesAt,
       mata,
       moonRises: moonRises.slice(0, 4),

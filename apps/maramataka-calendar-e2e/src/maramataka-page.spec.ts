@@ -2,6 +2,18 @@ import { expect, test } from '@playwright/test';
 
 test('renders API data for the selected location and updates when the location changes', async ({ page }) => {
   const fixedNowIso = '2026-06-25T05:00:00.000Z';
+  const ruleSet = {
+    id: 'mita-te-tai-best-observational-v1',
+    name: 'Mita Te Tai / Best observational maramataka',
+    version: '1',
+    source:
+      'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+    tradition: 'Mita Te Tai / Best',
+    maramaStart: 'new-moon-moonrise',
+    mataBoundary: 'moonrise-to-moonrise',
+    calibration: 'full-moon-ohua',
+    balancing: 'duplicate-ohua-drop-final-mata',
+  };
 
   await page.addInitScript(({ now }) => {
     const fixedNow = new Date(now).valueOf();
@@ -36,6 +48,7 @@ test('renders API data for the selected location and updates when the location c
       contentType: 'application/json',
       body: JSON.stringify({
         version: 'mita-te-tai-best',
+        ruleSet,
         whiroStartsAt: '2026-06-24T06:00:00.000Z',
         nights: location === 'auckland'
           ? [
@@ -99,6 +112,7 @@ test('renders API data for the selected location and updates when the location c
   await expect(page.locator('.night-card')).toHaveCount(2);
   await expect(page.locator('.night-card.current')).toHaveCount(1);
   await expect(page.locator('.night-card.current')).toContainText('Whiro');
+  await expect(page.getByText('Mita Te Tai / Best observational maramataka')).toBeVisible();
 
   await page.selectOption('#location-select', 'auckland');
 

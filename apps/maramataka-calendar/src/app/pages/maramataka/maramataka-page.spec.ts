@@ -9,6 +9,18 @@ import { MaramatakaPage } from './maramataka-page';
 
 describe('MaramatakaPage', () => {
   let httpTestingController: HttpTestingController;
+  const ruleSet = {
+    id: 'mita-te-tai-best-observational-v1',
+    name: 'Mita Te Tai / Best observational maramataka',
+    version: '1',
+    source:
+      'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+    tradition: 'Mita Te Tai / Best',
+    maramaStart: 'new-moon-moonrise',
+    mataBoundary: 'moonrise-to-moonrise',
+    calibration: 'full-moon-ohua',
+    balancing: 'duplicate-ohua-drop-final-mata',
+  };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -71,6 +83,7 @@ describe('MaramatakaPage', () => {
     const { monthRequest, todayRequest } = flushMaramatakaRequests();
     monthRequest.flush({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [],
     });
@@ -105,6 +118,7 @@ describe('MaramatakaPage', () => {
 
     monthRequest.flush({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [
         {
@@ -132,6 +146,7 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Wellington');
     expect(content).toContain('Whiro');
     expect(content).toContain('Tirea');
+    expect(content).toContain('Mita Te Tai / Best observational maramataka');
     expect(
       fixture.nativeElement.querySelector('.night-card.current')?.textContent,
     ).toContain('Whiro');
@@ -153,6 +168,7 @@ describe('MaramatakaPage', () => {
     const initialRequests = flushMaramatakaRequests();
     initialRequests.monthRequest.flush({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [],
     });
@@ -180,6 +196,7 @@ describe('MaramatakaPage', () => {
 
     monthRequest.flush({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [],
     });
@@ -215,6 +232,7 @@ describe('MaramatakaPage', () => {
 
     firstRequests.monthRequest.flush({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [],
     });
@@ -237,6 +255,7 @@ describe('MaramatakaPage', () => {
 
     secondRequests.monthRequest.flush({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [],
     });
@@ -270,6 +289,7 @@ describe('MaramatakaPage', () => {
 
     monthRequest.flush({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [],
     });
@@ -295,6 +315,7 @@ describe('MaramatakaPage', () => {
 
     monthRequest.flush({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: '2026-01-10T06:45:00.000Z',
       nights: [],
     });

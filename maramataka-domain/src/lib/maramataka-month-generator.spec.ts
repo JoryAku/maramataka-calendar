@@ -1,7 +1,13 @@
 import { generateMaramatakaMonth } from './maramataka-month-generator';
-import { MITA_TE_TAI_BEST_MATA } from './mita-te-tai-best';
+import {
+  MITA_TE_TAI_BEST_MATA,
+  MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET,
+} from './mita-te-tai-best';
+import { summarizeRuleSet } from './maramataka-rule-set';
 
 describe('generateMaramatakaMonth', () => {
+  const ruleSet = summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET);
+
   const moonRise = (date: string, time: string) => ({
     date,
     risesAt: new Date(`${date}T${time}:00+13:00`),
@@ -17,6 +23,7 @@ describe('generateMaramatakaMonth', () => {
 
     const month = generateMaramatakaMonth({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: moonRises[0].risesAt,
       mata: MITA_TE_TAI_BEST_MATA.slice(0, 2),
       moonRises,
@@ -32,6 +39,7 @@ describe('generateMaramatakaMonth', () => {
     expect(() =>
       generateMaramatakaMonth({
         version: 'mita-te-tai-best',
+        ruleSet,
         whiroStartsAt: new Date('2026-01-01T18:00:00+13:00'),
         mata: MITA_TE_TAI_BEST_MATA.slice(0, 2),
         moonRises: [moonRise('2026-01-01', '18:00')],
@@ -43,6 +51,7 @@ describe('generateMaramatakaMonth', () => {
     expect(() =>
       generateMaramatakaMonth({
         version: 'mita-te-tai-best',
+        ruleSet,
         whiroStartsAt: new Date('2026-01-01T18:00:00+13:00'),
         mata: MITA_TE_TAI_BEST_MATA.slice(0, 1),
         moonRises: [
@@ -62,6 +71,7 @@ describe('generateMaramatakaMonth', () => {
     expect(() =>
       generateMaramatakaMonth({
         version: 'mita-te-tai-best',
+        ruleSet,
         whiroStartsAt: new Date('2026-01-01T18:00:00+13:00'),
         mata: [invalidMata],
         moonRises: [
@@ -76,6 +86,7 @@ describe('generateMaramatakaMonth', () => {
     expect(() =>
       generateMaramatakaMonth({
         version: 'mita-te-tai-best',
+        ruleSet,
         whiroStartsAt: new Date('2026-01-01T18:00:00+13:00'),
         mata: MITA_TE_TAI_BEST_MATA.slice(0, 2),
         moonRises: [
@@ -96,6 +107,7 @@ describe('generateMaramatakaMonth', () => {
 
     const month = generateMaramatakaMonth({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: moonRises[0].risesAt,
       mata: MITA_TE_TAI_BEST_MATA.slice(0, 2),
       moonRises,
@@ -114,6 +126,7 @@ describe('generateMaramatakaMonth', () => {
 
     const month = generateMaramatakaMonth({
       version: 'mita-te-tai-best',
+      ruleSet,
       whiroStartsAt: moonRises[0].risesAt,
       mata: MITA_TE_TAI_BEST_MATA.slice(0, 2),
       moonRises,

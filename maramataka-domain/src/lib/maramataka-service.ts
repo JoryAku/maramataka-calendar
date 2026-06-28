@@ -10,8 +10,15 @@ import {
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaMonth, MaramatakaNightOverlap } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
+import {
+  MaramatakaRuleSet,
+  summarizeRuleSet,
+} from './maramataka-rule-set';
 import { generateMaramatakaMonth } from './maramataka-month-generator';
-import { MITA_TE_TAI_BEST_MATA } from './mita-te-tai-best';
+import {
+  MITA_TE_TAI_BEST_MATA,
+  MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET,
+} from './mita-te-tai-best';
 import { calculateWhiroStart } from './whiro-calculator';
 
 type WhiroCalculatorFn = typeof calculateWhiroStart;
@@ -21,6 +28,7 @@ export interface MaramatakaServiceDependencies {
   astronomyProvider: AstronomyProvider;
   calculateWhiroStartFn?: WhiroCalculatorFn;
   generateMaramatakaMonthFn?: MonthGeneratorFn;
+  ruleSet?: MaramatakaRuleSet;
   mata?: Mata[];
   version?: MaramatakaVersion;
 }
@@ -29,8 +37,7 @@ export class MaramatakaService {
   private readonly astronomyProvider: AstronomyProvider;
   private readonly calculateWhiroStartFn: WhiroCalculatorFn;
   private readonly generateMaramatakaMonthFn: MonthGeneratorFn;
-  private readonly mata: Mata[];
-  private readonly version: MaramatakaVersion;
+  private readonly ruleSet: MaramatakaRuleSet;
 
   constructor(dependencies: MaramatakaServiceDependencies) {
     this.astronomyProvider = dependencies.astronomyProvider;
@@ -38,8 +45,9 @@ export class MaramatakaService {
       dependencies.calculateWhiroStartFn ?? calculateWhiroStart;
     this.generateMaramatakaMonthFn =
       dependencies.generateMaramatakaMonthFn ?? generateMaramatakaMonth;
-    this.mata = dependencies.mata ?? MITA_TE_TAI_BEST_MATA;
-    this.version = dependencies.version ?? 'mita-te-tai-best';
+    this.ruleSet =
+      dependencies.ruleSet ??
+      this.createLegacyRuleSet(dependencies.mata, dependencies.version);
   }
 
   async getMonth(location: Location, date: Date): Promise<MaramatakaMonth> {
@@ -93,7 +101,7 @@ export class MaramatakaService {
 
     const monthMoonRises = moonRises.slice(
       whiroStartIndex,
-      whiroStartIndex + this.mata.length + 1,
+      whiroStartIndex + this.ruleSet.mata.length + 1,
     );
     const nextNewMoon = this.findNextNewMoon(
       [...previousYearNewMoons, ...requestedYearNewMoons, ...nextYearNewMoons],
@@ -108,8 +116,9 @@ export class MaramatakaService {
     try {
       return this.generateMaramatakaMonthFn({
         version: this.version,
+        ruleSet: summarizeRuleSet(this.ruleSet),
         whiroStartsAt,
-        mata: this.mata,
+        mata: this.ruleSet.mata,
         moonRises: monthMoonRises,
         overlaps,
       });
@@ -174,7 +183,7 @@ export class MaramatakaService {
       {
         intervalDate: nextWhiroMoonRise.date,
         overlap: {
-          mata: this.mata[0],
+          mata: this.ruleSet.mata[0],
           cycleStartsAt: nextWhiroMoonRise.risesAt,
           reason: 'new-moon-anchor',
         },
@@ -187,7 +196,7 @@ export class MaramatakaService {
     location: Location,
   ): Promise<MoonRise[]> {
     const datesToFetch = Array.from(
-      { length: this.mata.length + 3 },
+      { length: this.ruleSet.mata.length + 3 },
       (_, offset) => this.addIsoDateDays(startDate, offset),
     );
 
@@ -247,6 +256,27 @@ export class MaramatakaService {
 
   private formatIsoDateForLocation(date: Date, location: Location): string {
     return formatIsoDateInTimezone(date, location.timezone);
+  }
+
+  private get version(): MaramatakaVersion {
+    return this.ruleSet.mataVersion;
+  }
+
+  private createLegacyRuleSet(
+    mata = MITA_TE_TAI_BEST_MATA,
+    version: MaramatakaVersion = 'mita-te-tai-best',
+  ): MaramatakaRuleSet {
+    if (mata === MITA_TE_TAI_BEST_MATA && version === 'mita-te-tai-best') {
+      return MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET;
+    }
+
+    return {
+      ...MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET,
+      id: 'mita-te-tai-best-observational-v1',
+      name: `${MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.name} (custom mata)`,
+      mata,
+      mataVersion: version,
+    };
   }
 
   private getErrorMessage(error: unknown): string {

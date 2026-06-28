@@ -1,5 +1,6 @@
 <section class="month-summary">
-  <p><strong>Version:</strong> {{ month().version }}</p>
+  <p><strong>Rule set:</strong> {{ month().ruleSet.name }}</p>
+  <p><strong>Source:</strong> {{ month().ruleSet.tradition }}</p>
   <p>
     <strong>Whiro starts:</strong>
     {{ month().whiroStartsAt | date: 'EEE d MMM y, h:mm a' : nzTimeZone }}

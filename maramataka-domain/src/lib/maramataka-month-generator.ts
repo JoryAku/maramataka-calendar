@@ -1,6 +1,7 @@
 import { MoonRise } from '@maramataka-calendar/astronomy';
 import { MaramatakaMonth, MaramatakaNightOverlap } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
+import { MaramatakaRuleSetSummary } from './maramataka-rule-set';
 
 interface GenerateMaramatakaOverlapInput {
   intervalDate: string;
@@ -9,6 +10,7 @@ interface GenerateMaramatakaOverlapInput {
 
 interface GenerateMaramatakaMonthInput {
   version: MaramatakaVersion;
+  ruleSet: MaramatakaRuleSetSummary;
   whiroStartsAt: Date;
   mata: Mata[];
   moonRises: MoonRise[];
@@ -40,6 +42,7 @@ export function generateMaramatakaMonth(
   }
   return {
     version: input.version,
+    ruleSet: input.ruleSet,
     whiroStartsAt: input.whiroStartsAt,
     nights: input.mata.map((mata, index) => {
       const moonRise = input.moonRises[index];
