@@ -13,6 +13,7 @@ import {
   validateIanaTimezone,
 } from '@maramataka-calendar/astronomy';
 import {
+  MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaRuleSetSummary,
   MaramatakaService,
@@ -100,6 +101,32 @@ export class MaramatakaController {
     return this.handleAstronomyErrors(() =>
       this.maramatakaService.getMonth(location, date),
     );
+  }
+
+  @Get('cycle')
+  async getCycle(
+    @Query('date') dateInput: string,
+    @Query('location') locationInput?: string,
+    @Query('lat') latInput?: string,
+    @Query('lon') lonInput?: string,
+    @Query('timezone') timezoneInput?: string,
+  ): Promise<MaramatakaCycleDetails> {
+    const dateParts = this.parseDateParts(dateInput);
+    const location = locationInput
+      ? this.parseNamedLocation(locationInput)
+      : this.parseCoordinatesOrThrow(latInput, lonInput, timezoneInput);
+    const date = this.parseLocalDateForTimezone(dateParts, location.timezone);
+    const cycle = await this.handleAstronomyErrors(() =>
+      this.maramatakaService.getCycleDetails(location, date),
+    );
+
+    if (!cycle) {
+      throw new BadRequestException(
+        'No Maramataka cycle found for supplied date and location',
+      );
+    }
+
+    return cycle;
   }
 
   @Get('today')

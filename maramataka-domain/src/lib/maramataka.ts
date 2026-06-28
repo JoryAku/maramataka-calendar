@@ -26,3 +26,28 @@ export interface CurrentMaramatakaNight {
   ruleSet: MaramatakaRuleSetSummary;
   night: MaramatakaNight;
 }
+
+export interface MaramatakaCycleAnchor {
+  type: 'whiro' | 'full-moon' | 'next-whiro';
+  label: string;
+  occursAt: Date;
+  localDate: string;
+  localTime: string;
+  timezone: string;
+  source: string;
+  mata?: Mata;
+}
+
+export interface MaramatakaCycleDetails {
+  version: MaramatakaVersion;
+  ruleSet: MaramatakaRuleSetSummary;
+  timezone: string;
+  currentMataIndex: number;
+  currentNight: MaramatakaNight;
+  anchors: {
+    whiro: MaramatakaCycleAnchor;
+    fullMoon?: MaramatakaCycleAnchor;
+    nextWhiro: MaramatakaCycleAnchor;
+  };
+  nights: MaramatakaNight[];
+}
