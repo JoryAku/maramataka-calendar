@@ -64,6 +64,10 @@ npm run ci
 
 GitHub Actions runs CI for pull requests targeting `main`, pushes to `main`, and manual workflow dispatch. CI uses stub astronomy data so checks do not depend on live astronomy provider availability.
 
+## Deployment
+
+Production runtime configuration is documented in [docs/deployment-runtime.md](docs/deployment-runtime.md). Start from `.env.example` when configuring API environment variables.
+
 ## Workspace Layout
 
 - `apps/maramataka-calendar`: Angular frontend.
