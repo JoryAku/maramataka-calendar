@@ -9,6 +9,7 @@ import {
   urlencoded,
 } from 'express';
 import { AppModule } from './app/app.module';
+import { ApiExceptionFilter } from './app/api-exception.filter';
 
 const DEFAULT_BODY_LIMIT = '100kb';
 const ONE_DAY_IN_SECONDS = 86400;
@@ -28,6 +29,7 @@ async function bootstrap() {
     maxAge: ONE_DAY_IN_SECONDS,
   });
   app.enableShutdownHooks();
+  app.useGlobalFilters(new ApiExceptionFilter());
   app.setGlobalPrefix(globalPrefix);
 
   const port = Number(process.env.PORT ?? 3000);

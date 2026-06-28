@@ -5,6 +5,7 @@ import {
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
 import { MaramatakaController } from './maramataka.controller';
+import { DateLocationQueryDto } from './api-query.dto';
 
 interface ApiGoldenDateFixture {
   id: string;
@@ -151,10 +152,11 @@ describe('MaramatakaController golden date fixtures', () => {
         }),
       );
 
-      const response = await controller.getMonth(
-        fixture.requestDate,
-        fixture.locationId,
-      );
+      const query = Object.assign(new DateLocationQueryDto(), {
+        date: fixture.requestDate,
+        location: fixture.locationId,
+      });
+      const response = await controller.getMonth(query);
       const mataNames = response.nights.map((night) => night.mata.name);
 
       expect(response.whiroStartsAt.toISOString()).toBe(

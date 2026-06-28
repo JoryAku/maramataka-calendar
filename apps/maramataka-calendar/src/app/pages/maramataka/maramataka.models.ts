@@ -14,6 +14,7 @@ export interface MaramatakaNightOverlap {
 export interface LocationSummary {
   id: string;
   name: string;
+  rohe?: string;
 }
 
 export interface MaramatakaMonth {

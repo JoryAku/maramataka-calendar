@@ -20,18 +20,22 @@ describe('LocationsController', () => {
       expect(locations).toContainEqual({
         id: 'wellington',
         name: 'Wellington',
+        rohe: 'Te Whanganui-a-Tara',
       });
       expect(locations).toContainEqual({
         id: 'auckland',
         name: 'Auckland',
+        rohe: 'Tamaki Makaurau',
       });
       expect(locations).toContainEqual({
         id: 'christchurch',
         name: 'Christchurch',
+        rohe: 'Otautahi',
       });
       expect(locations).toContainEqual({
         id: 'gisborne',
         name: 'Gisborne',
+        rohe: 'Turanganui-a-Kiwa',
       });
     });
 
@@ -41,6 +45,7 @@ describe('LocationsController', () => {
       locations.forEach((location) => {
         expect(location).toHaveProperty('id');
         expect(location).toHaveProperty('name');
+        expect(location).toHaveProperty('rohe');
         expect(location).not.toHaveProperty('latitude');
         expect(location).not.toHaveProperty('longitude');
         expect(location).not.toHaveProperty('timezone');

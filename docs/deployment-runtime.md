@@ -123,7 +123,8 @@ MARAMATAKA_ASTRONOMY_CACHE_PATH=/var/cache/maramataka/astronomy.json
 ```
 
 The cache stores normalized astronomy results, not raw USNO responses. The cache
-file currently uses schema version `1`.
+file currently uses schema version `1`, and each cache entry also carries entry
+schema version `1`.
 
 Recommended production behaviour:
 
@@ -137,6 +138,18 @@ Recommended production behaviour:
 
 The current cache has no TTL. It is intentionally conservative because
 astronomical results for a date/location are stable once fetched.
+
+Stale-cache behaviour:
+
+- A cache hit is treated as authoritative and does not call USNO.
+- If USNO is unavailable and a matching cache entry exists, the cached value is
+  returned.
+- If USNO is unavailable and no matching cache entry exists, the request fails
+  with the provider error and the API maps that to a `503`.
+- Unsupported cache file versions are ignored and the cache starts empty.
+- Unsupported cache entry versions are ignored individually.
+- Corrupt cache files are discarded in memory and rewritten on the next
+  successful cache write.
 
 Manual reset:
 
@@ -153,8 +166,8 @@ When to reset:
 - A bad provider response was cached.
 - The `Location` or timezone contract changes in a way that affects cache keys.
 
-Future cache hardening should add explicit invalidation tooling, stale-cache
-policy, and migration handling.
+Future cache hardening should add explicit invalidation tooling and migration
+handling.
 
 ## Frontend Hosting
 
@@ -197,4 +210,3 @@ Use a supported location id from the API locations endpoint.
 - Add first-class cache invalidation/migration tooling.
 - Decide whether to add package-based middleware such as `helmet` and
   `compression`, or keep the current manual header/request-limit setup.
-

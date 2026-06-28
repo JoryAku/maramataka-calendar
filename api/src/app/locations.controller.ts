@@ -1,5 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
-import { LocationSummary, getLocationSummaries } from './locations';
+import {
+  LocationSummary,
+  getLocationSummaries,
+} from '@maramataka-calendar/location';
 
 @Controller('locations')
 export class LocationsController {

@@ -97,6 +97,8 @@ slice is file-backed and dependency-free:
 - Default path: `.cache/astronomy.json`.
 - Deployment override: `MARAMATAKA_ASTRONOMY_CACHE_PATH`.
 - Cached values are normalized astronomy results, not raw USNO responses.
+- Cache files and entries carry schema versions so incompatible data can be
+  ignored predictably.
 - Cached date strings are revived as `Date` values before reaching domain code.
 
 This file-backed cache is the current persistence boundary. It can later be
