@@ -12,6 +12,7 @@ import {
   summarizeRuleSet,
 } from '@maramataka-calendar/maramataka-domain';
 import { MaramatakaController } from './maramataka.controller';
+import { ApiExceptionFilter } from './api-exception.filter';
 
 describe('MaramatakaController', () => {
   let app: INestApplication;
@@ -63,6 +64,7 @@ describe('MaramatakaController', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+    app.useGlobalFilters(new ApiExceptionFilter());
     await app.init();
     await app.listen(0);
 
@@ -215,6 +217,15 @@ describe('MaramatakaController', () => {
     });
 
     expect(response.status).toBe(400);
+    expect(response.data).toEqual(
+      expect.objectContaining({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'date must be in YYYY-MM-DD format',
+        path: expect.stringContaining('/maramataka/month'),
+        timestamp: expect.any(String),
+      }),
+    );
     expect(response.data.message).toBe('date must be in YYYY-MM-DD format');
     expect(getMonthMock).not.toHaveBeenCalled();
   });
@@ -324,11 +335,14 @@ describe('MaramatakaController', () => {
     });
 
     expect(response.status).toBe(503);
-    expect(response.data).toEqual({
-      message: 'Astronomy data is currently unavailable',
-      provider: 'usno',
-      code: 'request-timeout',
-    });
+    expect(response.data).toEqual(
+      expect.objectContaining({
+        statusCode: 503,
+        message: 'Astronomy data is currently unavailable',
+        provider: 'usno',
+        code: 'request-timeout',
+      }),
+    );
   });
 
   describe('GET /maramataka/cycle', () => {

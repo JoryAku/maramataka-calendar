@@ -115,6 +115,42 @@ describe('PersistentCachedAstronomyProvider', () => {
     );
   });
 
+  it('uses cached values when the wrapped provider is unavailable', async () => {
+    const provider = createProvider({
+      getNewMoons: jest.fn().mockRejectedValue(new Error('USNO unavailable')),
+    });
+    const store = createStore({
+      'new-moons:2026': [
+        {
+          occursAt: '2026-01-18T19:52:00.000Z',
+          source: 'usno',
+        },
+      ],
+    });
+
+    const cached = new PersistentCachedAstronomyProvider(provider, store);
+    const newMoons = await cached.getNewMoons(2026);
+
+    expect(provider.getNewMoons).not.toHaveBeenCalled();
+    expect(newMoons).toEqual([
+      {
+        occursAt: new Date('2026-01-18T19:52:00.000Z'),
+        source: 'usno',
+      },
+    ]);
+  });
+
+  it('surfaces provider errors when the provider is unavailable on a cache miss', async () => {
+    const provider = createProvider({
+      getNewMoons: jest.fn().mockRejectedValue(new Error('USNO unavailable')),
+    });
+    const store = createStore();
+
+    const cached = new PersistentCachedAstronomyProvider(provider, store);
+
+    await expect(cached.getNewMoons(2026)).rejects.toThrow('USNO unavailable');
+  });
+
   it('does not fail provider reads when cache writes fail', async () => {
     const provider = createProvider({
       getNewMoons: jest.fn().mockResolvedValue([
