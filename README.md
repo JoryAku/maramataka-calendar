@@ -12,6 +12,9 @@ If you use `nvm`:
 nvm use
 ```
 
+The common npm scripts run a Node.js version preflight. If you see an
+unsupported Node version message, run `nvm use` from the repo root and retry.
+
 Install dependencies:
 
 ```sh
