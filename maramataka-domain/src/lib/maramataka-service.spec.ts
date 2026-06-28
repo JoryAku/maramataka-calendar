@@ -17,6 +17,13 @@ describe('MaramatakaService', () => {
     risesAt: new Date(`${date}T05:00:00Z`),
     source: 'usno',
   });
+  const createMoonRiseAtOffset = (startDate: string, offset: number): MoonRise => {
+    const start = new Date(`${startDate}T05:00:00Z`);
+    const date = new Date(start);
+    date.setUTCDate(start.getUTCDate() + offset);
+
+    return createMoonRise(date.toISOString().slice(0, 10));
+  };
 
   it('orchestrates astronomy, Whiro calculation, and month generation', async () => {
     const mata = [
@@ -109,7 +116,7 @@ describe('MaramatakaService', () => {
     expect(result).toBe(generatedMonth);
   });
 
-  it('marks the next New Moon date moonrise as overlapping Whiro when cycles overlap', async () => {
+  it('closes the marama at the next Whiro moonrise', async () => {
     const mata = [
       { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
       { index: 2, name: 'Tirea', version: 'mita-te-tai-best' as const },
@@ -162,27 +169,167 @@ describe('MaramatakaService', () => {
 
     await service.getMonth(location, new Date('2026-01-02T12:00:00Z'));
 
-    expect(generateMaramatakaMonthFn).toHaveBeenCalledWith({
-      version: 'mita-te-tai-best',
-      ruleSet: expect.objectContaining({
-        id: 'mita-te-tai-best-observational-v1',
-        balancing: 'duplicate-ohua-drop-final-mata',
-        name: 'Mita Te Tai / Best observational maramataka (custom mata)',
+    expect(generateMaramatakaMonthFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        whiroStartsAt: moonRises[0].risesAt,
+        mata: mata.slice(0, 2),
+        moonRises: moonRises.slice(0, 3),
       }),
-      whiroStartsAt: moonRises[0].risesAt,
-      mata,
-      moonRises: moonRises.slice(0, 4),
-      overlaps: [
-        {
-          intervalDate: '2026-01-03',
-          overlap: {
-            mata: mata[0],
-            cycleStartsAt: moonRises[2].risesAt,
-            reason: 'new-moon-anchor',
-          },
-        },
-      ],
+    );
+  });
+
+  it('keeps the normal sequence when Full Moon occurs on the 15th interval', async () => {
+    const moonRises = Array.from({ length: 34 }, (_, index) =>
+      createMoonRiseAtOffset('2026-01-01', index),
+    );
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'usno' },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            { occursAt: new Date('2026-01-15T12:00:00Z'), source: 'usno' },
+          ])
+          .mockResolvedValueOnce([]),
+        getMoonRise: jest
+          .fn()
+          .mockImplementation((date: string) =>
+            Promise.resolve(
+              moonRises.find((moonRise) => moonRise.date === date),
+            ),
+          ),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
     });
+
+    const month = await service.getMonth(
+      location,
+      new Date('2026-01-02T12:00:00Z'),
+    );
+
+    expect(month.nights).toHaveLength(30);
+    expect(month.nights[14].mata.name).toBe('Ohua');
+    expect(
+      month.nights.filter((night) => night.mata.name === 'Ohua'),
+    ).toHaveLength(1);
+    expect(month.nights[month.nights.length - 1].mata.name).toBe('Mutu');
+  });
+
+  it('duplicates Ohua twice and drops the final mata when Full Moon occurs on the 16th interval', async () => {
+    const moonRises = Array.from({ length: 34 }, (_, index) =>
+      createMoonRiseAtOffset('2026-01-01', index),
+    );
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'usno' },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            { occursAt: new Date('2026-01-16T12:00:00Z'), source: 'usno' },
+          ])
+          .mockResolvedValueOnce([]),
+        getMoonRise: jest
+          .fn()
+          .mockImplementation((date: string) =>
+            Promise.resolve(
+              moonRises.find((moonRise) => moonRise.date === date),
+            ),
+          ),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
+    });
+
+    const month = await service.getMonth(
+      location,
+      new Date('2026-01-02T12:00:00Z'),
+    );
+
+    expect(month.nights).toHaveLength(30);
+    expect(month.nights.slice(14, 16).map((night) => night.mata.name)).toEqual([
+      'Ohua',
+      'Ohua',
+    ]);
+    expect(month.nights.map((night) => night.mata.name)).not.toContain('Mutu');
+    expect(month.nights[month.nights.length - 1].mata.name).toBe('Maurea');
+  });
+
+  it('duplicates Ohua across the 15th, 16th, and 17th intervals and drops final mata when Full Moon occurs on the 17th interval', async () => {
+    const moonRises = Array.from({ length: 34 }, (_, index) =>
+      createMoonRiseAtOffset('2026-01-01', index),
+    );
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'usno' },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            { occursAt: new Date('2026-01-17T12:00:00Z'), source: 'usno' },
+          ])
+          .mockResolvedValueOnce([]),
+        getMoonRise: jest
+          .fn()
+          .mockImplementation((date: string) =>
+            Promise.resolve(
+              moonRises.find((moonRise) => moonRise.date === date),
+            ),
+          ),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
+    });
+
+    const month = await service.getMonth(
+      location,
+      new Date('2026-01-02T12:00:00Z'),
+    );
+
+    expect(month.nights).toHaveLength(30);
+    expect(month.nights.slice(14, 17).map((night) => night.mata.name)).toEqual([
+      'Ohua',
+      'Ohua',
+      'Ohua',
+    ]);
+    expect(month.nights.map((night) => night.mata.name)).not.toContain('Maurea');
+    expect(month.nights.map((night) => night.mata.name)).not.toContain('Mutu');
+    expect(month.nights[month.nights.length - 1].mata.name).toBe('Orongonui');
   });
 
   it('can fall back when there is no moonrise on the New Moon local date', async () => {

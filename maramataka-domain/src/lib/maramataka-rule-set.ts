@@ -5,6 +5,7 @@ export interface MaramatakaRuleSetSummary {
   name: string;
   version: string;
   source: string;
+  sourceQuote?: string;
   tradition: string;
   maramaStart: string;
   mataBoundary: string;
@@ -25,6 +26,7 @@ export function summarizeRuleSet(
     name: ruleSet.name,
     version: ruleSet.version,
     source: ruleSet.source,
+    sourceQuote: ruleSet.sourceQuote,
     tradition: ruleSet.tradition,
     maramaStart: ruleSet.maramaStart,
     mataBoundary: ruleSet.mataBoundary,
