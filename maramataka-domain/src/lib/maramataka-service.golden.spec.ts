@@ -73,6 +73,15 @@ function findFullMoonIntervalNumber(
   );
 }
 
+function getGoldenFixture(id: GoldenDateFixture['id']): GoldenDateFixture {
+  const fixture = GOLDEN_DATE_FIXTURES.find((candidate) => candidate.id === id);
+  if (!fixture) {
+    throw new Error(`Missing golden date fixture: ${id}`);
+  }
+
+  return fixture;
+}
+
 describe('MaramatakaService golden date fixtures', () => {
   it.each(GOLDEN_DATE_FIXTURES)('$id: $description', async (fixture) => {
     const service = new MaramatakaService({
@@ -101,5 +110,41 @@ describe('MaramatakaService golden date fixtures', () => {
     expect(ohuaIntervalNumbers).toEqual(fixture.expected.ohuaIntervalNumbers);
     expect(mataNames.slice(0, 5)).toEqual(fixture.expected.firstFiveMata);
     expect(mataNames.slice(-5)).toEqual(fixture.expected.lastFiveMata);
+  });
+
+  it('resolves current night to duplicated Ohua in a balanced marama', async () => {
+    const fixture = getGoldenFixture('gisborne-dst-start-late-full-moon');
+    const service = new MaramatakaService({
+      astronomyProvider: createGoldenFixtureProvider(fixture),
+    });
+
+    const currentNight = await service.getCurrentNight(
+      fixture.location,
+      new Date(fixture.fullMoons[0]),
+    );
+
+    expect(currentNight?.night.mata.name).toBe('Ohua');
+    expect(currentNight?.night.startsAt.toISOString()).toBe(
+      '2026-09-26T05:39:00.000Z',
+    );
+    expect(currentNight?.night.overlappingMata).toBeUndefined();
+  });
+
+  it('treats next Whiro moonrise as the next marama boundary, not an overlap', async () => {
+    const fixture = getGoldenFixture('wellington-winter-short-cycle');
+    const service = new MaramatakaService({
+      astronomyProvider: createGoldenFixtureProvider(fixture),
+    });
+
+    const currentNight = await service.getCurrentNight(
+      fixture.location,
+      new Date(fixture.expected.nextWhiroStartsAt),
+    );
+
+    expect(currentNight?.night.mata.name).toBe('Whiro');
+    expect(currentNight?.night.startsAt.toISOString()).toBe(
+      fixture.expected.nextWhiroStartsAt,
+    );
+    expect(currentNight?.night.overlappingMata).toBeUndefined();
   });
 });
