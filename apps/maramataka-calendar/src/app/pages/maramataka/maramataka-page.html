@@ -71,7 +71,30 @@
           {{ countdownToNextMata() }} until next mata
         </p>
 
-        @if (moonDetailsLoading()) {
+        @if (fishingGuidance()) {
+        <section class="guidance-layer" data-testid="fishing-guidance-layer">
+          <p class="guidance-title">{{ fishingGuidance()!.name }}</p>
+          <ul>
+            @for (recommendation of fishingGuidance()!.recommendations; track
+            recommendation) {
+            <li>{{ recommendation }}</li>
+            }
+          </ul>
+          <p class="guidance-source">
+            Source: @if (fishingGuidance()!.sourceUrl) {
+            <a
+              [href]="fishingGuidance()!.sourceUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ fishingGuidance()!.source }}
+            </a>
+            } @else {
+            <span>{{ fishingGuidance()!.source }}</span>
+            }
+          </p>
+        </section>
+        } @if (moonDetailsLoading()) {
         <p class="state compact" data-testid="moon-details-loading-state">
           Loading moon details...
         </p>
@@ -90,8 +113,7 @@
             <dt>Illumination</dt>
             <dd>{{ illuminationPercent() }}%</dd>
           </div>
-          }
-          @if (!moonDetails()!.unavailable.includes('lunarAgeDays')) {
+          } @if (!moonDetails()!.unavailable.includes('lunarAgeDays')) {
           <div>
             <dt>Age</dt>
             <dd>{{ moonDetails()!.lunarAgeDays }} days</dd>
@@ -113,8 +135,7 @@
             {{ moonDetails()!.transit!.occursAt | date: 'h:mm a' : nzTimeZone }}
           </dd>
         </div>
-        }
-        @if (moonDetails()?.moonset) {
+        } @if (moonDetails()?.moonset) {
         <div>
           <dt>Moonset</dt>
           <dd>
@@ -152,8 +173,7 @@
     <p class="state" data-testid="month-empty-state">
       No maramataka nights are available for this month.
     </p>
-    } @else {
-    @if (cycleLoading()) {
+    } @else { @if (cycleLoading()) {
     <p class="state compact" data-testid="cycle-loading-state">
       Loading cycle anchors...
     </p>
