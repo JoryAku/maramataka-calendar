@@ -46,25 +46,22 @@
   }
 
   <div class="wheel-layout">
-    <div
+    <svg
       class="cycle-wheel"
       role="list"
       aria-label="Generated marama wheel"
-      [style.--segment-count]="month().nights.length"
+      viewBox="0 0 100 100"
     >
-      <div class="wheel-core" aria-hidden="true">
-        <span>{{ month().nights.length }}</span>
-        <small>mata</small>
-      </div>
-      @for (item of wheelNights(); track item.night.startsAt.toISOString()) {
-      <button
-        type="button"
+      <circle class="wheel-guide outer" cx="50" cy="50" r="49"></circle>
+      <circle class="wheel-guide inner" cx="50" cy="50" r="25"></circle>
+      @for (item of wheelSegments(); track item.night.startsAt.toISOString()) {
+      <g
         role="listitem"
         class="wheel-segment"
         [class.current]="item.isCurrent"
         [class.full-moon]="item.isFullMoonAnchor"
         [class.overlap]="item.hasOverlap"
-        [style.--rotation.deg]="item.rotation"
+        tabindex="0"
         [attr.aria-current]="item.isCurrent ? 'true' : null"
         [attr.aria-label]="
           item.night.mata +
@@ -73,13 +70,29 @@
           (anchorLabel(item.night) ? ', ' + anchorLabel(item.night) : '')
         "
       >
-        <span [style.--label-rotation.deg]="item.labelRotation">
-          <strong>{{ item.index + 1 }}</strong>
-          <em>{{ item.night.mata }}</em>
-        </span>
-      </button>
+        <path class="segment-path" [attr.d]="item.path"></path>
+        <text
+          class="segment-label"
+          [attr.x]="item.labelX"
+          [attr.y]="item.labelY"
+          text-anchor="middle"
+          dominant-baseline="central"
+        >
+          {{ item.index + 1 }}
+        </text>
+        @if (anchorLabel(item.night)) {
+        <title>{{ anchorLabel(item.night) }}</title>
+        }
+      </g>
       }
-    </div>
+      <circle class="wheel-core" cx="50" cy="50" r="16"></circle>
+      <text class="wheel-core-count" x="50" y="48" text-anchor="middle">
+        {{ month().nights.length }}
+      </text>
+      <text class="wheel-core-label" x="50" y="56" text-anchor="middle">
+        mata
+      </text>
+    </svg>
 
     <ol class="cycle-list" aria-label="Generated marama intervals">
       @for (night of month().nights; track night.startsAt.toISOString(); let i = $index) {
