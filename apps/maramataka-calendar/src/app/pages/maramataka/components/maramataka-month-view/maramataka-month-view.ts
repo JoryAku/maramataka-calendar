@@ -15,24 +15,40 @@ import { NZ_TIMEZONE } from '../../maramataka.constants';
 })
 export class MaramatakaMonthView {
   protected readonly nzTimeZone = NZ_TIMEZONE;
+  private readonly wheelCenter = 50;
+  private readonly outerRadius = 47;
+  private readonly innerRadius = 31;
+  private readonly labelRadius = 39;
 
   month = input.required<MaramatakaMonth>();
   now = input.required<Date>();
   cycle = input<MaramatakaCycleDetails | null>(null);
 
-  protected readonly wheelNights = computed(() => {
+  protected readonly wheelSegments = computed(() => {
     const nights = this.month().nights;
     const total = nights.length;
+    const segmentAngle = total ? 360 / total : 0;
+    const gapAngle = Math.min(1.1, segmentAngle * 0.16);
 
-    return nights.map((night, index) => ({
-      night,
-      index,
-      rotation: total ? (360 / total) * index : 0,
-      labelRotation: total ? -(360 / total) * index : 0,
-      isCurrent: this.isCurrentNight(night),
-      isFullMoonAnchor: this.isFullMoonAnchor(night),
-      hasOverlap: (night.overlappingMata?.length ?? 0) > 0,
-    }));
+    return nights.map((night, index) => {
+      const startAngle = -90 + segmentAngle * index + gapAngle / 2;
+      const endAngle = -90 + segmentAngle * (index + 1) - gapAngle / 2;
+      const labelPoint = this.polarToCartesian(
+        this.labelRadius,
+        startAngle + segmentAngle / 2,
+      );
+
+      return {
+        night,
+        index,
+        path: this.describeSegment(startAngle, endAngle),
+        labelX: labelPoint.x,
+        labelY: labelPoint.y,
+        isCurrent: this.isCurrentNight(night),
+        isFullMoonAnchor: this.isFullMoonAnchor(night),
+        hasOverlap: (night.overlappingMata?.length ?? 0) > 0,
+      };
+    });
   });
 
   protected readonly repeatedMata = computed(() => {
@@ -90,5 +106,33 @@ export class MaramatakaMonthView {
         fullMoon.occursAt.getTime() >= night.startsAt.getTime() &&
         fullMoon.occursAt.getTime() < night.endsAt.getTime(),
     );
+  }
+
+  private describeSegment(startAngle: number, endAngle: number): string {
+    const outerStart = this.polarToCartesian(this.outerRadius, startAngle);
+    const outerEnd = this.polarToCartesian(this.outerRadius, endAngle);
+    const innerEnd = this.polarToCartesian(this.innerRadius, endAngle);
+    const innerStart = this.polarToCartesian(this.innerRadius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+
+    return [
+      `M ${outerStart.x} ${outerStart.y}`,
+      `A ${this.outerRadius} ${this.outerRadius} 0 ${largeArcFlag} 1 ${outerEnd.x} ${outerEnd.y}`,
+      `L ${innerEnd.x} ${innerEnd.y}`,
+      `A ${this.innerRadius} ${this.innerRadius} 0 ${largeArcFlag} 0 ${innerStart.x} ${innerStart.y}`,
+      'Z',
+    ].join(' ');
+  }
+
+  private polarToCartesian(
+    radius: number,
+    angleInDegrees: number,
+  ): { x: string; y: string } {
+    const angleInRadians = (angleInDegrees * Math.PI) / 180;
+
+    return {
+      x: (this.wheelCenter + radius * Math.cos(angleInRadians)).toFixed(3),
+      y: (this.wheelCenter + radius * Math.sin(angleInRadians)).toFixed(3),
+    };
   }
 }
