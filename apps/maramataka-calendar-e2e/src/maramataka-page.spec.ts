@@ -293,6 +293,18 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await page.goto('/pages/maramataka');
 
   await expect(page.getByTestId('today-card')).toContainText('Whiro');
+  await expect(page.getByTestId('fishing-guidance-layer')).toContainText(
+    'Mo te hi',
+  );
+  await expect(page.getByTestId('fishing-guidance-layer')).toContainText(
+    'Source',
+  );
+  await expect(
+    page.getByTestId('fishing-guidance-layer').getByRole('link'),
+  ).toHaveAttribute(
+    'href',
+    'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+  );
   await expect(page.getByTestId('next-mata-countdown')).toContainText(
     '30m until next mata',
   );
@@ -319,6 +331,9 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await page.selectOption('#location-select', 'auckland');
 
   await expect(page.getByTestId('today-card')).toContainText('Mako');
+  await expect(page.getByTestId('fishing-guidance-layer')).toContainText(
+    'Mo te rama',
+  );
   await expect(page.getByTestId('moon-details-panel')).toContainText(
     'First Quarter',
   );

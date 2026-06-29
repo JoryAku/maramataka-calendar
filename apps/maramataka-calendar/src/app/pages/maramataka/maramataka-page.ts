@@ -88,6 +88,12 @@ export class MaramatakaPage implements OnInit {
 
     return fraction === undefined ? null : Math.round(fraction * 100);
   });
+  protected readonly fishingGuidance = computed(() =>
+    this.today()?.mata.contentLayers?.find(
+      (layer) =>
+        layer.id === 'fishing-guidance' && layer.status === 'available',
+    ),
+  );
 
   ngOnInit(): void {
     this.loadLocations();

@@ -199,6 +199,55 @@ h2 {
   font-weight: 800;
 }
 
+.guidance-layer {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #27493f;
+  border-radius: 8px;
+  background: #0d211c;
+}
+
+.guidance-title {
+  margin: 0;
+  color: #7ce0c9;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.guidance-layer ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guidance-layer li {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #31534a;
+  border-radius: 999px;
+  background: #102821;
+  color: #f4fbf8;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.guidance-source {
+  margin: 0;
+  color: #91aaa0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.guidance-source a {
+  color: #bfeee3;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18rem;
+}
+
 .moon-facts,
 .timing-panel {
   display: grid;

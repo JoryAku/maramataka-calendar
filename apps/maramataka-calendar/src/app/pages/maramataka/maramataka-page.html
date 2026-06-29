@@ -94,7 +94,30 @@
           {{ countdownToNextMata() }} until next mata
         </p>
 
-        @if (moonDetailsLoading()) {
+        @if (fishingGuidance()) {
+        <section class="guidance-layer" data-testid="fishing-guidance-layer">
+          <p class="guidance-title">{{ fishingGuidance()!.name }}</p>
+          <ul>
+            @for (recommendation of fishingGuidance()!.recommendations; track
+            recommendation) {
+            <li>{{ recommendation }}</li>
+            }
+          </ul>
+          <p class="guidance-source">
+            Source: @if (fishingGuidance()!.sourceUrl) {
+            <a
+              [href]="fishingGuidance()!.sourceUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ fishingGuidance()!.source }}
+            </a>
+            } @else {
+            <span>{{ fishingGuidance()!.source }}</span>
+            }
+          </p>
+        </section>
+        } @if (moonDetailsLoading()) {
         <p class="state compact" data-testid="moon-details-loading-state">
           Loading moon details...
         </p>

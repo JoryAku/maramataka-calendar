@@ -66,6 +66,8 @@ export interface MaramatakaTodayOverlap<TDate = Date> {
 export interface MaramatakaTodayMata {
   index: number;
   name: string;
+  version?: string;
+  contentLayers?: MataContentLayer[];
 }
 
 export interface MaramatakaRuleSet {
@@ -138,6 +140,7 @@ export interface MataContentLayer {
   id: string;
   name: string;
   source: string;
+  sourceUrl?: string;
   version: string;
   status: 'available' | 'unavailable';
   description?: string;

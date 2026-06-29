@@ -88,7 +88,25 @@ describe('MaramatakaPage', () => {
 
   function todayFixture(): Record<string, unknown> {
     return {
-      mata: { index: 1, name: 'Whiro' },
+      mata: {
+        index: 1,
+        name: 'Whiro',
+        contentLayers: [
+          {
+            id: 'fishing-guidance',
+            name: 'Fishing guidance',
+            source:
+              'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+            sourceUrl:
+              'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+            version: '1',
+            status: 'available',
+            description:
+              'Fishing activity guidance encoded from the Mita Te Tai / Best source phrases for this mata.',
+            recommendations: ['Mo te hi', 'Mo te rama'],
+          },
+        ],
+      },
       startsAt: '2026-01-10T06:45:00.000Z',
       endsAt: '2026-01-11T06:45:00.000Z',
     };
@@ -244,6 +262,15 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Waxing Crescent');
     expect(content).toContain('17%');
     expect(content).toContain('Meridian');
+    expect(content).toContain('Fishing guidance');
+    expect(content).toContain('Mo te hi');
+    expect(
+      fixture.nativeElement
+        .querySelector('[data-testid="fishing-guidance-layer"] a')
+        ?.getAttribute('href'),
+    ).toBe(
+      'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+    );
     expect(
       fixture.nativeElement.querySelector('.wheel-segment.current')
         ?.textContent,
