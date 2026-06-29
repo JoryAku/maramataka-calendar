@@ -51,11 +51,11 @@ export class MaramatakaPage implements OnInit {
   protected readonly moonDetails = signal<MoonDetails | null>(null);
   protected readonly now = signal(new Date());
   protected readonly hasNights = computed(
-    () => (this.month()?.nights.length ?? 0) > 0
+    () => (this.month()?.nights.length ?? 0) > 0,
   );
   protected readonly selectedLocationName = computed(() => {
     const selectedLocation = this.locations().find(
-      (location) => location.id === this.selectedLocationId()
+      (location) => location.id === this.selectedLocationId(),
     );
 
     return selectedLocation?.name ?? 'Selected location';
@@ -86,6 +86,12 @@ export class MaramatakaPage implements OnInit {
 
     return fraction === undefined ? null : Math.round(fraction * 100);
   });
+  protected readonly fishingGuidance = computed(() =>
+    this.today()?.mata.contentLayers?.find(
+      (layer) =>
+        layer.id === 'fishing-guidance' && layer.status === 'available',
+    ),
+  );
 
   ngOnInit(): void {
     this.loadLocations();
@@ -99,7 +105,7 @@ export class MaramatakaPage implements OnInit {
     merge(fromEvent(window, 'focus'), fromEvent(document, 'visibilitychange'))
       .pipe(
         filter(() => !document.hidden),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => {
         this.refreshIfDateChanged();
@@ -141,18 +147,20 @@ export class MaramatakaPage implements OnInit {
           this.todayLoading.set(false);
           this.moonDetailsLoading.set(false);
           this.monthError.set(
-            'Unable to load maramataka month because locations could not be loaded.'
+            'Unable to load maramataka month because locations could not be loaded.',
           );
           this.cycleError.set(
-            'Unable to load maramataka cycle because locations could not be loaded.'
+            'Unable to load maramataka cycle because locations could not be loaded.',
           );
           this.todayError.set(
-            'Unable to load today\'s maramataka because locations could not be loaded.'
+            "Unable to load today's maramataka because locations could not be loaded.",
           );
           this.moonDetailsError.set(
-            'Unable to load moon details because locations could not be loaded.'
+            'Unable to load moon details because locations could not be loaded.',
           );
-          this.locationsError.set('Unable to load locations. Please try again.');
+          this.locationsError.set(
+            'Unable to load locations. Please try again.',
+          );
         },
       });
   }
@@ -200,7 +208,9 @@ export class MaramatakaPage implements OnInit {
 
           this.month.set(null);
           this.monthLoading.set(false);
-          this.monthError.set('Unable to load maramataka month. Please try again.');
+          this.monthError.set(
+            'Unable to load maramataka month. Please try again.',
+          );
         },
       });
 
@@ -246,7 +256,9 @@ export class MaramatakaPage implements OnInit {
 
           this.today.set(null);
           this.todayLoading.set(false);
-          this.todayError.set('Unable to load today\'s maramataka. Please try again.');
+          this.todayError.set(
+            "Unable to load today's maramataka. Please try again.",
+          );
         },
       });
 

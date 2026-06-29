@@ -17,27 +17,106 @@ const MOON_WEEKS: Record<MoonWeekKey, MataMoonWeek> = {
   },
 };
 
-const GUIDANCE_LAYER_UNAVAILABLE: MataContentLayer = {
-  id: 'general-guidance',
-  name: 'General guidance',
-  source:
-    'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-  version: '1',
-  status: 'unavailable',
-  unavailableReason: 'General activity guidance has not been encoded yet.',
+const MITA_TE_TAI_BEST_SOURCE =
+  'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference';
+const MITA_TE_TAI_BEST_SOURCE_URL =
+  'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
+
+const FISHING_GUIDANCE_BY_MATA_INDEX: Record<number, string[]> = {
+  1: ['Mo te hi', 'Mo te rama'],
+  2: [
+    'Mo te hi',
+    'Mo te rama',
+    'Mo te whakapa',
+    'Mo te whakaata',
+    'Mo te taiki',
+  ],
+  3: [
+    'Mo te hi',
+    'Mo te rama',
+    'Mo te whakapa',
+    'Mo te taiki',
+    'Mo te ngaro kai, &c.',
+  ],
+  4: [
+    'Mo te hi',
+    'Mo te rama',
+    'Mo te whakapa',
+    'Mo te taiki',
+    'Mo te ngaro kai, &c.',
+  ],
+  5: [
+    'Mo te hi',
+    'Mo te rama',
+    'Mo te taiki',
+    'Mo te whakapa',
+    'Mo te ngaro kai, &c.',
+  ],
+  6: ['Mo te rama'],
+  7: ['Mo te hi'],
+  8: ['Mo te hi', 'Mo te ngaro kai, &c.'],
+  9: ['Mo te hi', 'Mo te ngaro kai, &c.'],
+  10: ['Mo te ra he'],
+  11: ['Mo te whakaata'],
+  12: ['Mo te whakaata'],
+  13: ['Mo te hi', 'Mo te ngaro kai, &c.', 'Mo te whakaata'],
+  14: ['Mo te ra he'],
+  15: ['Mo te rami', 'Mo te whakaata'],
+  16: ['Mo te ngaro hue', 'Mo te rami', 'Mo te whakaata'],
+  17: ['Mo te ngaro hue', 'Mo te rami', 'Mo te whakaata'],
+  18: ['Mo te ngaro hue', 'Mo te rami', 'Mo te whakaata'],
+  19: ['Mo te hi', 'Mo te ngaro kai, &c.'],
+  20: ['Mo te rama'],
+  21: ['Mo te ra he'],
+  22: ['Mo te ra he'],
+  23: ['Mo te ngaro hue'],
+  24: [
+    'Mo te hi',
+    'Mo te rama',
+    'Mo te whakapa',
+    'Mo te turanga pawai',
+    'Mo te ngaro kai, &c.',
+    'Mo te taiki',
+  ],
+  25: [
+    'Mo te hi',
+    'Mo te rama',
+    'Mo te whakapa',
+    'Mo te whakaata',
+    'Mo te taiki',
+    'Mo te turanga pawai',
+    'Mo te ngaro kai, &c.',
+  ],
+  26: ['Mo te hi', 'Mo te rama', 'Mo te taiki'],
+  27: ['Mo te hi', 'Mo te rama', 'Mo te whakapa', 'Mo te whakaata'],
+  28: ['Mo te hi', 'Mo te ngaro kai, &c.', 'Mo te rama'],
+  29: ['Mo te hi', 'Mo te ngaro kai, &c.', 'Mo te rama'],
+  30: ['Mo te hi', 'Mo te ngaro kai, &c.', 'Mo te rama'],
 };
 
-function createMata(
-  index: number,
-  name: string,
-  moonWeek: MataMoonWeek,
-): Mata {
+function createMata(index: number, name: string, moonWeek: MataMoonWeek): Mata {
   return {
     index,
     name,
     version: 'mita-te-tai-best',
     moonWeek,
-    contentLayers: [GUIDANCE_LAYER_UNAVAILABLE],
+    contentLayers: [createFishingGuidanceLayer(index)],
+  };
+}
+
+function createFishingGuidanceLayer(index: number): MataContentLayer {
+  const recommendations = FISHING_GUIDANCE_BY_MATA_INDEX[index] ?? [];
+
+  return {
+    id: 'fishing-guidance',
+    name: 'Fishing guidance',
+    source: MITA_TE_TAI_BEST_SOURCE,
+    sourceUrl: MITA_TE_TAI_BEST_SOURCE_URL,
+    version: '1',
+    status: 'available',
+    description:
+      'Fishing activity guidance encoded from the Mita Te Tai / Best source phrases for this mata.',
+    recommendations,
   };
 }
 
@@ -82,8 +161,7 @@ export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   id: 'mita-te-tai-best-observational-v1',
   name: 'Mita Te Tai / Best observational maramataka',
   version: '1',
-  source:
-    'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+  source: MITA_TE_TAI_BEST_SOURCE,
   sourceQuote: MITA_TE_TAI_BEST_BALANCING_QUOTE,
   tradition: 'Mita Te Tai / Best',
   maramaStart: 'new-moon-moonrise',

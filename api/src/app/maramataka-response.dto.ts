@@ -2,6 +2,7 @@ import { MoonDetails } from '@maramataka-calendar/astronomy';
 import {
   CurrentMaramatakaNight,
   MaramatakaRuleSetSummary,
+  MataContentLayer,
 } from '@maramataka-calendar/maramataka-domain';
 
 export interface TodayMaramatakaNightResponseDto {
@@ -9,11 +10,13 @@ export interface TodayMaramatakaNightResponseDto {
   mata: {
     index: number;
     name: string;
+    contentLayers?: MataContentLayer[];
   };
   overlappingMata?: {
     mata: {
       index: number;
       name: string;
+      contentLayers?: MataContentLayer[];
     };
     cycleStartsAt: Date;
     reason: 'new-moon-anchor';
@@ -60,11 +63,13 @@ export function toTodayMaramatakaNightResponse(
     mata: {
       index: night.mata.index,
       name: night.mata.name,
+      contentLayers: night.mata.contentLayers,
     },
     overlappingMata: night.overlappingMata?.map((overlap) => ({
       mata: {
         index: overlap.mata.index,
         name: overlap.mata.name,
+        contentLayers: overlap.mata.contentLayers,
       },
       cycleStartsAt: overlap.cycleStartsAt,
       reason: overlap.reason,
