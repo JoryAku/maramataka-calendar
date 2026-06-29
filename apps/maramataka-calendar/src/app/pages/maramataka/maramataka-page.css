@@ -95,7 +95,10 @@ h2 {
 
 .moon-tracker {
   display: grid;
-  grid-template-columns: minmax(180px, 0.85fr) minmax(240px, 1fr) minmax(260px, 0.9fr);
+  grid-template-columns: minmax(180px, 0.85fr) minmax(240px, 1fr) minmax(
+      260px,
+      0.9fr
+    );
   gap: 1rem;
   align-items: stretch;
 }
@@ -125,7 +128,9 @@ h2 {
     radial-gradient(circle at 40% 58%, #767d79 0 9%, transparent 10%),
     radial-gradient(circle at 54% 32%, #949b96 0 5%, transparent 6%),
     linear-gradient(90deg, #d8dad4 0 44%, #949b96 45% 64%, #242c2a 65% 100%);
-  box-shadow: 0 0 45px #d5e8df55, inset -32px 0 45px #10171599;
+  box-shadow:
+    0 0 45px #d5e8df55,
+    inset -32px 0 45px #10171599;
 }
 
 .moon-disc span {
@@ -161,6 +166,55 @@ h2 {
   background: #102821;
   color: #d8eee6;
   font-weight: 800;
+}
+
+.guidance-layer {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #27493f;
+  border-radius: 8px;
+  background: #0d211c;
+}
+
+.guidance-title {
+  margin: 0;
+  color: #7ce0c9;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.guidance-layer ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guidance-layer li {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #31534a;
+  border-radius: 999px;
+  background: #102821;
+  color: #f4fbf8;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.guidance-source {
+  margin: 0;
+  color: #91aaa0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.guidance-source a {
+  color: #bfeee3;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18rem;
 }
 
 .moon-facts,

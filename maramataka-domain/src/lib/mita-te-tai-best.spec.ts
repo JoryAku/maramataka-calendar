@@ -50,19 +50,38 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
     ]);
   });
 
-  it('marks guidance content as explicitly unavailable until encoded', () => {
+  it('adds fishing guidance as a content layer', () => {
     MITA_TE_TAI_BEST_MATA.forEach((mata) => {
-      expect(mata.contentLayers).toEqual([
-        {
-          id: 'general-guidance',
-          name: 'General guidance',
-          source:
-            'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-          version: '1',
-          status: 'unavailable',
-          unavailableReason: 'General activity guidance has not been encoded yet.',
-        },
-      ]);
+      expect(mata.contentLayers?.[0]).toMatchObject({
+        id: 'fishing-guidance',
+        name: 'Fishing guidance',
+        source:
+          'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+        sourceUrl:
+          'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+        version: '1',
+        status: 'available',
+      });
+      expect(mata.contentLayers?.[0].recommendations?.length).toBeGreaterThan(
+        0,
+      );
     });
+  });
+
+  it('keeps source fishing phrases on the relevant mata', () => {
+    expect(MITA_TE_TAI_BEST_MATA[0].contentLayers?.[0].recommendations).toEqual(
+      ['Mo te hi', 'Mo te rama'],
+    );
+    expect(
+      MITA_TE_TAI_BEST_MATA[24].contentLayers?.[0].recommendations,
+    ).toEqual([
+      'Mo te hi',
+      'Mo te rama',
+      'Mo te whakapa',
+      'Mo te whakaata',
+      'Mo te taiki',
+      'Mo te turanga pawai',
+      'Mo te ngaro kai, &c.',
+    ]);
   });
 });
