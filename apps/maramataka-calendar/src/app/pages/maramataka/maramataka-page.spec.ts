@@ -245,7 +245,8 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('17%');
     expect(content).toContain('Meridian');
     expect(
-      fixture.nativeElement.querySelector('.wheel-segment.current')?.textContent,
+      fixture.nativeElement.querySelector('.wheel-segment.current')
+        ?.textContent,
     ).toContain('Whiro');
   });
 
@@ -261,18 +262,16 @@ describe('MaramatakaPage', () => {
     fixture.detectChanges();
 
     expect(
-      fixture.nativeElement.querySelector(
-        '[data-testid="next-mata-countdown"]',
-      )?.textContent,
+      fixture.nativeElement.querySelector('[data-testid="next-mata-countdown"]')
+        ?.textContent,
     ).toContain('18h 45m');
 
     vi.advanceTimersByTime(60_000);
     fixture.detectChanges();
 
     expect(
-      fixture.nativeElement.querySelector(
-        '[data-testid="next-mata-countdown"]',
-      )?.textContent,
+      fixture.nativeElement.querySelector('[data-testid="next-mata-countdown"]')
+        ?.textContent,
     ).toContain('18h 44m');
   });
 
@@ -322,7 +321,9 @@ describe('MaramatakaPage', () => {
 
     const content = fixture.nativeElement.textContent as string;
     expect(
-      fixture.nativeElement.querySelector('[data-testid="today-overlap-state"]'),
+      fixture.nativeElement.querySelector(
+        '[data-testid="today-overlap-state"]',
+      ),
     ).not.toBeNull();
     expect(content).toContain('Also Whiro for the next cycle');
     expect(
@@ -376,19 +377,57 @@ describe('MaramatakaPage', () => {
     page.onLocationChange('auckland');
 
     const requests = flushMaramatakaRequests('auckland');
-    flushSuccessfulMaramatakaRequests(
-      requests,
-      monthFixture(),
-      {
-        mata: { index: 2, name: 'Tirea' },
-        startsAt: '2026-01-11T06:45:00.000Z',
-        endsAt: '2026-01-12T06:45:00.000Z',
-      },
-    );
+    flushSuccessfulMaramatakaRequests(requests, monthFixture(), {
+      mata: { index: 2, name: 'Tirea' },
+      startsAt: '2026-01-11T06:45:00.000Z',
+      endsAt: '2026-01-12T06:45:00.000Z',
+    });
 
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Auckland');
+  });
+
+  it('uses the selected demo date for maramataka and moon detail requests', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-24T22:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests());
+
+    const page = fixture.componentInstance as unknown as {
+      onDateChange(date: string): void;
+    };
+    page.onDateChange('2026-06-26');
+
+    const requests = flushMaramatakaRequests();
+    expect(requests.monthRequest.request.params.get('date')).toBe('2026-06-26');
+    expect(requests.cycleRequest.request.params.get('date')).toBe('2026-06-26');
+    expect(requests.todayRequest.request.params.get('dateTime')).toBe(
+      '2026-06-26T12:00:00',
+    );
+    expect(requests.moonDetailsRequest.request.params.get('date')).toBe(
+      '2026-06-26',
+    );
+
+    flushSuccessfulMaramatakaRequests(requests, monthFixture(), {
+      mata: { index: 2, name: 'Tirea' },
+      startsAt: '2026-06-25T00:00:00.000Z',
+      endsAt: '2026-06-26T00:00:00.000Z',
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Tirea');
+    expect(
+      (
+        fixture.nativeElement.querySelector(
+          '#date-select',
+        ) as HTMLInputElement | null
+      )?.value,
+    ).toBe('2026-06-26');
   });
 
   it('reloads data when the NZ calendar date changes on focus', () => {

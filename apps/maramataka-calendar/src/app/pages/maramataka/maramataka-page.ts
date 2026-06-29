@@ -50,12 +50,14 @@ export class MaramatakaPage implements OnInit {
   protected readonly moonDetailsError = signal<string | null>(null);
   protected readonly moonDetails = signal<MoonDetails | null>(null);
   protected readonly now = signal(new Date());
+  protected readonly selectedDate = signal(this.api.formatDate(new Date()));
+  protected readonly useLiveDate = signal(true);
   protected readonly hasNights = computed(
-    () => (this.month()?.nights.length ?? 0) > 0
+    () => (this.month()?.nights.length ?? 0) > 0,
   );
   protected readonly selectedLocationName = computed(() => {
     const selectedLocation = this.locations().find(
-      (location) => location.id === this.selectedLocationId()
+      (location) => location.id === this.selectedLocationId(),
     );
 
     return selectedLocation?.name ?? 'Selected location';
@@ -93,13 +95,15 @@ export class MaramatakaPage implements OnInit {
     interval(1000)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        this.now.set(new Date());
+        if (this.useLiveDate()) {
+          this.now.set(new Date());
+        }
       });
 
     merge(fromEvent(window, 'focus'), fromEvent(document, 'visibilitychange'))
       .pipe(
         filter(() => !document.hidden),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => {
         this.refreshIfDateChanged();
@@ -112,6 +116,27 @@ export class MaramatakaPage implements OnInit {
     }
 
     this.selectedLocationId.set(locationId);
+    this.reloadData();
+  }
+
+  protected onDateChange(date: string): void {
+    if (!date || date === this.selectedDate()) {
+      return;
+    }
+
+    this.useLiveDate.set(false);
+    this.selectedDate.set(date);
+    this.reloadData();
+  }
+
+  protected resetDateToToday(): void {
+    const today = this.api.formatDate(new Date());
+    if (this.useLiveDate() && today === this.selectedDate()) {
+      return;
+    }
+
+    this.useLiveDate.set(true);
+    this.selectedDate.set(today);
     this.reloadData();
   }
 
@@ -141,18 +166,20 @@ export class MaramatakaPage implements OnInit {
           this.todayLoading.set(false);
           this.moonDetailsLoading.set(false);
           this.monthError.set(
-            'Unable to load maramataka month because locations could not be loaded.'
+            'Unable to load maramataka month because locations could not be loaded.',
           );
           this.cycleError.set(
-            'Unable to load maramataka cycle because locations could not be loaded.'
+            'Unable to load maramataka cycle because locations could not be loaded.',
           );
           this.todayError.set(
-            'Unable to load today\'s maramataka because locations could not be loaded.'
+            "Unable to load today's maramataka because locations could not be loaded.",
           );
           this.moonDetailsError.set(
-            'Unable to load moon details because locations could not be loaded.'
+            'Unable to load moon details because locations could not be loaded.',
           );
-          this.locationsError.set('Unable to load locations. Please try again.');
+          this.locationsError.set(
+            'Unable to load locations. Please try again.',
+          );
         },
       });
   }
@@ -163,9 +190,9 @@ export class MaramatakaPage implements OnInit {
       return;
     }
 
-    const now = new Date();
-    this.now.set(now);
-    this.lastRequestedNzDate = this.api.formatDate(now);
+    const requestDate = this.requestDate();
+    this.now.set(requestDate);
+    this.lastRequestedNzDate = this.api.formatDate(requestDate);
     this.monthLoading.set(true);
     this.cycleLoading.set(true);
     this.todayLoading.set(true);
@@ -182,7 +209,7 @@ export class MaramatakaPage implements OnInit {
     const generation = ++this.requestGeneration;
 
     this.api
-      .getMonth(locationId, now)
+      .getMonth(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (month) => {
@@ -200,12 +227,14 @@ export class MaramatakaPage implements OnInit {
 
           this.month.set(null);
           this.monthLoading.set(false);
-          this.monthError.set('Unable to load maramataka month. Please try again.');
+          this.monthError.set(
+            'Unable to load maramataka month. Please try again.',
+          );
         },
       });
 
     this.api
-      .getCycleDetails(locationId, now)
+      .getCycleDetails(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (cycle) => {
@@ -228,7 +257,7 @@ export class MaramatakaPage implements OnInit {
       });
 
     this.api
-      .getToday(locationId, now)
+      .getToday(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (today) => {
@@ -246,12 +275,14 @@ export class MaramatakaPage implements OnInit {
 
           this.today.set(null);
           this.todayLoading.set(false);
-          this.todayError.set('Unable to load today\'s maramataka. Please try again.');
+          this.todayError.set(
+            "Unable to load today's maramataka. Please try again.",
+          );
         },
       });
 
     this.api
-      .getMoonDetails(locationId, now)
+      .getMoonDetails(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (details) => {
@@ -275,13 +306,34 @@ export class MaramatakaPage implements OnInit {
   }
 
   private refreshIfDateChanged(): void {
-    if (this.locationsLoading() || !this.selectedLocationId()) {
+    if (
+      !this.useLiveDate() ||
+      this.locationsLoading() ||
+      !this.selectedLocationId()
+    ) {
       return;
     }
 
     const currentNzDate = this.api.formatDate(new Date());
     if (currentNzDate !== this.lastRequestedNzDate) {
+      this.selectedDate.set(currentNzDate);
       this.reloadData();
     }
+  }
+
+  private requestDate(): Date {
+    if (this.useLiveDate()) {
+      return new Date();
+    }
+
+    return this.nzMiddayForDate(this.selectedDate());
+  }
+
+  private nzMiddayForDate(localDate: string): Date {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(localDate)) {
+      return new Date();
+    }
+
+    return new Date(`${localDate}T12:00:00+12:00`);
   }
 }
