@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Logger,
   Query,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -24,6 +25,8 @@ import {
 
 @Controller('maramataka')
 export class MaramatakaController {
+  private readonly logger = new Logger(MaramatakaController.name);
+
   constructor(private readonly maramatakaService: MaramatakaService) {}
 
   @Get('month')
@@ -32,8 +35,9 @@ export class MaramatakaController {
   ): Promise<MaramatakaMonth> {
     const { date, location } = this.validateDateLocationQuery(query);
 
-    return this.handleAstronomyErrors(() =>
-      this.maramatakaService.getMonth(location, date),
+    return this.handleAstronomyErrors(
+      'maramataka.month',
+      () => this.maramatakaService.getMonth(location, date),
     );
   }
 
@@ -42,8 +46,9 @@ export class MaramatakaController {
     @Query() query: DateLocationQueryDto,
   ): Promise<MaramatakaCycleDetails> {
     const { date, location } = this.validateDateLocationQuery(query);
-    const cycle = await this.handleAstronomyErrors(() =>
-      this.maramatakaService.getCycleDetails(location, date),
+    const cycle = await this.handleAstronomyErrors(
+      'maramataka.cycle',
+      () => this.maramatakaService.getCycleDetails(location, date),
     );
 
     if (!cycle) {
@@ -60,8 +65,9 @@ export class MaramatakaController {
     @Query() query: DateTimeLocationQueryDto,
   ): Promise<TodayMaramatakaNightResponseDto> {
     const { date, location } = this.validateDateTimeLocationQuery(query);
-    const currentNight = await this.handleAstronomyErrors(() =>
-      this.maramatakaService.getCurrentNight(location, date),
+    const currentNight = await this.handleAstronomyErrors(
+      'maramataka.today',
+      () => this.maramatakaService.getCurrentNight(location, date),
     );
 
     if (!currentNight) {
@@ -78,8 +84,9 @@ export class MaramatakaController {
     @Query() query: DateLocationQueryDto,
   ): Promise<MoonDetailsResponseDto> {
     const { date, location } = this.validateDateLocationQuery(query);
-    const details = await this.handleAstronomyErrors(() =>
-      this.maramatakaService.getMoonDetails(location, date),
+    const details = await this.handleAstronomyErrors(
+      'maramataka.moon-details',
+      () => this.maramatakaService.getMoonDetails(location, date),
     );
 
     return toMoonDetailsResponse(details);
@@ -98,6 +105,7 @@ export class MaramatakaController {
   }
 
   private async handleAstronomyErrors<T>(
+    operationName: string,
     operation: () => Promise<T>,
   ): Promise<T> {
     try {
@@ -105,6 +113,17 @@ export class MaramatakaController {
     } catch (error) {
       const astronomyError = findAstronomyProviderError(error);
       if (astronomyError) {
+        this.logger.error(
+          JSON.stringify({
+            event: 'astronomy_provider_failure',
+            operation: operationName,
+            provider: astronomyError.provider,
+            code: astronomyError.code,
+            message: astronomyError.message,
+          }),
+          astronomyError.stack,
+        );
+
         throw new ServiceUnavailableException({
           message: 'Astronomy data is currently unavailable',
           provider: astronomyError.provider,

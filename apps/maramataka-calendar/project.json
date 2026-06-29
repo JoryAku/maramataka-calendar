@@ -28,6 +28,12 @@
       },
       "configurations": {
         "production": {
+          "fileReplacements": [
+            {
+              "replace": "apps/maramataka-calendar/src/environments/environment.ts",
+              "with": "apps/maramataka-calendar/src/environments/environment.production.ts"
+            }
+          ],
           "budgets": [
             {
               "type": "initial",
@@ -41,6 +47,18 @@
             }
           ],
           "outputHashing": "all"
+        },
+        "staging": {
+          "fileReplacements": [
+            {
+              "replace": "apps/maramataka-calendar/src/environments/environment.ts",
+              "with": "apps/maramataka-calendar/src/environments/environment.staging.ts"
+            }
+          ],
+          "optimization": true,
+          "outputHashing": "all",
+          "sourceMap": false,
+          "extractLicenses": true
         },
         "development": {
           "optimization": false,

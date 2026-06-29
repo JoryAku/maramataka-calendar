@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
 import { AppService } from './app.service';
 
 describe('AppService', () => {
@@ -6,7 +7,15 @@ describe('AppService', () => {
 
   beforeAll(async () => {
     const app = await Test.createTestingModule({
-      providers: [AppService],
+      providers: [
+        AppService,
+        {
+          provide: MaramatakaService,
+          useValue: {
+            getMoonDetails: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = app.get<AppService>(AppService);

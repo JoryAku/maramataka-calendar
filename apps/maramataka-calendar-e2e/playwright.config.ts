@@ -33,6 +33,9 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: true,
     cwd: workspaceRoot,
+    env: {
+      MARAMATAKA_ASTRONOMY_MODE: 'stub',
+    },
   },
   projects: [
     {
