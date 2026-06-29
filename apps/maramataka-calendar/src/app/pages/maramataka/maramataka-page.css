@@ -49,25 +49,56 @@ h2 {
   text-transform: uppercase;
 }
 
-.location-panel {
+.demo-controls {
   display: grid;
-  gap: 0.35rem;
-  min-width: min(18rem, 100%);
+  grid-template-columns: minmax(11rem, 16rem) minmax(12rem, 17rem);
+  gap: 0.75rem;
+  align-items: end;
 }
 
-.location-label {
+.control-panel {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.control-label {
   color: #9fb5ac;
   font-size: 0.82rem;
   font-weight: 700;
 }
 
-.location-select {
+.control-input {
   width: 100%;
   border: 1px solid #31534a;
   border-radius: 8px;
   padding: 0.75rem 0.85rem;
   background: #0d211c;
   color: #f0f7f4;
+  color-scheme: dark;
+  font: inherit;
+}
+
+.date-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.secondary-button {
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  background: #102821;
+  color: #e7f6ef;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.secondary-button:disabled {
+  cursor: default;
+  opacity: 0.52;
 }
 
 .today-section,
@@ -283,6 +314,10 @@ dd {
   .page-header,
   .section-header {
     display: grid;
+  }
+
+  .demo-controls {
+    grid-template-columns: 1fr;
   }
 
   .moon-visual {

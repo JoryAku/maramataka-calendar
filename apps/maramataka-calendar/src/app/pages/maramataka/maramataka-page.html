@@ -5,29 +5,52 @@
       <h1>Moon tracker</h1>
     </div>
 
-    <section class="location-panel" aria-label="Location">
-      <label class="location-label" for="location-select">Location</label>
-      @if (locationsLoading()) {
-      <p class="state compact" data-testid="locations-loading-state">
-        Loading locations...
-      </p>
-      } @else if (locationsError()) {
-      <p class="state error compact" data-testid="locations-error-state">
-        {{ locationsError() }}
-      </p>
-      } @else {
-      <select
-        id="location-select"
-        class="location-select"
-        [value]="selectedLocationId()"
-        (change)="onLocationChange($any($event.target).value)"
-      >
-        @for (location of locations(); track location.id) {
-        <option [value]="location.id">{{ location.name }}</option>
+    <div class="demo-controls">
+      <section class="control-panel" aria-label="Location">
+        <label class="control-label" for="location-select">Location</label>
+        @if (locationsLoading()) {
+        <p class="state compact" data-testid="locations-loading-state">
+          Loading locations...
+        </p>
+        } @else if (locationsError()) {
+        <p class="state error compact" data-testid="locations-error-state">
+          {{ locationsError() }}
+        </p>
+        } @else {
+        <select
+          id="location-select"
+          class="control-input"
+          [value]="selectedLocationId()"
+          (change)="onLocationChange($any($event.target).value)"
+        >
+          @for (location of locations(); track location.id) {
+          <option [value]="location.id">{{ location.name }}</option>
+          }
+        </select>
         }
-      </select>
-      }
-    </section>
+      </section>
+
+      <section class="control-panel" aria-label="Date">
+        <label class="control-label" for="date-select">Date</label>
+        <div class="date-control">
+          <input
+            id="date-select"
+            class="control-input"
+            type="date"
+            [value]="selectedDate()"
+            (change)="onDateChange($any($event.target).value)"
+          />
+          <button
+            class="secondary-button"
+            type="button"
+            [disabled]="useLiveDate()"
+            (click)="resetDateToToday()"
+          >
+            Today
+          </button>
+        </div>
+      </section>
+    </div>
   </header>
 
   <section class="today-section" aria-labelledby="today-heading">
