@@ -178,7 +178,7 @@ export class MaramatakaPage implements OnInit {
             'Unable to load maramataka cycle because locations could not be loaded.',
           );
           this.todayError.set(
-            "Unable to load today's maramataka because locations could not be loaded.",
+            'Unable to load the selected day because locations could not be loaded.',
           );
           this.moonDetailsError.set(
             'Unable to load moon details because locations could not be loaded.',
@@ -282,7 +282,7 @@ export class MaramatakaPage implements OnInit {
           this.today.set(null);
           this.todayLoading.set(false);
           this.todayError.set(
-            "Unable to load today's maramataka. Please try again.",
+            'Unable to load the selected day. Please try again.',
           );
         },
       });

@@ -254,7 +254,7 @@ describe('MaramatakaPage', () => {
     fixture.detectChanges();
 
     const content = fixture.nativeElement.textContent as string;
-    expect(content).toContain('Today');
+    expect(content).toContain('Selected day');
     expect(content).toContain('Wellington');
     expect(content).toContain('Whiro');
     expect(content).toContain('Tirea');
