@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('renders API data for the selected location and updates when the location changes', async ({ page }) => {
+test('renders the MVP moon tracker and cycle wheel for the selected location', async ({ page }) => {
   const fixedNowIso = '2026-06-25T05:00:00.000Z';
   const ruleSet = {
     id: 'mita-te-tai-best-observational-v1',
@@ -20,16 +20,29 @@ test('renders API data for the selected location and updates when the location c
     const RealDate = Date;
 
     class FixedDate extends RealDate {
-      constructor(...args: ConstructorParameters<typeof Date>) {
-        if (args.length === 0) {
+      constructor(
+        valueOrYear?: string | number | Date,
+        monthIndex?: number,
+        date?: number,
+        hours?: number,
+        minutes?: number,
+        seconds?: number,
+        ms?: number,
+      ) {
+        if (arguments.length === 0) {
           super(fixedNow);
           return;
         }
 
-        super(...args);
+        if (typeof monthIndex === 'number' && typeof valueOrYear === 'number') {
+          super(valueOrYear, monthIndex, date, hours, minutes, seconds, ms);
+          return;
+        }
+
+        super(valueOrYear as string | number | Date);
       }
 
-      static now(): number {
+      static override now(): number {
         return fixedNow;
       }
     }
@@ -43,6 +56,7 @@ test('renders API data for the selected location and updates when the location c
 
   await page.route('**/api/maramataka/month**', async (route) => {
     const location = new URL(route.request().url()).searchParams.get('location');
+    const isAuckland = location === 'auckland';
 
     await route.fulfill({
       contentType: 'application/json',
@@ -50,7 +64,7 @@ test('renders API data for the selected location and updates when the location c
         version: 'mita-te-tai-best',
         ruleSet,
         whiroStartsAt: '2026-06-24T06:00:00.000Z',
-        nights: location === 'auckland'
+        nights: isAuckland
           ? [
               {
                 mata: { index: 1, name: 'Mako', version: 'mita-te-tai-best' },
@@ -70,6 +84,70 @@ test('renders API data for the selected location and updates when the location c
                 endsAt: '2026-06-25T06:30:00.000Z',
               },
             ],
+      }),
+    });
+  });
+
+  await page.route('**/api/maramataka/cycle**', async (route) => {
+    const location = new URL(route.request().url()).searchParams.get('location');
+    const isAuckland = location === 'auckland';
+    const mata = {
+      index: 1,
+      name: isAuckland ? 'Mako' : 'Whiro',
+      version: 'mita-te-tai-best',
+    };
+
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        version: 'mita-te-tai-best',
+        ruleSet,
+        timezone: 'Pacific/Auckland',
+        currentMataIndex: 1,
+        currentNight: {
+          mata,
+          startsAt: '2026-06-25T04:30:00.000Z',
+          endsAt: '2026-06-25T05:30:00.000Z',
+        },
+        anchors: {
+          whiro: {
+            type: 'whiro',
+            label: 'Whiro / Kohititanga',
+            occursAt: '2026-06-25T04:30:00.000Z',
+            localDate: '2026-06-25',
+            localTime: '16:30:00',
+            timezone: 'Pacific/Auckland',
+            source: 'stub moonrise',
+            mata,
+          },
+          fullMoon: {
+            type: 'full-moon',
+            label: 'Rakaunui / Full Moon',
+            occursAt: '2026-06-25T05:00:00.000Z',
+            localDate: '2026-06-25',
+            localTime: '17:00:00',
+            timezone: 'Pacific/Auckland',
+            source: 'stub',
+            mata,
+          },
+          nextWhiro: {
+            type: 'next-whiro',
+            label: 'Next Whiro / Kohititanga',
+            occursAt: '2026-06-25T06:30:00.000Z',
+            localDate: '2026-06-25',
+            localTime: '18:30:00',
+            timezone: 'Pacific/Auckland',
+            source: 'stub moonrise',
+            mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+          },
+        },
+        nights: [
+          {
+            mata,
+            startsAt: '2026-06-25T04:30:00.000Z',
+            endsAt: '2026-06-25T05:30:00.000Z',
+          },
+        ],
       }),
     });
   });
@@ -106,18 +184,75 @@ test('renders API data for the selected location and updates when the location c
     });
   });
 
+  await page.route('**/api/maramataka/moon-details**', async (route) => {
+    const location = new URL(route.request().url()).searchParams.get('location');
+
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        date: '2026-06-25',
+        phase: location === 'auckland' ? 'First Quarter' : 'Waxing Crescent',
+        fractionIlluminated: location === 'auckland' ? 0.5 : 0.25,
+        lunarAgeDays: location === 'auckland' ? 7.1 : 2.5,
+        distanceKm: null,
+        lunarAgeSource: 'stub',
+        closestPhase: {
+          phase: 'Full Moon',
+          occursAt: '2026-06-25T05:00:00.000Z',
+          source: 'stub',
+        },
+        moonrise: {
+          occursAt: '2026-06-25T04:30:00.000Z',
+          source: 'stub',
+        },
+        moonset: {
+          occursAt: '2026-06-25T18:15:00.000Z',
+          source: 'stub',
+        },
+        transit: {
+          occursAt: '2026-06-25T12:00:00.000Z',
+          source: 'stub',
+        },
+        unavailable: ['distanceKm'],
+        source: 'stub',
+      }),
+    });
+  });
+
   await page.goto('/pages/maramataka');
 
   await expect(page.getByTestId('today-card')).toContainText('Whiro');
-  await expect(page.locator('.night-card')).toHaveCount(2);
-  await expect(page.locator('.night-card.current')).toHaveCount(1);
-  await expect(page.locator('.night-card.current')).toContainText('Whiro');
+  await expect(page.getByTestId('next-mata-countdown')).toContainText(
+    '30m until next mata',
+  );
+  await expect(page.getByTestId('moon-details-panel')).toContainText(
+    'Waxing Crescent',
+  );
+  await expect(page.getByTestId('moon-details-panel')).toContainText('25%');
+  await expect(page.getByTestId('moon-details-panel')).toContainText(
+    '2.5 days',
+  );
+  await expect(page.getByLabel('Moon timings')).toContainText('Moonset');
+  await expect(page.getByLabel('Moon timings')).toContainText('Meridian');
+  await expect(page.locator('.cycle-wheel')).toBeVisible();
+  await expect(page.locator('.wheel-segment')).toHaveCount(2);
+  await expect(page.locator('.wheel-segment.current')).toHaveCount(1);
+  await expect(page.locator('.wheel-segment.current')).toHaveAttribute(
+    'aria-label',
+    /Whiro/,
+  );
   await expect(page.getByText('Mita Te Tai / Best observational maramataka')).toBeVisible();
 
   await page.selectOption('#location-select', 'auckland');
 
   await expect(page.getByTestId('today-card')).toContainText('Mako');
-  await expect(page.locator('.night-card')).toHaveCount(1);
-  await expect(page.locator('.night-card.current')).toHaveCount(1);
-  await expect(page.locator('.night-card.current')).toContainText('Mako');
+  await expect(page.getByTestId('moon-details-panel')).toContainText(
+    'First Quarter',
+  );
+  await expect(page.getByTestId('moon-details-panel')).toContainText('50%');
+  await expect(page.locator('.wheel-segment')).toHaveCount(1);
+  await expect(page.locator('.wheel-segment.current')).toHaveAttribute(
+    'aria-label',
+    /Mako/,
+  );
 });

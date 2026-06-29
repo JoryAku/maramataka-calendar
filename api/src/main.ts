@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { randomUUID } from 'node:crypto';
 import {
   json,
   NextFunction,
@@ -20,6 +21,7 @@ async function bootstrap() {
 
   configureTrustProxy(app.getHttpAdapter().getInstance());
   configureSecurityHeaders(app.getHttpAdapter().getInstance());
+  configureRequestLogging(app.getHttpAdapter().getInstance());
   configureRequestLimits(app.getHttpAdapter().getInstance());
   app.enableCors({
     origin: getAllowedCorsOrigins(),
@@ -88,6 +90,53 @@ function configureRequestLimits(server: {
 
   server.use(json({ limit: bodyLimit }));
   server.use(urlencoded({ extended: false, limit: bodyLimit }));
+}
+
+function configureRequestLogging(server: {
+  use: (
+    middleware: (
+      request: Request,
+      response: Response,
+      next: NextFunction,
+    ) => void,
+  ) => void;
+}): void {
+  const logger = new Logger('HttpRequest');
+
+  server.use((request: Request, response: Response, next: NextFunction) => {
+    const startedAt = Date.now();
+    const requestId = getRequestId(request);
+
+    response.setHeader('X-Request-Id', requestId);
+    response.on('finish', () => {
+      const durationMs = Date.now() - startedAt;
+      const context = {
+        requestId,
+        method: request.method,
+        path: request.originalUrl ?? request.url,
+        statusCode: response.statusCode,
+        durationMs,
+        remoteAddress: request.ip,
+        userAgent: request.get('user-agent'),
+      };
+      const message = JSON.stringify(context);
+
+      if (response.statusCode >= 500) {
+        logger.error(message);
+        return;
+      }
+
+      logger.log(message);
+    });
+
+    next();
+  });
+}
+
+function getRequestId(request: Request): string {
+  const incomingRequestId = request.get('x-request-id');
+
+  return incomingRequestId?.trim() || randomUUID();
 }
 
 function getAllowedCorsOrigins(): boolean | string[] {

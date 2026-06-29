@@ -11,15 +11,15 @@ The app has two deployable pieces:
 - Angular frontend: built from `apps/maramataka-calendar`.
 - NestJS API: built from `api`.
 
-The frontend currently calls the API through the `/api` path. The simplest
+The frontend defaults to calling the API through the `/api` path. The simplest
 production deployment is therefore one public origin where:
 
 - static frontend assets are served from `/`
 - API traffic is routed to the NestJS API at `/api/*`
 
 If the frontend and API are hosted on different origins, configure
-`CORS_ORIGINS` on the API and make sure the frontend deployment routes API calls
-to the deployed API origin.
+`CORS_ORIGINS` on the API and set the frontend API base URL by environment build
+configuration or runtime config.
 
 ## Build Commands
 
@@ -62,13 +62,18 @@ After building the API, run:
 node dist/api/main.js
 ```
 
-The API exposes its health endpoint at:
+The API exposes health endpoints at:
 
 ```text
 /api/health
+/api/health/live
+/api/health/ready
 ```
 
-Deployment platforms should use this endpoint for liveness checks.
+`/api/health` is kept as a backward-compatible liveness endpoint.
+Deployment platforms should use `/api/health/live` for liveness checks and
+`/api/health/ready` for readiness checks. Readiness performs a lightweight
+astronomy-backed check and returns `503` when provider data is unavailable.
 
 ## Required Environment
 
@@ -183,6 +188,71 @@ frontend host's rewrite/proxy feature.
 
 For single-page-app routing, route unknown non-API paths back to `index.html`.
 
+### Frontend API Base URL
+
+The frontend uses an injected app config rather than hard-coded endpoint
+strings. Supported modes are:
+
+| Environment | Build command | API base URL |
+| --- | --- | --- |
+| Local/dev | `npx nx run maramataka-calendar:build:development` or `nx serve` | `/api` via the local proxy |
+| Staging | `npx nx run maramataka-calendar:build:staging` | `https://staging-api.maramataka.example/api` placeholder |
+| Production | `npx nx run maramataka-calendar:build:production` | `/api` on the same public origin |
+
+Until real deployment domains are chosen, staging uses a placeholder API host.
+Production defaults to same-origin `/api`, which keeps the recommended routing
+simple and avoids rebuilding the frontend for each production host.
+
+Deployments that need to reuse one frontend bundle across environments can
+provide runtime config before Angular starts:
+
+```html
+<script>
+  window.__MARAMATAKA_CONFIG__ = {
+    apiBaseUrl: 'https://api.your-domain.example/api',
+    errorReporting: 'console',
+  };
+</script>
+```
+
+The runtime value overrides the build-time environment file. The API base URL
+must include the `/api` prefix when the API is exposed under that path.
+
+### Frontend Error Reporting
+
+The MVP frontend uses a small global Angular error handler. In local, staging,
+and production it reports uncaught frontend errors to `console.error` with a
+sanitized message and stack. User-facing API failures are still handled in the
+page with calm loading and error states.
+
+Future production hardening can replace the console reporter with an external
+error sink without changing page-level code; the current config already exposes
+`errorReporting` as the switch point.
+
+## Observability
+
+The API writes one structured log line per request, including:
+
+- `requestId`
+- HTTP method and path
+- response status code
+- request duration in milliseconds
+- remote address
+- user agent
+
+If a client sends `X-Request-Id`, the API preserves it and returns the same
+value in the response header. Otherwise the API generates a request id.
+
+Astronomy provider failures are logged with:
+
+- `event=astronomy_provider_failure`
+- API operation name
+- provider
+- provider error code
+- provider message
+
+These failures are also mapped to consistent `503` API error responses.
+
 ## CI And Pre-Deployment Checks
 
 Before deployment, run:
@@ -197,6 +267,8 @@ For a production smoke test after deployment:
 
 ```sh
 curl https://your-domain.example/api/health
+curl https://your-domain.example/api/health/live
+curl https://your-domain.example/api/health/ready
 curl "https://your-domain.example/api/maramataka/today?dateTime=2026-06-28T12:00:00&location=wellington"
 ```
 
@@ -207,6 +279,9 @@ Use a supported location id from the API locations endpoint.
 - Choose the actual hosting platform for the frontend and API.
 - Decide whether production cache storage is persistent volume, object storage,
   or a future database-backed cache.
+- Replace placeholder staging API URL with the real staging domain.
+- Decide whether frontend error reporting should stay console-only for MVP or
+  report to a hosted error sink.
 - Add first-class cache invalidation/migration tooling.
 - Decide whether to add package-based middleware such as `helmet` and
   `compression`, or keep the current manual header/request-limit setup.

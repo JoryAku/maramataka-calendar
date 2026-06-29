@@ -33,4 +33,24 @@ describe('GET /api', () => {
     expect(typeof firstNight.startsAt).toBe('string');
     expect(typeof firstNight.endsAt).toBe('string');
   }, 30000);
+
+  it('exposes liveness and readiness health checks', async () => {
+    const liveness = await axios.get('/api/health/live');
+    expect(liveness.status).toBe(200);
+    expect(liveness.data).toEqual({
+      status: 'ok',
+      service: 'maramataka-api',
+    });
+
+    const readiness = await axios.get('/api/health/ready');
+    expect(readiness.status).toBe(200);
+    expect(readiness.data).toMatchObject({
+      status: 'ok',
+      service: 'maramataka-api',
+      checks: {
+        app: 'ok',
+        astronomyProvider: 'ok',
+      },
+    });
+  }, 30000);
 });

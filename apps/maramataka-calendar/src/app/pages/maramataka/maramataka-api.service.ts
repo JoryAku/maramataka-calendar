@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
+import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { NZ_TIMEZONE } from './maramataka.constants';
 import {
   ApiMaramatakaCycleDetails,
@@ -18,13 +19,14 @@ import {
 @Injectable({ providedIn: 'root' })
 export class MaramatakaApiService {
   private readonly http = inject(HttpClient);
+  private readonly config = inject(MARAMATAKA_APP_CONFIG);
 
   formatDate(date: Date): string {
     return this.toYyyyMmDd(date);
   }
 
   getLocations(): Observable<LocationSummary[]> {
-    return this.http.get<LocationSummary[]>('/api/locations');
+    return this.http.get<LocationSummary[]>(this.apiUrl('/locations'));
   }
 
   getMonth(locationId: string, date: Date): Observable<MaramatakaMonth> {
@@ -33,7 +35,7 @@ export class MaramatakaApiService {
       .set('location', locationId);
 
     return this.http
-      .get<ApiMaramatakaMonth>('/api/maramataka/month', { params })
+      .get<ApiMaramatakaMonth>(this.apiUrl('/maramataka/month'), { params })
       .pipe(map((response) => this.mapMonth(response)));
   }
 
@@ -46,7 +48,9 @@ export class MaramatakaApiService {
       .set('location', locationId);
 
     return this.http
-      .get<ApiMaramatakaCycleDetails>('/api/maramataka/cycle', { params })
+      .get<ApiMaramatakaCycleDetails>(this.apiUrl('/maramataka/cycle'), {
+        params,
+      })
       .pipe(map((response) => this.mapCycleDetails(response)));
   }
 
@@ -56,7 +60,9 @@ export class MaramatakaApiService {
       .set('location', locationId);
 
     return this.http
-      .get<MaramatakaToday<string>>('/api/maramataka/today', { params })
+      .get<MaramatakaToday<string>>(this.apiUrl('/maramataka/today'), {
+        params,
+      })
       .pipe(map((response) => this.mapToday(response)));
   }
 
@@ -66,8 +72,12 @@ export class MaramatakaApiService {
       .set('location', locationId);
 
     return this.http
-      .get<ApiMoonDetails>('/api/maramataka/moon-details', { params })
+      .get<ApiMoonDetails>(this.apiUrl('/maramataka/moon-details'), { params })
       .pipe(map((response) => this.mapMoonDetails(response)));
+  }
+
+  private apiUrl(path: string): string {
+    return `${this.config.apiBaseUrl}${path}`;
   }
 
   private mapMonth(apiMonth: ApiMaramatakaMonth): MaramatakaMonth {

@@ -4,6 +4,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { MaramatakaApiService } from './maramataka-api.service';
 import { MaramatakaCycleDetails } from './maramataka.models';
 
@@ -141,5 +142,32 @@ describe('MaramatakaApiService', () => {
       new Date('2026-10-10T17:17:00.000Z'),
     );
     expect(cycle?.nights[0].mata).toBe('Ohua');
+  });
+
+  it('uses the configured API base URL', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        MaramatakaApiService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: MARAMATAKA_APP_CONFIG,
+          useValue: {
+            apiBaseUrl: 'https://api.example.test/api',
+            errorReporting: 'none',
+          },
+        },
+      ],
+    });
+    httpTestingController = TestBed.inject(HttpTestingController);
+    service = TestBed.inject(MaramatakaApiService);
+
+    service.getLocations().subscribe();
+
+    const request = httpTestingController.expectOne(
+      'https://api.example.test/api/locations',
+    );
+    request.flush([]);
   });
 });
