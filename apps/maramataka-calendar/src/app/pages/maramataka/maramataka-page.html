@@ -5,43 +5,66 @@
       <h1>Moon tracker</h1>
     </div>
 
-    <section class="location-panel" aria-label="Location">
-      <label class="location-label" for="location-select">Location</label>
-      @if (locationsLoading()) {
-      <p class="state compact" data-testid="locations-loading-state">
-        Loading locations...
-      </p>
-      } @else if (locationsError()) {
-      <p class="state error compact" data-testid="locations-error-state">
-        {{ locationsError() }}
-      </p>
-      } @else {
-      <select
-        id="location-select"
-        class="location-select"
-        [value]="selectedLocationId()"
-        (change)="onLocationChange($any($event.target).value)"
-      >
-        @for (location of locations(); track location.id) {
-        <option [value]="location.id">{{ location.name }}</option>
+    <div class="demo-controls">
+      <section class="control-panel" aria-label="Location">
+        <label class="control-label" for="location-select">Location</label>
+        @if (locationsLoading()) {
+        <p class="state compact" data-testid="locations-loading-state">
+          Loading locations...
+        </p>
+        } @else if (locationsError()) {
+        <p class="state error compact" data-testid="locations-error-state">
+          {{ locationsError() }}
+        </p>
+        } @else {
+        <select
+          id="location-select"
+          class="control-input"
+          [value]="selectedLocationId()"
+          (change)="onLocationChange($any($event.target).value)"
+        >
+          @for (location of locations(); track location.id) {
+          <option [value]="location.id">{{ location.name }}</option>
+          }
+        </select>
         }
-      </select>
-      }
-    </section>
+      </section>
+
+      <section class="control-panel" aria-label="View date">
+        <label class="control-label" for="date-select">View date</label>
+        <div class="date-control">
+          <input
+            id="date-select"
+            class="control-input"
+            type="date"
+            [value]="selectedDate()"
+            (change)="onDateChange($any($event.target).value)"
+          />
+          <button
+            class="secondary-button"
+            type="button"
+            [disabled]="useLiveDate()"
+            (click)="resetDateToToday()"
+          >
+            Use today
+          </button>
+        </div>
+      </section>
+    </div>
   </header>
 
   <section class="today-section" aria-labelledby="today-heading">
     <div class="section-header">
       <div>
-        <p class="eyebrow">1. Today</p>
-        <h2 id="today-heading">What is happening now?</h2>
+        <p class="eyebrow">1. Selected day</p>
+        <h2 id="today-heading">What is happening on this day?</h2>
       </div>
       <p>{{ selectedLocationName() }}</p>
     </div>
 
     @if (todayLoading()) {
     <p class="state" data-testid="today-loading-state">
-      Loading today's maramataka...
+      Loading maramataka for the selected day...
     </p>
     } @else if (todayError()) {
     <p class="state error" data-testid="today-error-state">
@@ -49,7 +72,7 @@
     </p>
     } @else if (!today()) {
     <p class="state" data-testid="today-empty-state">
-      No maramataka night is available for today.
+      No maramataka night is available for this day.
     </p>
     } @else {
     <article class="moon-tracker" data-testid="today-card">
@@ -60,7 +83,7 @@
       </div>
 
       <div class="mata-panel">
-        <p class="eyebrow">Current mata</p>
+        <p class="eyebrow">Mata for this day</p>
         <h3>{{ today()!.mata.name }}</h3>
         @if (today()!.overlappingMata?.length) {
         <p class="overlap-label" data-testid="today-overlap-state">

@@ -14,9 +14,9 @@
 }
 
 .page-header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
   gap: 1rem;
   margin-bottom: 1rem;
 }
@@ -49,25 +49,63 @@ h2 {
   text-transform: uppercase;
 }
 
-.location-panel {
+.demo-controls {
   display: grid;
-  gap: 0.35rem;
-  min-width: min(18rem, 100%);
+  grid-template-columns: minmax(16rem, 1fr) minmax(22rem, 1fr);
+  gap: 1rem;
+  align-items: end;
+  width: min(100%, 68rem);
 }
 
-.location-label {
+.control-panel {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.control-label {
   color: #9fb5ac;
   font-size: 0.82rem;
   font-weight: 700;
 }
 
-.location-select {
+.control-input {
   width: 100%;
+  min-height: 3.25rem;
   border: 1px solid #31534a;
   border-radius: 8px;
   padding: 0.75rem 0.85rem;
   background: #0d211c;
   color: #f0f7f4;
+  color-scheme: dark;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.date-control {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(7rem, auto);
+  gap: 0.5rem;
+}
+
+.secondary-button {
+  min-height: 3.25rem;
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+  background: #102821;
+  color: #e7f6ef;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.secondary-button:disabled {
+  cursor: default;
+  opacity: 0.52;
 }
 
 .today-section,
@@ -274,15 +312,17 @@ dd {
 }
 
 @media (max-width: 900px) {
-  .page-header,
   .section-header,
   .moon-tracker {
     grid-template-columns: 1fr;
   }
 
-  .page-header,
   .section-header {
     display: grid;
+  }
+
+  .demo-controls {
+    grid-template-columns: 1fr;
   }
 
   .moon-visual {
@@ -298,5 +338,9 @@ dd {
   .today-section,
   .month-section {
     padding: 0.75rem;
+  }
+
+  .date-control {
+    grid-template-columns: 1fr;
   }
 }
