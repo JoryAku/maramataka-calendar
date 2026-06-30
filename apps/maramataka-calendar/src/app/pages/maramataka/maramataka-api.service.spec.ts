@@ -81,7 +81,7 @@ describe('MaramatakaApiService', () => {
           localDate: '2026-09-11',
           localTime: '06:03:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
           mata: {
             index: 1,
             name: 'Whiro',
@@ -95,7 +95,7 @@ describe('MaramatakaApiService', () => {
           localDate: '2026-09-27',
           localTime: '05:49:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno',
+          source: 'astronomy-engine',
           mata: {
             index: 15,
             name: 'Ohua',
@@ -109,7 +109,7 @@ describe('MaramatakaApiService', () => {
           localDate: '2026-10-11',
           localTime: '06:17:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
           mata: {
             index: 1,
             name: 'Whiro',

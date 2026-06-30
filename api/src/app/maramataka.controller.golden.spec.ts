@@ -91,11 +91,11 @@ function createGoldenFixtureProvider(
 ): AstronomyProvider {
   const newMoons = fixture.newMoons.map((occursAt) => ({
     occursAt: new Date(occursAt),
-    source: 'usno',
+    source: 'astronomy-engine',
   }));
   const fullMoons = fixture.fullMoons.map((occursAt) => ({
     occursAt: new Date(occursAt),
-    source: 'usno',
+    source: 'astronomy-engine',
   }));
   const moonRises = new Map<string, MoonRise>(
     fixture.moonRises.map(([date, risesAt]) => [
@@ -103,7 +103,7 @@ function createGoldenFixtureProvider(
       {
         date,
         risesAt: new Date(risesAt),
-        source: 'usno',
+        source: 'astronomy-engine',
       },
     ]),
   );

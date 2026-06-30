@@ -1,8 +1,8 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
-export const ASTRONOMY_CACHE_FILE_VERSION = 1;
-export const ASTRONOMY_CACHE_ENTRY_VERSION = 1;
+export const ASTRONOMY_CACHE_FILE_VERSION = 2;
+export const ASTRONOMY_CACHE_ENTRY_VERSION = 2;
 
 export interface AstronomyCacheStore {
   get<T>(key: string): Promise<T | undefined>;
