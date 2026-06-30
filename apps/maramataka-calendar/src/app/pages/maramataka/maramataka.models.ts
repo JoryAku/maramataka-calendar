@@ -103,6 +103,8 @@ export interface MaramatakaRuleSet {
   starMonthNaming?: {
     strategy: string;
     sampleTimeLocal: string;
+    yearStartMarkerId: string;
+    yearStartDescription: string;
     source: string;
     sourceUrl?: string;
     sourceQuote?: string;

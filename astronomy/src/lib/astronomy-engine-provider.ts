@@ -31,10 +31,25 @@ interface StarEquatorResult {
   dec: number;
 }
 
-const STAR_MARKER_SOURCE_URL =
-  'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
+const STAR_MARKER_SOURCE = 'Elsdon Best, The Maori Division of Time';
 
 export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
+  {
+    id: 'matariki',
+    name: 'Matariki',
+    type: 'asterism',
+    englishName: 'Pleiades',
+    description:
+      'Pleiades; year-start marker appearing on the dawn horizon.',
+    seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+    source: STAR_MARKER_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 3.7914,
+      declinationDegrees: 24.1051,
+    },
+  },
   {
     id: 'puanga',
     name: 'Puanga',
@@ -43,8 +58,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     description:
       'New-year marker associated with appearance in the morning sky.',
     seasonalAssociation: 'New year / first seasonal month',
-    source: 'Thomson / Best seasonal marker account',
-    sourceUrl: STAR_MARKER_SOURCE_URL,
+    source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
     representative: {
       kind: 'fixed-equatorial',
@@ -59,12 +73,26 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     englishName: 'Venus',
     description: 'Venus as a morning-star marker in the seasonal account.',
     seasonalAssociation: 'Second seasonal month marker',
-    source: 'Thomson / Best seasonal marker account',
-    sourceUrl: STAR_MARKER_SOURCE_URL,
+    source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
     representative: {
       kind: 'body',
       body: 'Venus',
+    },
+  },
+  {
+    id: 'takurua',
+    name: 'Takurua',
+    type: 'star',
+    englishName: 'Sirius',
+    description: 'Sirius; Best notes Takurua is also a name for winter.',
+    seasonalAssociation: 'Second named month marker',
+    source: STAR_MARKER_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 6.7525,
+      declinationDegrees: -16.7161,
     },
   },
   {
@@ -75,8 +103,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     description:
       'Orion Belt marker; represented here by Alnilam for sky-position calculation.',
     seasonalAssociation: 'Second seasonal month marker',
-    source: 'Thomson / Best seasonal marker account',
-    sourceUrl: STAR_MARKER_SOURCE_URL,
+    source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
     representative: {
       kind: 'fixed-equatorial',
@@ -107,8 +134,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     englishName: 'Antares',
     description: 'Summer marker associated with the Rehua star.',
     seasonalAssociation: 'Summer marker',
-    source: 'Thomson / Best seasonal marker account',
-    sourceUrl: STAR_MARKER_SOURCE_URL,
+    source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
     representative: {
       kind: 'fixed-equatorial',

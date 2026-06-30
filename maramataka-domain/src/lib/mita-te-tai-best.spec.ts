@@ -95,23 +95,32 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
       sampleTimeLocal: '06:00',
-      source:
-        'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+      yearStartMarkerId: 'matariki',
+      source: 'Elsdon Best, The Maori Division of Time',
     });
     expect(
       MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers.map(
         (marker) => marker.name,
       ),
-    ).toEqual(['Puanga', 'Kōpū', 'Tautoru', 'Whakaahu', 'Rehua', 'Uruao']);
+    ).toEqual([
+      'Matariki',
+      'Puanga',
+      'Kōpū',
+      'Takurua',
+      'Tautoru',
+      'Whakaahu',
+      'Rehua',
+      'Uruao',
+    ]);
     expect(
       MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.months,
-    ).toHaveLength(13);
+    ).toHaveLength(12);
     expect(
       MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.months[0],
     ).toMatchObject({
-      name: 'Puanga',
-      markerIds: ['puanga'],
-      sourceText: expect.stringContaining('Puanga star in the morning'),
+      name: 'Te Tahi o Pipiri',
+      markerIds: ['matariki'],
+      sourceText: expect.stringContaining('Matariki'),
     });
   });
 });

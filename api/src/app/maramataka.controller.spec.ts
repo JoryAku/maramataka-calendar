@@ -1124,7 +1124,7 @@ describe('MaramatakaController', () => {
           description: 'A dawn marker associated with the Māori new year.',
           seasonalAssociation:
             'Associated with the first month and the appearance of Puanga in the morning.',
-          source: 'Dr. Thomson seasonal star account',
+          source: 'Elsdon Best, The Maori Division of Time',
           sourceUrl:
             'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
           confidence: 'confirmed',

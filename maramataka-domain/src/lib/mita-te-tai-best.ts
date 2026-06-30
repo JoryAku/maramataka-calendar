@@ -6,7 +6,7 @@ export const MITA_TE_TAI_BEST_BALANCING_QUOTE =
   '"In the original, No. 1 (the Whiro night) is marked "kohititanga" a word employed to denote the appearance of the new moon. Nos. 15, 16, and 17 are marked "huanga," denoting full moon. Apparently the commencement of the lunar month was not always precisely fixed, for Metara\'s notebook contained a statement to the effect that sometimes the full moon (Ohua) appeared on the 16th night, or even on the 17th, in which latter case the 15th, 16th, and 17th nights would all be called Ohua, and several of the final night names of the list would be dropped for that month. This would be for the purpose of balancing the lunar month."';
 
 export const MITA_TE_TAI_BEST_STAR_MONTH_QUOTE =
-  '"Although time passes away among them like a shadow, the unrecorded year is divided into thirteen moons, and each moon is distinguished by the rising of stars, the flowering of plants, and the arrival of two migratory birds. June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning. July is marked by the stars Kopu and Tautoru and the flowering of the karaka tree. August is distinguished by the stars Mangere and Whakaau; September by the rising of the Oetahi star and the flowering of the kowhai, rangiora, and kotukutuku trees. It is in this month that kumara are planted. October, or the fifth month, is known by the flowering of certain plants; during this month the ground is got ready for potatoes. November is characterized by the flowering of the rata and rewarewa trees. December is known by the rising of the Rehua star, the ripening of the karaka berries, and in the south part of the Island by the arrival of two cuckoos. January is distinguished by the Rehua star, the appearance of the Uruao star, and the departure of the cuckoos. In February the Rehua star still shines and the Matiti star appears; it is the dry month of the year. March is known by the ripening of the kumara, and in April they are dug up. May, or the twelfth month, often passes unnoticed. The thirteenth month is distinguished by the Puanga star, the harbinger of the new year."';
+  '"The following names are those of the twelve months as known to the latter tribe, supplied by Himiona Tikitu: 1. Te Tahi o Pipiri, The First of Pipiri. 2. Te Rua o Takurua, The Second of Takurua. 3. Te Toru o Hereturi-koka, The Third of Hereturi-koka. 4. Te Wha o Mahuru, The Fourth of Mahuru. 5. Te Rima o Kopu, The Fifth of Kopu. 6. Whitianaunau. 7. Hakihea. 8. Kai-tatea. 9. Ruhi-te-rangi. 10. Poutu-te-rangi. 11. Paenga-whawha. 12. Haki-haratua." "Without exception, stars were the ariki (controllers, heads) of these months. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn."';
 
 type MoonWeekKey = 'whiro' | 'tamatea' | 'rakaunui' | 'korekoreTangaroa';
 
@@ -25,8 +25,26 @@ const MITA_TE_TAI_BEST_SOURCE =
   'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference';
 const MITA_TE_TAI_BEST_SOURCE_URL =
   'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
+const MITA_TE_TAI_BEST_STAR_MONTH_SOURCE =
+  'Elsdon Best, The Maori Division of Time';
 
 const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
+  {
+    id: 'matariki',
+    name: 'Matariki',
+    type: 'asterism',
+    englishName: 'Pleiades',
+    description:
+      'Pleiades; Best records Matariki appearing on the dawn horizon as the commencement of the year.',
+    seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 3.7914,
+      declinationDegrees: 24.1051,
+    },
+  },
   {
     id: 'puanga',
     name: 'Puanga',
@@ -35,8 +53,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     description:
       'New-year marker associated with appearance in the morning sky.',
     seasonalAssociation: 'New year / first seasonal month',
-    source: MITA_TE_TAI_BEST_SOURCE,
-    sourceUrl: MITA_TE_TAI_BEST_SOURCE_URL,
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
     representative: {
       kind: 'fixed-equatorial',
@@ -51,12 +68,26 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     englishName: 'Venus',
     description: 'Venus as a morning-star marker in the seasonal account.',
     seasonalAssociation: 'Second seasonal month marker',
-    source: MITA_TE_TAI_BEST_SOURCE,
-    sourceUrl: MITA_TE_TAI_BEST_SOURCE_URL,
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
     representative: {
       kind: 'body',
       body: 'Venus',
+    },
+  },
+  {
+    id: 'takurua',
+    name: 'Takurua',
+    type: 'star',
+    englishName: 'Sirius',
+    description: 'Sirius; Best notes Takurua is also a name for winter.',
+    seasonalAssociation: 'Second named month marker',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 6.7525,
+      declinationDegrees: -16.7161,
     },
   },
   {
@@ -67,8 +98,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     description:
       'Orion Belt marker; represented here by Alnilam for sky-position calculation.',
     seasonalAssociation: 'Second seasonal month marker',
-    source: MITA_TE_TAI_BEST_SOURCE,
-    sourceUrl: MITA_TE_TAI_BEST_SOURCE_URL,
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
     representative: {
       kind: 'fixed-equatorial',
@@ -99,8 +129,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     englishName: 'Antares',
     description: 'Summer marker associated with the Rehua star.',
     seasonalAssociation: 'Summer marker',
-    source: MITA_TE_TAI_BEST_SOURCE,
-    sourceUrl: MITA_TE_TAI_BEST_SOURCE_URL,
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
     representative: {
       kind: 'fixed-equatorial',
@@ -129,117 +158,98 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
 const MITA_TE_TAI_BEST_STAR_MONTH_NOTES = [
   {
     sequence: 1,
-    name: 'Puanga',
-    markerIds: ['puanga'],
+    name: 'Te Tahi o Pipiri',
+    markerIds: ['matariki'],
     description:
-      'The first seasonal month is associated with Puanga appearing in the morning.',
+      'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
     sourceText:
-      'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+      'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
   },
   {
     sequence: 2,
-    name: 'Kōpū / Tautoru',
-    markerIds: ['kopu', 'tautoru'],
+    name: 'Te Rua o Takurua',
+    markerIds: ['takurua'],
     description:
-      'The second seasonal month is associated with Kōpū and Tautoru, alongside karaka flowering.',
+      'The second named month is Te Rua o Takurua. Best notes Takurua is Sirius and also a name for winter.',
     sourceText:
-      'July is marked by the stars Kopu and Tautoru and the flowering of the karaka tree.',
+      'Te Rua o Takurua .. The Second of Takurua.',
   },
   {
     sequence: 3,
-    name: 'Mangere / Whakaahu',
-    markerIds: ['mangere', 'whakaahu'],
+    name: 'Te Toru o Hereturi-koka',
+    markerIds: [],
     description:
-      'The third seasonal month is associated with Mangere and Whakaahu. Mangere is retained as an unresolved star name for later research.',
+      'The third named month is Te Toru o Hereturi-koka.',
     sourceText:
-      'August is distinguished by the stars Mangere and Whakaau.',
+      'Te Toru o Hereturi-koka .. The Third of Hereturi-koka.',
   },
   {
     sequence: 4,
-    name: 'Oetahi',
-    markerIds: ['oetahi'],
+    name: 'Te Wha o Mahuru',
+    markerIds: [],
     description:
-      'The fourth seasonal month is associated with Oetahi and spring flowering. Oetahi is retained as an unresolved star name for later research.',
+      'The fourth named month is Te Wha o Mahuru.',
     sourceText:
-      'September by the rising of the Oetahi star and the flowering of the kowhai, rangiora, and kotukutuku trees.',
+      'Te Wha o Mahuru .. The Fourth of Mahuru.',
   },
   {
     sequence: 5,
-    name: 'Planting preparation',
-    markerIds: [],
+    name: 'Te Rima o Kōpū',
+    markerIds: ['kopu'],
     description:
-      'The fifth seasonal month is described through flowering and garden preparation rather than a confirmed star marker.',
+      'The fifth named month is Te Rima o Kōpū. Best notes Kōpū is Venus.',
     sourceText:
-      'October, or the fifth month, is known by the flowering of certain plants; during this month the ground is got ready for potatoes.',
+      'Te Rima o Kopu .. The Fifth of Kopu.',
   },
   {
     sequence: 6,
-    name: 'Rata / Rewarewa flowering',
+    name: 'Whitianaunau',
     markerIds: [],
     description:
-      'The sixth seasonal month is described through the flowering of rata and rewarewa rather than a confirmed star marker.',
-    sourceText:
-      'November is characterized by the flowering of the rata and rewarewa trees.',
+      'The sixth named month is Whitianaunau. Best notes it differs from the inland list.',
+    sourceText: 'Whitianaunau.',
   },
   {
     sequence: 7,
-    name: 'Rehua',
-    markerIds: ['rehua'],
-    description:
-      'The seventh seasonal month is associated with Rehua, karaka berries ripening, and the southern arrival of cuckoos.',
-    sourceText:
-      'December is known by the rising of the Rehua star, the ripening of the karaka berries, and in the south part of the Island by the arrival of two cuckoos.',
+    name: 'Hakihea',
+    markerIds: [],
+    description: 'The seventh named month is Hakihea.',
+    sourceText: 'Hakihea.',
   },
   {
     sequence: 8,
-    name: 'Rehua / Uruao',
-    markerIds: ['rehua', 'uruao'],
-    description:
-      'The eighth seasonal month is associated with Rehua, Uruao, and the departure of cuckoos.',
-    sourceText:
-      'January is distinguished by the Rehua star, the appearance of the Uruao star, and the departure of the cuckoos.',
+    name: 'Kai-tatea',
+    markerIds: [],
+    description: 'The eighth named month is Kai-tatea.',
+    sourceText: 'Kai-tatea.',
   },
   {
     sequence: 9,
-    name: 'Rehua / Matiti',
-    markerIds: ['rehua', 'matiti'],
-    description:
-      'The ninth seasonal month is associated with Rehua and Matiti. Matiti is retained as an unresolved star name for later research.',
-    sourceText:
-      'In February the Rehua star still shines and the Matiti star appears; it is the dry month of the year.',
+    name: 'Ruhi-te-rangi',
+    markerIds: [],
+    description: 'The ninth named month is Ruhi-te-rangi.',
+    sourceText: 'Ruhi-te-rangi.',
   },
   {
     sequence: 10,
-    name: 'Kumara ripening',
+    name: 'Poutu-te-rangi',
     markerIds: [],
-    description:
-      'The tenth seasonal month is described through kumara ripening rather than a confirmed star marker.',
-    sourceText: 'March is known by the ripening of the kumara.',
+    description: 'The tenth named month is Poutu-te-rangi.',
+    sourceText: 'Poutu-te-rangi.',
   },
   {
     sequence: 11,
-    name: 'Kumara harvest',
+    name: 'Paenga-whāwhā',
     markerIds: [],
-    description:
-      'The eleventh seasonal month is described through kumara harvest rather than a confirmed star marker.',
-    sourceText: 'In April they are dug up.',
+    description: 'The eleventh named month is Paenga-whāwhā.',
+    sourceText: 'Paenga-whawha.',
   },
   {
     sequence: 12,
-    name: 'Often unnoticed',
+    name: 'Haki-haratua',
     markerIds: [],
-    description:
-      'The twelfth seasonal month is recorded as often passing unnoticed.',
-    sourceText: 'May, or the twelfth month, often passes unnoticed.',
-  },
-  {
-    sequence: 13,
-    name: 'Puanga',
-    markerIds: ['puanga'],
-    description:
-      'The thirteenth seasonal month is associated with Puanga as the harbinger of the new year.',
-    sourceText:
-      'The thirteenth month is distinguished by the Puanga star, the harbinger of the new year.',
+    description: 'The twelfth named month is Haki-haratua.',
+    sourceText: 'Haki-haratua.',
   },
 ];
 
@@ -393,8 +403,10 @@ export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
     strategy:
       'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
     sampleTimeLocal: '06:00',
-    source: MITA_TE_TAI_BEST_SOURCE,
-    sourceUrl: MITA_TE_TAI_BEST_SOURCE_URL,
+    yearStartMarkerId: 'matariki',
+    yearStartDescription:
+      'The year commences with Matariki appearing on the horizon at dawn.',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     sourceQuote: MITA_TE_TAI_BEST_STAR_MONTH_QUOTE,
     markers: MITA_TE_TAI_BEST_STAR_MONTH_MARKERS,
     months: MITA_TE_TAI_BEST_STAR_MONTH_NOTES,

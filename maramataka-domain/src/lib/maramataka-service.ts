@@ -234,6 +234,7 @@ export class MaramatakaService {
       return undefined;
     }
     const starMarkers = await this.getStarMarkers(location, month.whiroStartsAt);
+    const starMonth = this.selectStarMonth(starMarkers);
 
     return {
       version: month.version,
@@ -272,9 +273,28 @@ export class MaramatakaService {
         }),
       },
       nights: month.nights,
-      starMonth: this.selectStarMonth(starMarkers),
-      starMarkers,
+      starMonth,
+      starMarkers: this.selectRelevantStarMarkers(starMarkers, starMonth),
     };
+  }
+
+  private selectRelevantStarMarkers(
+    starMarkers: StarMarker[],
+    starMonth: MaramatakaStarMonth | undefined,
+  ): StarMarker[] {
+    const markerIds = starMonth?.note?.markerIds;
+    if (markerIds?.length) {
+      return starMarkers.filter(
+        (marker) =>
+          marker.visibility !== 'below-horizon' && markerIds.includes(marker.id),
+      );
+    }
+
+    if (starMonth?.marker) {
+      return [starMonth.marker];
+    }
+
+    return starMarkers.filter((marker) => marker.visibility !== 'below-horizon');
   }
 
   private selectStarMonth(
@@ -285,20 +305,27 @@ export class MaramatakaService {
       return undefined;
     }
 
-    const marker = starMarkers.find(
+    const visibleEasternMarkers = starMarkers.filter(
       (candidate) =>
         candidate.visibility !== 'below-horizon' &&
         ['NE', 'E', 'SE'].includes(candidate.direction),
     );
+    const note = starMonthNaming.months.find((month) =>
+      month.markerIds.some((markerId) =>
+        visibleEasternMarkers.some((marker) => marker.id === markerId),
+      ),
+    );
+    const marker = note
+      ? visibleEasternMarkers.find((candidate) =>
+          note.markerIds.includes(candidate.id),
+        )
+      : visibleEasternMarkers[0];
     if (!marker) {
       return undefined;
     }
-    const note = starMonthNaming.months.find((month) =>
-      month.markerIds.includes(marker.id),
-    );
 
     return {
-      name: marker.name,
+      name: note?.name ?? marker.name,
       marker,
       rule: starMonthNaming.strategy,
       source: starMonthNaming.source,

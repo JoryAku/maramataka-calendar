@@ -141,7 +141,7 @@ class StubAstronomyProvider implements AstronomyProvider {
   async getStarMarkers(
     date: string,
     location: Location,
-    _markers?: StarMarkerDefinition[],
+    markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
     const observedAt = this.localDateTimeToUtc(
       Number(date.slice(0, 4)),
@@ -151,41 +151,45 @@ class StubAstronomyProvider implements AstronomyProvider {
       location,
     );
 
-    return [
-      {
-        id: 'puanga',
-        name: 'Puanga',
-        type: 'star',
-        englishName: 'Rigel',
-        description:
-          'New-year marker associated with appearance in the morning sky.',
-        seasonalAssociation: 'New year / first seasonal month',
-        source: 'stub',
-        confidence: 'confirmed',
-        observedAt,
-        altitudeDegrees: 24,
-        azimuthDegrees: 74,
-        direction: 'E',
-        visibility: 'prominent',
-        calculation: 'Stub dawn sky marker for deterministic local testing.',
-      },
-      {
-        id: 'tautoru',
-        name: 'Tautoru',
-        type: 'asterism',
-        englishName: "Orion's Belt",
-        description: 'Orion Belt marker represented in the dawn sky.',
-        seasonalAssociation: 'Second seasonal month marker',
-        source: 'stub',
-        confidence: 'confirmed',
-        observedAt,
-        altitudeDegrees: 18,
-        azimuthDegrees: 82,
-        direction: 'E',
-        visibility: 'visible',
-        calculation: 'Stub dawn sky marker for deterministic local testing.',
-      },
-    ];
+    const markerDefinitions: StarMarkerDefinition[] =
+      markers?.length
+        ? markers
+        : [
+            {
+              id: 'matariki',
+              name: 'Matariki',
+              type: 'asterism' as const,
+              englishName: 'Pleiades',
+              description:
+                'Pleiades; year-start marker in the dawn sky.',
+              seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+              source: 'stub',
+              confidence: 'confirmed' as const,
+              representative: {
+                kind: 'fixed-equatorial' as const,
+                rightAscensionHours: 3.7914,
+                declinationDegrees: 24.1051,
+              },
+            },
+          ];
+
+    return markerDefinitions.map((marker, index) => ({
+      id: marker.id,
+      name: marker.name,
+      type: marker.type,
+      englishName: marker.englishName,
+      description: marker.description,
+      seasonalAssociation: marker.seasonalAssociation,
+      source: marker.source,
+      sourceUrl: marker.sourceUrl,
+      confidence: marker.confidence,
+      observedAt,
+      altitudeDegrees: Math.max(6, 24 - index * 2),
+      azimuthDegrees: 74 + index,
+      direction: 'E',
+      visibility: index === 0 ? 'prominent' : 'visible',
+      calculation: 'Stub dawn sky marker for deterministic local testing.',
+    }));
   }
 
   private localDateTimeToUtc(

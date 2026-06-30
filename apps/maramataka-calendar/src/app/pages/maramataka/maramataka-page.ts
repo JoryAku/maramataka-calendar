@@ -99,9 +99,7 @@ export class MaramatakaPage implements OnInit {
     ),
   );
   protected readonly visibleStarMarkers = computed(() =>
-    this.starMarkers()
-      .filter((marker) => marker.visibility !== 'below-horizon')
-      .slice(0, 3),
+    this.relevantStarMarkers(this.starMarkers()).slice(0, 3),
   );
   protected readonly starMonthNaming = computed(
     () =>
@@ -387,5 +385,22 @@ export class MaramatakaPage implements OnInit {
     }
 
     return new Date(`${localDate}T12:00:00+12:00`);
+  }
+
+  private relevantStarMarkers(markers: StarMarker[]): StarMarker[] {
+    const visibleMarkers = markers.filter(
+      (marker) => marker.visibility !== 'below-horizon',
+    );
+    const markerIds = this.starMonth()?.note?.markerIds;
+    if (markerIds?.length) {
+      return visibleMarkers.filter((marker) => markerIds.includes(marker.id));
+    }
+
+    const starMonthMarkerId = this.starMonth()?.marker.id;
+    if (starMonthMarkerId) {
+      return visibleMarkers.filter((marker) => marker.id === starMonthMarkerId);
+    }
+
+    return visibleMarkers;
   }
 }

@@ -27,26 +27,27 @@ describe('MaramatakaApiService', () => {
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
       sampleTimeLocal: '06:00',
-      source:
-        'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+      yearStartMarkerId: 'matariki',
+      yearStartDescription:
+        'The year commences with Matariki appearing on the horizon at dawn.',
+      source: 'Elsdon Best, The Maori Division of Time',
       months: [
         {
           sequence: 1,
-          name: 'Puanga',
-          markerIds: ['puanga'],
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
           description:
-            'The first seasonal month is associated with Puanga appearing in the morning.',
-          sourceText:
-            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
         },
       ],
       markers: [
         {
-          id: 'puanga',
-          name: 'Puanga',
-          type: 'star',
-          englishName: 'Rigel',
-          seasonalAssociation: 'New year / first seasonal month',
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
           confidence: 'confirmed',
         },
       ],
@@ -146,16 +147,16 @@ describe('MaramatakaApiService', () => {
         },
       },
       starMonth: {
-        name: 'Puanga',
+        name: 'Te Tahi o Pipiri',
         marker: {
-          id: 'puanga',
-          name: 'Puanga',
-          type: 'star',
-          englishName: 'Rigel',
-          description: 'A dawn marker associated with the Māori new year.',
-          seasonalAssociation:
-            'Associated with the first month and the appearance of Puanga in the morning.',
-          source: 'Dr. Thomson seasonal star account',
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          description:
+            'Pleiades; year-start marker appearing on the dawn horizon.',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          source: 'Elsdon Best, The Maori Division of Time',
           confidence: 'confirmed',
           observedAt: '2026-09-14T18:00:00.000Z',
           altitudeDegrees: 21,
@@ -167,29 +168,26 @@ describe('MaramatakaApiService', () => {
         },
         rule:
           'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
-        source: 'Dr. Thomson seasonal star account',
+        source: 'Elsdon Best, The Maori Division of Time',
         note: {
           sequence: 1,
-          name: 'Puanga',
-          markerIds: ['puanga'],
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
           description:
-            'The first seasonal month is associated with Puanga appearing in the morning.',
-          sourceText:
-            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
         },
       },
       starMarkers: [
         {
-          id: 'puanga',
-          name: 'Puanga',
-          type: 'star',
-          englishName: 'Rigel',
-          description: 'A dawn marker associated with the Māori new year.',
-          seasonalAssociation:
-            'Associated with the first month and the appearance of Puanga in the morning.',
-          source: 'Dr. Thomson seasonal star account',
-          sourceUrl:
-            'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          description:
+            'Pleiades; year-start marker appearing on the dawn horizon.',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          source: 'Elsdon Best, The Maori Division of Time',
           confidence: 'confirmed',
           observedAt: '2026-09-14T18:00:00.000Z',
           altitudeDegrees: 21,
@@ -225,16 +223,19 @@ describe('MaramatakaApiService', () => {
       new Date('2026-10-10T17:17:00.000Z'),
     );
     expect(cycle?.nights[0].mata).toBe('Ohua');
-    expect(cycle?.starMarkers?.[0].name).toBe('Puanga');
+    expect(cycle?.starMarkers?.[0].name).toBe('Matariki');
     expect(cycle?.starMarkers?.[0].observedAt).toEqual(
       new Date('2026-09-14T18:00:00.000Z'),
     );
-    expect(cycle?.starMonth?.name).toBe('Puanga');
+    expect(cycle?.starMonth?.name).toBe('Te Tahi o Pipiri');
     expect(cycle?.starMonth?.marker.observedAt).toEqual(
       new Date('2026-09-14T18:00:00.000Z'),
     );
     expect(cycle?.starMonth?.note?.sourceText).toContain(
-      'June is the first month of the year',
+      'The First of Pipiri',
+    );
+    expect(cycle?.starMonth?.note?.sourceText).toContain(
+      'Matariki (Pleiades) on the horizon at dawn',
     );
   });
 
@@ -263,7 +264,7 @@ describe('MaramatakaApiService', () => {
         description: 'A seasonal dawn marker.',
         seasonalAssociation:
           'Associated with July alongside Kōpū in the seasonal star account.',
-        source: 'Dr. Thomson seasonal star account',
+        source: 'Elsdon Best, The Maori Division of Time',
         confidence: 'confirmed',
         observedAt: '2026-06-24T18:00:00.000Z',
         altitudeDegrees: 18,

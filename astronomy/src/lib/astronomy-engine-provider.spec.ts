@@ -187,7 +187,7 @@ describe('AstronomyEngineProvider', () => {
       altitudeDegrees: 21.8,
       direction: 'E',
       visibility: 'prominent',
-      source: 'Dr. Thomson seasonal star account',
+      source: 'Elsdon Best, The Maori Division of Time',
     });
     expect(markers.find((marker) => marker.id === 'kopu')).toMatchObject({
       name: 'Kōpū',

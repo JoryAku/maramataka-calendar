@@ -19,50 +19,64 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
       sampleTimeLocal: '06:00',
-      source:
-        'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-      sourceUrl:
-        'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+      yearStartMarkerId: 'matariki',
+      yearStartDescription:
+        'The year commences with Matariki appearing on the horizon at dawn.',
+      source: 'Elsdon Best, The Maori Division of Time',
       months: [
         {
           sequence: 1,
-          name: 'Puanga',
-          markerIds: ['puanga'],
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
           description:
-            'The first seasonal month is associated with Puanga appearing in the morning.',
-          sourceText:
-            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
         },
       ],
       markers: [
         {
-          id: 'puanga',
-          name: 'Puanga',
-          type: 'star',
-          englishName: 'Rigel',
-          seasonalAssociation: 'New year / first seasonal month',
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
           confidence: 'confirmed',
         },
       ],
     },
   };
   const starMarker = {
-    id: 'puanga',
-    name: 'Puanga',
-    type: 'star',
-    englishName: 'Rigel',
-    description: 'A dawn marker associated with the Māori new year.',
-    seasonalAssociation: 'New year / first seasonal month',
-    source:
-      'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-    sourceUrl:
-      'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+    id: 'matariki',
+    name: 'Matariki',
+    type: 'asterism',
+    englishName: 'Pleiades',
+    description: 'Pleiades; year-start marker appearing on the dawn horizon.',
+    seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+    source: 'Elsdon Best, The Maori Division of Time',
     confidence: 'confirmed',
     observedAt: '2026-06-24T18:00:00.000Z',
     altitudeDegrees: 24,
     azimuthDegrees: 74,
     direction: 'E',
     visibility: 'prominent',
+    calculation:
+      'Dawn sky position sampled at 06:00 local time for the selected location.',
+  };
+  const otherVisibleStarMarker = {
+    id: 'puanga',
+    name: 'Puanga',
+    type: 'star',
+    englishName: 'Rigel',
+    description:
+      'A visible marker that is not assigned to the active named month.',
+    seasonalAssociation: 'Another rule-set marker',
+    source: 'Elsdon Best, The Maori Division of Time',
+    confidence: 'confirmed',
+    observedAt: '2026-06-24T18:00:00.000Z',
+    altitudeDegrees: 18,
+    azimuthDegrees: 80,
+    direction: 'E',
+    visibility: 'visible',
     calculation:
       'Dawn sky position sampled at 06:00 local time for the selected location.',
   };
@@ -227,11 +241,10 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
           },
         },
         starMonth: {
-          name: 'Puanga',
+          name: 'Te Tahi o Pipiri',
           marker: starMarker,
           rule: ruleSet.starMonthNaming.strategy,
           source: ruleSet.starMonthNaming.source,
-          sourceUrl: ruleSet.starMonthNaming.sourceUrl,
           note: ruleSet.starMonthNaming.months[0],
         },
         starMarkers: [starMarker],
@@ -352,7 +365,7 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await page.route('**/api/maramataka/star-markers**', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify([starMarker]),
+      body: JSON.stringify([starMarker, otherVisibleStarMarker]),
     });
   });
 
@@ -381,12 +394,20 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByTestId('moon-details-panel')).toContainText(
     '2.5 days',
   );
-  await expect(page.getByTestId('star-marker-layer')).toContainText('Puanga');
-  await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
-    'Star month: Puanga',
+  await expect(page.getByTestId('star-marker-layer')).toContainText(
+    'Matariki',
+  );
+  await expect(page.getByTestId('star-marker-layer')).not.toContainText(
+    'Rigel',
   );
   await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
-    'Puanga appearing in the morning',
+    'Star month: Te Tahi o Pipiri',
+  );
+  await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
+    'The First of Pipiri',
+  );
+  await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
+    'Matariki (Pleiades) on the horizon at dawn',
   );
   await expect(page.getByLabel('Moon timings')).toContainText('Moonset');
   await expect(page.getByLabel('Moon timings')).toContainText('Meridian');

@@ -12,6 +12,8 @@ export interface StarMonthNote {
 export interface StarMonthNamingRuleSet {
   strategy: string;
   sampleTimeLocal: string;
+  yearStartMarkerId: string;
+  yearStartDescription: string;
   source: string;
   sourceUrl?: string;
   sourceQuote?: string;
@@ -69,6 +71,9 @@ export function summarizeRuleSet(
       ? {
           strategy: ruleSet.starMonthNaming.strategy,
           sampleTimeLocal: ruleSet.starMonthNaming.sampleTimeLocal,
+          yearStartMarkerId: ruleSet.starMonthNaming.yearStartMarkerId,
+          yearStartDescription:
+            ruleSet.starMonthNaming.yearStartDescription,
           source: ruleSet.starMonthNaming.source,
           sourceUrl: ruleSet.starMonthNaming.sourceUrl,
           sourceQuote: ruleSet.starMonthNaming.sourceQuote,

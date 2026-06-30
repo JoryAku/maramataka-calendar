@@ -4,6 +4,8 @@ import {
   MoonRise,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from './maramataka-service';
+import { MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET } from './mita-te-tai-best';
+import { summarizeRuleSet } from './maramataka-rule-set';
 
 describe('MaramatakaService', () => {
   const location: Location = {
@@ -114,6 +116,95 @@ describe('MaramatakaService', () => {
       overlaps: undefined,
     });
     expect(result).toBe(generatedMonth);
+  });
+
+  it('returns only star markers relevant to the active named month', async () => {
+    const whiroStartsAt = new Date('2026-06-10T05:00:00Z');
+    const generatedMonth = {
+      version: 'mita-te-tai-best' as const,
+      ruleSet: summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET),
+      whiroStartsAt,
+      nights: [
+        {
+          mata: MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.mata[0],
+          startsAt: whiroStartsAt,
+          endsAt: new Date('2026-06-11T05:00:00Z'),
+        },
+      ],
+    };
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons: jest
+          .fn()
+          .mockImplementation((year: number) =>
+            Promise.resolve(
+              year === 2026
+                ? [
+                    {
+                      occursAt: new Date('2026-06-10T00:00:00Z'),
+                      source: 'astronomy-engine',
+                    },
+                  ]
+                : [],
+            ),
+          ),
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn().mockResolvedValue([]),
+        getMoonRise: jest
+          .fn()
+          .mockImplementation((date: string) => Promise.resolve(createMoonRise(date))),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+        getStarMarkers: jest.fn().mockResolvedValue([
+          {
+            id: 'matariki',
+            name: 'Matariki',
+            type: 'asterism',
+            englishName: 'Pleiades',
+            description: 'Year-start marker.',
+            seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+            source: 'Elsdon Best, The Maori Division of Time',
+            confidence: 'confirmed',
+            observedAt: whiroStartsAt,
+            altitudeDegrees: 6,
+            azimuthDegrees: 80,
+            direction: 'E',
+            visibility: 'visible',
+            calculation: 'Test marker.',
+          },
+          {
+            id: 'puanga',
+            name: 'Puanga',
+            type: 'star',
+            englishName: 'Rigel',
+            description: 'Visible but not the active month ariki.',
+            seasonalAssociation: 'Another marker',
+            source: 'Elsdon Best, The Maori Division of Time',
+            confidence: 'confirmed',
+            observedAt: whiroStartsAt,
+            altitudeDegrees: 18,
+            azimuthDegrees: 82,
+            direction: 'E',
+            visibility: 'visible',
+            calculation: 'Test marker.',
+          },
+        ]),
+      },
+      calculateWhiroStartFn: jest.fn().mockReturnValue(whiroStartsAt),
+      generateMaramatakaMonthFn: jest.fn().mockReturnValue(generatedMonth),
+    });
+
+    const cycle = await service.getCycleDetails(
+      location,
+      new Date('2026-06-10T06:00:00Z'),
+    );
+
+    expect(cycle?.starMonth?.name).toBe('Te Tahi o Pipiri');
+    expect(cycle?.starMonth?.marker.name).toBe('Matariki');
+    expect(cycle?.starMarkers?.map((marker) => marker.name)).toEqual([
+      'Matariki',
+    ]);
   });
 
   it('closes the marama at the next Whiro moonrise', async () => {

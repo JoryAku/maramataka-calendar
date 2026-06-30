@@ -24,28 +24,27 @@ describe('MaramatakaPage', () => {
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
       sampleTimeLocal: '06:00',
-      source:
-        'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-      sourceUrl:
-        'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+      yearStartMarkerId: 'matariki',
+      yearStartDescription:
+        'The year commences with Matariki appearing on the horizon at dawn.',
+      source: 'Elsdon Best, The Maori Division of Time',
       months: [
         {
           sequence: 1,
-          name: 'Puanga',
-          markerIds: ['puanga'],
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
           description:
-            'The first seasonal month is associated with Puanga appearing in the morning.',
-          sourceText:
-            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
         },
       ],
       markers: [
         {
-          id: 'puanga',
-          name: 'Puanga',
-          type: 'star',
-          englishName: 'Rigel',
-          seasonalAssociation: 'New year / first seasonal month',
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
           confidence: 'confirmed',
         },
       ],
@@ -194,18 +193,16 @@ describe('MaramatakaPage', () => {
         },
       },
       starMonth: {
-        name: 'Puanga',
+        name: 'Te Tahi o Pipiri',
         marker: {
-          id: 'puanga',
-          name: 'Puanga',
-          type: 'star',
-          englishName: 'Rigel',
-          description: 'A dawn marker associated with the Māori new year.',
-          seasonalAssociation: 'New year / first seasonal month',
-          source:
-            'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-          sourceUrl:
-            'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          description:
+            'Pleiades; year-start marker appearing on the dawn horizon.',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          source: 'Elsdon Best, The Maori Division of Time',
           confidence: 'confirmed',
           observedAt: '2026-01-10T17:00:00.000Z',
           altitudeDegrees: 24,
@@ -217,18 +214,14 @@ describe('MaramatakaPage', () => {
         },
         rule:
           'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
-        source:
-          'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-        sourceUrl:
-          'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+        source: 'Elsdon Best, The Maori Division of Time',
         note: {
           sequence: 1,
-          name: 'Puanga',
-          markerIds: ['puanga'],
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
           description:
-            'The first seasonal month is associated with Puanga appearing in the morning.',
-          sourceText:
-            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
         },
       },
       starMarkers: starMarkersFixture(),
@@ -264,22 +257,38 @@ describe('MaramatakaPage', () => {
   function starMarkersFixture(): Record<string, unknown>[] {
     return [
       {
-        id: 'puanga',
-        name: 'Puanga',
-        type: 'star',
-        englishName: 'Rigel',
-        description: 'A dawn marker associated with the Māori new year.',
-        seasonalAssociation:
-          'Associated with the first month and the appearance of Puanga in the morning.',
-        source: 'Dr. Thomson seasonal star account',
-        sourceUrl:
-          'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+        id: 'matariki',
+        name: 'Matariki',
+        type: 'asterism',
+        englishName: 'Pleiades',
+        description:
+          'Pleiades; year-start marker appearing on the dawn horizon.',
+        seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+        source: 'Elsdon Best, The Maori Division of Time',
         confidence: 'confirmed',
         observedAt: '2026-01-10T17:00:00.000Z',
         altitudeDegrees: 24,
         azimuthDegrees: 74,
         direction: 'E',
         visibility: 'prominent',
+        calculation:
+          'Dawn sky position sampled at 06:00 local time for the selected location.',
+      },
+      {
+        id: 'puanga',
+        name: 'Puanga',
+        type: 'star',
+        englishName: 'Rigel',
+        description:
+          'A dawn marker that is visible but not assigned to this named month.',
+        seasonalAssociation: 'Another rule-set marker',
+        source: 'Elsdon Best, The Maori Division of Time',
+        confidence: 'confirmed',
+        observedAt: '2026-01-10T17:00:00.000Z',
+        altitudeDegrees: 18,
+        azimuthDegrees: 80,
+        direction: 'E',
+        visibility: 'visible',
         calculation:
           'Dawn sky position sampled at 06:00 local time for the selected location.',
       },
@@ -376,18 +385,13 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('17%');
     expect(content).toContain('Meridian');
     expect(content).toContain('Dawn sky markers');
-    expect(content).toContain('Puanga');
-    expect(content).toContain('Rigel');
-    expect(content).toContain('Star month: Puanga');
-    expect(content).toContain('Puanga appearing in the morning');
-    expect(content).toContain('June is the first month of the year');
-    expect(
-      fixture.nativeElement
-        .querySelector('[data-testid="star-marker-layer"] a')
-        ?.getAttribute('href'),
-    ).toBe(
-      'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
-    );
+    expect(content).toContain('Matariki');
+    expect(content).toContain('Pleiades');
+    expect(content).not.toContain('Rigel');
+    expect(content).toContain('Star month: Te Tahi o Pipiri');
+    expect(content).toContain('Himiona Tikitu');
+    expect(content).toContain('The First of Pipiri');
+    expect(content).toContain('Matariki (Pleiades) on the horizon at dawn');
     expect(content).toContain('Fishing guidance');
     expect(content).toContain('Mo te hi');
     expect(
