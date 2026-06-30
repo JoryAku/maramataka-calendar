@@ -7,11 +7,11 @@ function createGoldenFixtureProvider(
 ): AstronomyProvider {
   const newMoons = fixture.newMoons.map((occursAt) => ({
     occursAt: new Date(occursAt),
-    source: 'usno',
+    source: 'astronomy-engine',
   }));
   const fullMoons = fixture.fullMoons.map((occursAt) => ({
     occursAt: new Date(occursAt),
-    source: 'usno',
+    source: 'astronomy-engine',
   }));
   const moonRises = new Map<string, MoonRise>(
     fixture.moonRises.map(([date, risesAt]) => [
@@ -19,7 +19,7 @@ function createGoldenFixtureProvider(
       {
         date,
         risesAt: new Date(risesAt),
-        source: 'usno',
+        source: 'astronomy-engine',
       },
     ]),
   );
@@ -173,7 +173,7 @@ describe('MaramatakaService golden date fixtures', () => {
           localDate: '2026-09-11',
           localTime: '06:03:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
           mata: { name: 'Whiro' },
         },
         fullMoon: {
@@ -183,7 +183,7 @@ describe('MaramatakaService golden date fixtures', () => {
           localDate: '2026-09-27',
           localTime: '05:49:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno',
+          source: 'astronomy-engine',
           mata: { name: 'Ohua' },
         },
         nextWhiro: {
@@ -193,7 +193,7 @@ describe('MaramatakaService golden date fixtures', () => {
           localDate: '2026-10-11',
           localTime: '06:17:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
           mata: { name: 'Whiro' },
         },
       },

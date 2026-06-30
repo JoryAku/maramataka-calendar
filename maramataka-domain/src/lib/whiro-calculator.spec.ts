@@ -9,12 +9,12 @@ describe('calculateWhiroStart', () => {
         {
           date: '2026-01-01',
           risesAt: new Date('2026-01-01T18:31:00+13:00'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         {
           date: '2026-01-02',
           risesAt: new Date('2026-01-02T19:21:00+13:00'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
       ],
     });
@@ -30,7 +30,7 @@ describe('calculateWhiroStart', () => {
         {
           date: '2026-01-01',
           risesAt: new Date('2026-01-01T18:31:00+13:00'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
       ],
     });
@@ -46,12 +46,12 @@ describe('calculateWhiroStart', () => {
         {
           date: '2026-01-02',
           risesAt: new Date('2026-01-02T19:21:00+13:00'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         {
           date: '2025-12-31',
           risesAt: new Date('2025-12-31T17:41:00+13:00'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
       ],
     });
@@ -68,7 +68,7 @@ describe('calculateWhiroStart', () => {
           {
             date: '2026-01-01',
             risesAt: new Date('2026-01-01T18:31:00+13:00'),
-            source: 'usno',
+            source: 'astronomy-engine',
           },
         ],
       }),

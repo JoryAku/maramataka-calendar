@@ -11,7 +11,7 @@ describe('generateMaramatakaMonth', () => {
   const moonRise = (date: string, time: string) => ({
     date,
     risesAt: new Date(`${date}T${time}:00+13:00`),
-    source: 'usno',
+    source: 'astronomy-engine',
   });
 
   it('creates nights from consecutive moonrises', () => {

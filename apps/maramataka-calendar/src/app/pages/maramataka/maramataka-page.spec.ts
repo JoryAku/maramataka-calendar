@@ -131,7 +131,7 @@ describe('MaramatakaPage', () => {
           localDate: '2026-01-10',
           localTime: '19:45:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
         },
         fullMoon: {
           type: 'full-moon',
@@ -140,7 +140,7 @@ describe('MaramatakaPage', () => {
           localDate: '2026-01-11',
           localTime: '16:00:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         nextWhiro: {
           type: 'next-whiro',
@@ -149,7 +149,7 @@ describe('MaramatakaPage', () => {
           localDate: '2026-01-12',
           localTime: '19:45:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
         },
       },
       nights: [],
@@ -162,22 +162,22 @@ describe('MaramatakaPage', () => {
       phase: 'Waxing Crescent',
       fractionIlluminated: 0.17,
       lunarAgeDays: 2.5,
-      lunarAgeSource: 'usno moon phases',
+      lunarAgeSource: 'astronomy-engine moon phases',
       distanceKm: null,
       moonrise: {
         occursAt: '2026-01-10T06:45:00.000Z',
-        source: 'usno',
+        source: 'astronomy-engine',
       },
       moonset: {
         occursAt: '2026-01-10T19:12:00.000Z',
-        source: 'usno',
+        source: 'astronomy-engine',
       },
       transit: {
         occursAt: '2026-01-10T12:41:00.000Z',
-        source: 'usno',
+        source: 'astronomy-engine',
       },
       unavailable: ['distanceKm'],
-      source: 'usno',
+      source: 'astronomy-engine',
     };
   }
 

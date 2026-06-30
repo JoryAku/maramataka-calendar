@@ -15,7 +15,7 @@ describe('MaramatakaService', () => {
   const createMoonRise = (date: string): MoonRise => ({
     date,
     risesAt: new Date(`${date}T05:00:00Z`),
-    source: 'usno',
+    source: 'astronomy-engine',
   });
   const createMoonRiseAtOffset = (startDate: string, offset: number): MoonRise => {
     const start = new Date(`${startDate}T05:00:00Z`);
@@ -41,10 +41,10 @@ describe('MaramatakaService', () => {
     const getNewMoons = jest
       .fn()
       .mockResolvedValueOnce([
-        { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2026-01-29T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-29T06:00:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([]);
 
@@ -135,8 +135,8 @@ describe('MaramatakaService', () => {
       .fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'usno' },
-        { occursAt: new Date('2026-01-03T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2026-01-03T06:00:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([]);
 
@@ -197,8 +197,8 @@ describe('MaramatakaService', () => {
             .fn()
             .mockResolvedValueOnce([])
             .mockResolvedValueOnce([
-              { occursAt: new Date('2026-01-01T01:00:00Z'), source: 'usno' },
-              { occursAt: new Date('2026-01-04T01:00:00Z'), source: 'usno' },
+              { occursAt: new Date('2026-01-01T01:00:00Z'), source: 'astronomy-engine' },
+              { occursAt: new Date('2026-01-04T01:00:00Z'), source: 'astronomy-engine' },
             ])
             .mockResolvedValueOnce([]),
           getMoonPhases: jest.fn(),
@@ -255,8 +255,8 @@ describe('MaramatakaService', () => {
       .fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'usno' },
-        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([]);
 
@@ -268,7 +268,7 @@ describe('MaramatakaService', () => {
           .fn()
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([
-            { occursAt: new Date('2026-01-15T12:00:00Z'), source: 'usno' },
+            { occursAt: new Date('2026-01-15T12:00:00Z'), source: 'astronomy-engine' },
           ])
           .mockResolvedValueOnce([]),
         getMoonRise: jest
@@ -305,8 +305,8 @@ describe('MaramatakaService', () => {
       .fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'usno' },
-        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([]);
 
@@ -318,7 +318,7 @@ describe('MaramatakaService', () => {
           .fn()
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([
-            { occursAt: new Date('2026-01-16T12:00:00Z'), source: 'usno' },
+            { occursAt: new Date('2026-01-16T12:00:00Z'), source: 'astronomy-engine' },
           ])
           .mockResolvedValueOnce([]),
         getMoonRise: jest
@@ -356,8 +356,8 @@ describe('MaramatakaService', () => {
       .fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'usno' },
-        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2026-01-31T06:00:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([]);
 
@@ -369,7 +369,7 @@ describe('MaramatakaService', () => {
           .fn()
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([
-            { occursAt: new Date('2026-01-17T12:00:00Z'), source: 'usno' },
+            { occursAt: new Date('2026-01-17T12:00:00Z'), source: 'astronomy-engine' },
           ])
           .mockResolvedValueOnce([]),
         getMoonRise: jest
@@ -412,7 +412,7 @@ describe('MaramatakaService', () => {
       .fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'usno' },
+        { occursAt: new Date('2026-01-01T06:00:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([]);
 
@@ -465,7 +465,7 @@ describe('MaramatakaService', () => {
     const getNewMoons = jest
       .fn()
       .mockResolvedValueOnce([
-        { occursAt: new Date('2025-12-31T23:30:00Z'), source: 'usno' },
+        { occursAt: new Date('2025-12-31T23:30:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
@@ -535,7 +535,7 @@ describe('MaramatakaService', () => {
         getNewMoons: jest
           .fn()
           .mockResolvedValueOnce([
-            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'astronomy-engine' },
           ])
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),
@@ -563,7 +563,7 @@ describe('MaramatakaService', () => {
         getNewMoons: jest
           .fn()
           .mockResolvedValueOnce([
-            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'astronomy-engine' },
           ])
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),
@@ -573,9 +573,9 @@ describe('MaramatakaService', () => {
           .fn()
           .mockRejectedValue(
             new AstronomyProviderError(
-              'usno',
+              'astronomy-engine',
               'request-timeout',
-              'USNO moonrise request timed out after 10000ms',
+              'Astronomy Engine moonrise request timed out after 10000ms',
             ),
           ),
         getMoonRiseSet: jest.fn(),
@@ -587,10 +587,10 @@ describe('MaramatakaService', () => {
     await expect(
       service.getMonth(location, new Date('2026-01-15T12:00:00Z')),
     ).rejects.toMatchObject({
-      provider: 'usno',
+      provider: 'astronomy-engine',
       code: 'request-timeout',
       message:
-        'Failed to retrieve moonrise data: USNO moonrise request timed out after 10000ms',
+        'Failed to retrieve moonrise data: Astronomy Engine moonrise request timed out after 10000ms',
     });
   });
 
@@ -606,7 +606,7 @@ describe('MaramatakaService', () => {
         getNewMoons: jest
           .fn()
           .mockResolvedValueOnce([
-            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'astronomy-engine' },
           ])
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),
@@ -641,7 +641,7 @@ describe('MaramatakaService', () => {
         getNewMoons: jest
           .fn()
           .mockResolvedValueOnce([
-            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'usno' },
+            { occursAt: new Date('2025-12-30T06:00:00Z'), source: 'astronomy-engine' },
           ])
           .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),

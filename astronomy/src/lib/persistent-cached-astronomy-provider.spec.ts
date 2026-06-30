@@ -55,7 +55,7 @@ describe('PersistentCachedAstronomyProvider', () => {
         {
           phase: 'New Moon',
           occursAt: '2026-01-09T04:05:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
       ],
     });
@@ -73,7 +73,7 @@ describe('PersistentCachedAstronomyProvider', () => {
       getMoonRise: jest.fn().mockResolvedValue({
         date: '2026-01-01',
         risesAt: new Date('2026-01-01T05:31:00.000Z'),
-        source: 'usno',
+        source: 'astronomy-engine',
       }),
     });
     const store = createStore();
@@ -97,7 +97,7 @@ describe('PersistentCachedAstronomyProvider', () => {
       getFullMoons: jest.fn().mockResolvedValue([
         {
           occursAt: new Date('2026-01-03T10:03:00.000Z'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
       ]),
     });
@@ -117,13 +117,13 @@ describe('PersistentCachedAstronomyProvider', () => {
 
   it('uses cached values when the wrapped provider is unavailable', async () => {
     const provider = createProvider({
-      getNewMoons: jest.fn().mockRejectedValue(new Error('USNO unavailable')),
+      getNewMoons: jest.fn().mockRejectedValue(new Error('Astronomy Engine unavailable')),
     });
     const store = createStore({
       'new-moons:2026': [
         {
           occursAt: '2026-01-18T19:52:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
       ],
     });
@@ -135,20 +135,20 @@ describe('PersistentCachedAstronomyProvider', () => {
     expect(newMoons).toEqual([
       {
         occursAt: new Date('2026-01-18T19:52:00.000Z'),
-        source: 'usno',
+        source: 'astronomy-engine',
       },
     ]);
   });
 
   it('surfaces provider errors when the provider is unavailable on a cache miss', async () => {
     const provider = createProvider({
-      getNewMoons: jest.fn().mockRejectedValue(new Error('USNO unavailable')),
+      getNewMoons: jest.fn().mockRejectedValue(new Error('Astronomy Engine unavailable')),
     });
     const store = createStore();
 
     const cached = new PersistentCachedAstronomyProvider(provider, store);
 
-    await expect(cached.getNewMoons(2026)).rejects.toThrow('USNO unavailable');
+    await expect(cached.getNewMoons(2026)).rejects.toThrow('Astronomy Engine unavailable');
   });
 
   it('does not fail provider reads when cache writes fail', async () => {
@@ -156,7 +156,7 @@ describe('PersistentCachedAstronomyProvider', () => {
       getNewMoons: jest.fn().mockResolvedValue([
         {
           occursAt: new Date('2026-01-09T04:05:00.000Z'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
       ]),
     });
@@ -171,7 +171,7 @@ describe('PersistentCachedAstronomyProvider', () => {
     expect(newMoons).toEqual([
       {
         occursAt: new Date('2026-01-09T04:05:00.000Z'),
-        source: 'usno',
+        source: 'astronomy-engine',
       },
     ]);
   });
@@ -186,24 +186,24 @@ describe('PersistentCachedAstronomyProvider', () => {
         closestPhase: {
           phase: 'Full Moon',
           occursAt: '2026-01-03T10:03:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         moonrise: {
           date: '2026-01-01',
           risesAt: '2026-01-01T05:57:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         moonset: {
           date: '2026-01-01',
           setsAt: '2025-12-31T13:50:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         transit: {
           date: '2026-01-01',
           transitsAt: '2026-01-01T10:21:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
-        source: 'usno',
+        source: 'astronomy-engine',
       },
     });
 

@@ -1,7 +1,5 @@
 import { MoonPhase } from './astronomy-provider';
 
-export const LUNAR_AGE_SOURCE = 'usno moon phases';
-
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function calculateLunarAgeDays(

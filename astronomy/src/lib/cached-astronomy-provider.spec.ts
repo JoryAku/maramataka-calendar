@@ -79,7 +79,7 @@ describe('CachedAstronomyProvider', () => {
       getMoonRise: jest.fn().mockResolvedValue({
         date: '2026-01-01',
         risesAt: new Date('2026-01-01T18:31:00+13:00'),
-        source: 'usno',
+        source: 'astronomy-engine',
       }),
     });
 
@@ -111,7 +111,7 @@ describe('CachedAstronomyProvider', () => {
         date: '2026-01-01',
         risesAt: new Date('2026-01-01T18:31:00+13:00'),
         setsAt: new Date('2026-01-02T09:14:00+13:00'),
-        source: 'usno',
+        source: 'astronomy-engine',
       }),
     });
 
@@ -142,7 +142,7 @@ describe('CachedAstronomyProvider', () => {
       getMoonTransit: jest.fn().mockResolvedValue({
         date: '2026-01-01',
         transitsAt: new Date('2026-01-01T10:21:00.000Z'),
-        source: 'usno',
+        source: 'astronomy-engine',
       }),
     });
 
@@ -160,7 +160,7 @@ describe('CachedAstronomyProvider', () => {
         date: '2026-01-01',
         phase: 'Waxing Gibbous',
         fractionIlluminated: 0.91,
-        source: 'usno',
+        source: 'astronomy-engine',
       }),
     });
 

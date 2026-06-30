@@ -232,7 +232,7 @@ export class MaramatakaService {
           label: 'Whiro / Kohititanga',
           occursAt: month.whiroStartsAt,
           location,
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
           mata: month.nights[0]?.mata,
         }),
         ...(fullMoon
@@ -252,7 +252,7 @@ export class MaramatakaService {
           label: 'Next Whiro / Kohititanga',
           occursAt: nextWhiroStartsAt,
           location,
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
           mata: this.ruleSet.mata[0],
         }),
       },

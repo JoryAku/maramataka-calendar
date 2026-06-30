@@ -138,7 +138,7 @@ describe('MaramatakaController', () => {
           localDate: '2026-01-01',
           localTime: '20:47:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
           mata: {
             index: 1,
             name: 'Whiro',
@@ -152,7 +152,7 @@ describe('MaramatakaController', () => {
           localDate: '2026-01-02',
           localTime: '21:00:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno',
+          source: 'astronomy-engine',
           mata: {
             index: 2,
             name: 'Tirea',
@@ -166,7 +166,7 @@ describe('MaramatakaController', () => {
           localDate: '2026-01-04',
           localTime: '20:44:00',
           timezone: 'Pacific/Auckland',
-          source: 'usno moonrise',
+          source: 'astronomy-engine moonrise',
           mata: {
             index: 1,
             name: 'Whiro',
@@ -318,9 +318,9 @@ describe('MaramatakaController', () => {
   it('returns HTTP 503 for astronomy provider failures', async () => {
     getMonthMock.mockRejectedValue(
       new AstronomyProviderError(
-        'usno',
+        'astronomy-engine',
         'request-timeout',
-        'USNO moonrise request timed out after 10000ms',
+        'Astronomy Engine moonrise request timed out after 10000ms',
       ),
     );
 
@@ -339,7 +339,7 @@ describe('MaramatakaController', () => {
       expect.objectContaining({
         statusCode: 503,
         message: 'Astronomy data is currently unavailable',
-        provider: 'usno',
+        provider: 'astronomy-engine',
         code: 'request-timeout',
       }),
     );
@@ -380,7 +380,7 @@ describe('MaramatakaController', () => {
             localDate: '2026-01-01',
             localTime: '20:47:00',
             timezone: 'Pacific/Auckland',
-            source: 'usno moonrise',
+            source: 'astronomy-engine moonrise',
             mata: {
               index: 1,
               name: 'Whiro',
@@ -394,7 +394,7 @@ describe('MaramatakaController', () => {
             localDate: '2026-01-02',
             localTime: '21:00:00',
             timezone: 'Pacific/Auckland',
-            source: 'usno',
+            source: 'astronomy-engine',
             mata: {
               index: 2,
               name: 'Tirea',
@@ -408,7 +408,7 @@ describe('MaramatakaController', () => {
             localDate: '2026-01-04',
             localTime: '20:44:00',
             timezone: 'Pacific/Auckland',
-            source: 'usno moonrise',
+            source: 'astronomy-engine moonrise',
             mata: {
               index: 1,
               name: 'Whiro',
@@ -1016,28 +1016,28 @@ describe('MaramatakaController', () => {
         phase: 'Waxing Gibbous',
         fractionIlluminated: 0.91,
         lunarAgeDays: 11.89,
-        lunarAgeSource: 'usno moon phases',
+        lunarAgeSource: 'astronomy-engine moon phases',
         closestPhase: {
           phase: 'Full Moon',
           occursAt: new Date('2026-01-03T10:03:00.000Z'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         moonrise: {
           date: '2026-01-01',
           risesAt: new Date('2026-01-01T05:57:00.000Z'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         moonset: {
           date: '2026-01-01',
           setsAt: new Date('2025-12-31T13:50:00.000Z'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         transit: {
           date: '2026-01-01',
           transitsAt: new Date('2026-01-01T10:21:00.000Z'),
-          source: 'usno',
+          source: 'astronomy-engine',
         },
-        source: 'usno',
+        source: 'astronomy-engine',
       });
 
       const response = await axios.get(`${baseUrl}/maramataka/moon-details`, {
@@ -1054,27 +1054,27 @@ describe('MaramatakaController', () => {
         phase: 'Waxing Gibbous',
         fractionIlluminated: 0.91,
         lunarAgeDays: 11.89,
-        lunarAgeSource: 'usno moon phases',
+        lunarAgeSource: 'astronomy-engine moon phases',
         distanceKm: null,
         closestPhase: {
           phase: 'Full Moon',
           occursAt: '2026-01-03T10:03:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         moonrise: {
           occursAt: '2026-01-01T05:57:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         moonset: {
           occursAt: '2025-12-31T13:50:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         transit: {
           occursAt: '2026-01-01T10:21:00.000Z',
-          source: 'usno',
+          source: 'astronomy-engine',
         },
         unavailable: ['distanceKm'],
-        source: 'usno',
+        source: 'astronomy-engine',
       });
       expect(getMoonDetailsMock).toHaveBeenCalledTimes(1);
 

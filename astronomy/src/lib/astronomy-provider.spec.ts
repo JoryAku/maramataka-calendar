@@ -12,7 +12,7 @@ describe('AstronomyProvider', () => {
   it('defines a NewMoon shape', () => {
     const moon: NewMoon = {
       occursAt: new Date(),
-      source: 'usno',
+      source: 'astronomy-engine',
     };
 
     expect(moon.occursAt).toBeInstanceOf(Date);
@@ -21,7 +21,7 @@ describe('AstronomyProvider', () => {
   it('defines a FullMoon shape', () => {
     const moon: FullMoon = {
       occursAt: new Date(),
-      source: 'usno',
+      source: 'astronomy-engine',
     };
 
     expect(moon.occursAt).toBeInstanceOf(Date);
@@ -31,7 +31,7 @@ describe('AstronomyProvider', () => {
     const phase: MoonPhase = {
       phase: 'Full Moon',
       occursAt: new Date(),
-      source: 'usno',
+      source: 'astronomy-engine',
     };
 
     expect(phase.phase).toBe('Full Moon');
@@ -42,7 +42,7 @@ describe('AstronomyProvider', () => {
       date: '2026-01-01',
       risesAt: new Date(),
       setsAt: new Date(),
-      source: 'usno',
+      source: 'astronomy-engine',
     };
 
     expect(moonRiseSet.date).toBe('2026-01-01');
@@ -54,7 +54,7 @@ describe('AstronomyProvider', () => {
     const moonRise: MoonRise = {
       date: '2026-01-01',
       risesAt: new Date(),
-      source: 'usno',
+      source: 'astronomy-engine',
     };
 
     expect(moonRise.date).toBe('2026-01-01');
@@ -65,7 +65,7 @@ describe('AstronomyProvider', () => {
     const transit: MoonTransit = {
       date: '2026-01-01',
       transitsAt: new Date(),
-      source: 'usno',
+      source: 'astronomy-engine',
     };
 
     expect(transit.transitsAt).toBeInstanceOf(Date);
@@ -76,7 +76,7 @@ describe('AstronomyProvider', () => {
       date: '2026-01-01',
       phase: 'Waxing Crescent',
       fractionIlluminated: 0.25,
-      source: 'usno',
+      source: 'astronomy-engine',
     };
 
     expect(details.fractionIlluminated).toBe(0.25);

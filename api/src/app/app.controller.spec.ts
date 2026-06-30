@@ -82,13 +82,17 @@ describe('AppController', () => {
     it('returns 503 when astronomy is unavailable', async () => {
       const appController = app.get<AppController>(AppController);
       maramatakaService.getMoonDetails.mockRejectedValue(
-        new AstronomyProviderError('usno', 'request-failed', 'USNO unavailable'),
+        new AstronomyProviderError(
+          'astronomy-engine',
+          'request-failed',
+          'Astronomy Engine unavailable',
+        ),
       );
 
       await expect(appController.getReadiness()).rejects.toMatchObject({
         response: expect.objectContaining({
           status: 'unavailable',
-          provider: 'usno',
+          provider: 'astronomy-engine',
           code: 'request-failed',
         }),
       });

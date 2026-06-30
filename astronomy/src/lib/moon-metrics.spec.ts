@@ -1,17 +1,17 @@
 import { calculateLunarAgeDays } from './moon-metrics';
 
 describe('moon metrics', () => {
-  it('calculates lunar age from the previous USNO New Moon phase', () => {
+  it('calculates lunar age from the previous New Moon phase', () => {
     const age = calculateLunarAgeDays(new Date('2026-01-20T00:00:00.000Z'), [
       {
         phase: 'New Moon',
         occursAt: new Date('2026-01-18T19:52:00.000Z'),
-        source: 'usno',
+        source: 'astronomy-engine',
       },
       {
         phase: 'Full Moon',
         occursAt: new Date('2026-02-01T22:09:00.000Z'),
-        source: 'usno',
+        source: 'astronomy-engine',
       },
     ]);
 
@@ -23,7 +23,7 @@ describe('moon metrics', () => {
       {
         phase: 'New Moon',
         occursAt: new Date('2026-02-17T12:01:00.000Z'),
-        source: 'usno',
+        source: 'astronomy-engine',
       },
     ]);
 

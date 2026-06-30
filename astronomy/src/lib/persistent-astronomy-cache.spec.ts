@@ -31,14 +31,14 @@ describe('FileAstronomyCacheStore', () => {
     await store.set('moonrise:2026-01-01', {
       date: '2026-01-01',
       risesAt: new Date('2026-01-01T05:31:00.000Z'),
-      source: 'usno',
+      source: 'astronomy-engine',
     });
 
     const nextStore = new FileAstronomyCacheStore(cachePath);
     await expect(nextStore.get('moonrise:2026-01-01')).resolves.toEqual({
       date: '2026-01-01',
       risesAt: '2026-01-01T05:31:00.000Z',
-      source: 'usno',
+      source: 'astronomy-engine',
     });
 
     const rawCache = JSON.parse(await readFile(cachePath, 'utf8')) as {
