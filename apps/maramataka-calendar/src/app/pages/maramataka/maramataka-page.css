@@ -49,7 +49,7 @@ h2 {
   text-transform: uppercase;
 }
 
-.demo-controls {
+.controls {
   display: grid;
   grid-template-columns: minmax(16rem, 1fr) minmax(22rem, 1fr);
   gap: 1rem;
@@ -86,7 +86,7 @@ h2 {
 .date-control {
   display: grid;
   grid-template-columns: minmax(13rem, 1fr) minmax(7rem, auto);
-  gap: 0.5rem;
+  gap: 2rem;
 }
 
 .secondary-button {
@@ -350,7 +350,7 @@ dd {
     display: grid;
   }
 
-  .demo-controls {
+  .controls {
     grid-template-columns: 1fr;
   }
 
