@@ -86,7 +86,7 @@ h2 {
 .date-control {
   display: grid;
   grid-template-columns: minmax(13rem, 1fr) minmax(7rem, auto);
-  gap: 0.5rem;
+  gap: 2rem;
 }
 
 .secondary-button {
