@@ -45,6 +45,38 @@
   </p>
   }
 
+  @if (starMonth() || cycleStarMarkers().length) {
+  <section class="cycle-star-layer" data-testid="cycle-star-marker-layer">
+    @if (starMonth()) {
+    <p>Star month: {{ starMonth()!.name }}</p>
+    <span>
+      Named from {{ starMonth()!.marker.name }} at dawn around Whiro.
+    </span>
+    @if (starMonth()!.note) {
+    <span>
+      {{ starMonth()!.note!.description }}
+    </span>
+    <span>
+      Source note: {{ starMonth()!.note!.sourceText }}
+    </span>
+    }
+    } @else {
+    <p>Dawn sky markers for this part of the cycle</p>
+    }
+    @if (month().ruleSet.starMonthNaming) {
+    <span>{{ month().ruleSet.starMonthNaming!.strategy }}</span>
+    }
+    <ul>
+      @for (marker of cycleStarMarkers(); track marker.id) {
+      <li>
+        <strong>{{ marker.name }}</strong>
+        <span>{{ marker.altitudeDegrees }}° {{ marker.direction }}</span>
+      </li>
+      }
+    </ul>
+  </section>
+  }
+
   <div class="wheel-layout">
     <svg
       class="cycle-wheel"

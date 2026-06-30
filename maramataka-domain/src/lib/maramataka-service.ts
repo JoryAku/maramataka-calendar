@@ -8,6 +8,7 @@ import {
   FullMoon,
   MoonRise,
   NewMoon,
+  StarMarker,
 } from '@maramataka-calendar/astronomy';
 import {
   CurrentMaramatakaNight,
@@ -15,6 +16,7 @@ import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaNight,
+  MaramatakaStarMonth,
 } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
 import {
@@ -176,6 +178,18 @@ export class MaramatakaService {
     return this.astronomyProvider.getMoonDetails(localDate, location);
   }
 
+  async getStarMarkers(location: Location, date: Date): Promise<StarMarker[]> {
+    const localDate = this.formatIsoDateForLocation(date, location);
+
+    return (
+      this.astronomyProvider.getStarMarkers?.(
+        localDate,
+        location,
+        this.ruleSet.starMonthNaming?.markers,
+      ) ?? []
+    );
+  }
+
   async getCurrentNight(
     location: Location,
     date: Date,
@@ -219,6 +233,7 @@ export class MaramatakaService {
     if (!nextWhiroStartsAt) {
       return undefined;
     }
+    const starMarkers = await this.getStarMarkers(location, month.whiroStartsAt);
 
     return {
       version: month.version,
@@ -257,6 +272,38 @@ export class MaramatakaService {
         }),
       },
       nights: month.nights,
+      starMonth: this.selectStarMonth(starMarkers),
+      starMarkers,
+    };
+  }
+
+  private selectStarMonth(
+    starMarkers: StarMarker[],
+  ): MaramatakaStarMonth | undefined {
+    const starMonthNaming = this.ruleSet.starMonthNaming;
+    if (!starMonthNaming) {
+      return undefined;
+    }
+
+    const marker = starMarkers.find(
+      (candidate) =>
+        candidate.visibility !== 'below-horizon' &&
+        ['NE', 'E', 'SE'].includes(candidate.direction),
+    );
+    if (!marker) {
+      return undefined;
+    }
+    const note = starMonthNaming.months.find((month) =>
+      month.markerIds.includes(marker.id),
+    );
+
+    return {
+      name: marker.name,
+      marker,
+      rule: starMonthNaming.strategy,
+      source: starMonthNaming.source,
+      sourceUrl: starMonthNaming.sourceUrl,
+      note,
     };
   }
 

@@ -9,6 +9,9 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  StarMarker,
+  StarMarkerDefinition,
+  StarMarkerVisibility,
 } from './astronomy-provider';
 import { AstronomyProviderError } from './astronomy-provider-error';
 import { calculateLunarAgeDays } from './moon-metrics';
@@ -22,6 +25,139 @@ const ASTRONOMY_ENGINE_LUNAR_AGE_SOURCE = 'astronomy-engine moon phases';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 type AstronomyEngineModule = typeof import('astronomy-engine');
+
+interface StarEquatorResult {
+  ra: number;
+  dec: number;
+}
+
+interface StarHorizonResult {
+  altitude: number;
+  azimuth: number;
+}
+
+interface StarAstronomyEngineModule extends AstronomyEngineModule {
+  Body: AstronomyEngineModule['Body'] & {
+    Venus?: unknown;
+  };
+  Equator?: (
+    body: unknown,
+    date: Date,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    ofDate: boolean,
+    aberration: boolean,
+  ) => StarEquatorResult;
+  Horizon?: (
+    date: Date,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    ra: number,
+    dec: number,
+    refraction: string,
+  ) => StarHorizonResult;
+}
+
+const STAR_MARKER_SOURCE_URL =
+  'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
+
+export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
+  {
+    id: 'puanga',
+    name: 'Puanga',
+    type: 'star',
+    englishName: 'Rigel',
+    description:
+      'New-year marker associated with appearance in the morning sky.',
+    seasonalAssociation: 'New year / first seasonal month',
+    source: 'Thomson / Best seasonal marker account',
+    sourceUrl: STAR_MARKER_SOURCE_URL,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 5.2423,
+      declinationDegrees: -8.2016,
+    },
+  },
+  {
+    id: 'kopu',
+    name: 'Kōpū',
+    type: 'planet',
+    englishName: 'Venus',
+    description: 'Venus as a morning-star marker in the seasonal account.',
+    seasonalAssociation: 'Second seasonal month marker',
+    source: 'Thomson / Best seasonal marker account',
+    sourceUrl: STAR_MARKER_SOURCE_URL,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'body',
+      body: 'Venus',
+    },
+  },
+  {
+    id: 'tautoru',
+    name: 'Tautoru',
+    type: 'asterism',
+    englishName: "Orion's Belt",
+    description:
+      'Orion Belt marker; represented here by Alnilam for sky-position calculation.',
+    seasonalAssociation: 'Second seasonal month marker',
+    source: 'Thomson / Best seasonal marker account',
+    sourceUrl: STAR_MARKER_SOURCE_URL,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 5.6036,
+      declinationDegrees: -1.2019,
+    },
+  },
+  {
+    id: 'whakaahu',
+    name: 'Whakaahu',
+    type: 'star',
+    englishName: 'Castor',
+    description:
+      'Gemini marker; represented by Castor, with Pollux retained for later review.',
+    seasonalAssociation: 'Late winter / early spring marker',
+    source: 'Te Aka / project star-marker notes',
+    confidence: 'working',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 7.5767,
+      declinationDegrees: 31.8883,
+    },
+  },
+  {
+    id: 'rehua',
+    name: 'Rehua',
+    type: 'star',
+    englishName: 'Antares',
+    description: 'Summer marker associated with the Rehua star.',
+    seasonalAssociation: 'Summer marker',
+    source: 'Thomson / Best seasonal marker account',
+    sourceUrl: STAR_MARKER_SOURCE_URL,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 16.4901,
+      declinationDegrees: -26.432,
+    },
+  },
+  {
+    id: 'uruao',
+    name: 'Uruao',
+    type: 'sky-figure',
+    englishName: 'Tail of Scorpion working marker',
+    description:
+      "Working project interpretation for Tamarereti's Canoe / Tail of Scorpion context.",
+    seasonalAssociation: 'Provisional sky-figure marker',
+    source: 'Project working interpretation',
+    confidence: 'working',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 17.5601,
+      declinationDegrees: -37.1038,
+    },
+  },
+];
 
 export class AstronomyEngineProvider implements AstronomyProvider {
   private readonly enginePromise: Promise<AstronomyEngineModule>;
@@ -193,6 +329,57 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     });
   }
 
+  async getStarMarkers(
+    date: string,
+    location: Location,
+    markers = DEFAULT_STAR_MARKERS,
+  ): Promise<StarMarker[]> {
+    return this.calculate('star markers', async (engine) => {
+      const starEngine = engine as StarAstronomyEngineModule;
+      if (!starEngine.Horizon) {
+        throw this.dataUnavailable('Astronomy Engine Horizon API unavailable');
+      }
+
+      const observedAt = this.localDateAtTime(date, location, 6, 0);
+      const observer = this.observer(engine, location);
+
+      return markers.map((marker) => {
+        const coordinates = this.markerCoordinates(
+          marker,
+          starEngine,
+          observer,
+          observedAt,
+        );
+        const horizon = starEngine.Horizon!(
+          observedAt,
+          observer,
+          coordinates.ra,
+          coordinates.dec,
+          'normal',
+        );
+
+        return {
+          id: marker.id,
+          name: marker.name,
+          type: marker.type,
+          englishName: marker.englishName,
+          description: marker.description,
+          seasonalAssociation: marker.seasonalAssociation,
+          source: marker.source,
+          sourceUrl: marker.sourceUrl,
+          confidence: marker.confidence,
+          observedAt,
+          altitudeDegrees: this.roundTo(horizon.altitude, 1),
+          azimuthDegrees: this.roundTo(horizon.azimuth, 1),
+          direction: this.directionFromAzimuth(horizon.azimuth),
+          visibility: this.visibilityFromAltitude(horizon.altitude),
+          calculation:
+            'Dawn sky position sampled at 06:00 local time for the selected location.',
+        };
+      }).sort((a, b) => b.altitudeDegrees - a.altitudeDegrees);
+    });
+  }
+
   private async getMoonPhasesForSurroundingYears(
     date: Date,
   ): Promise<MoonPhase[]> {
@@ -237,6 +424,29 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     location: Location,
   ): InstanceType<AstronomyEngineModule['Observer']> {
     return new engine.Observer(location.latitude, location.longitude, 0);
+  }
+
+  private markerCoordinates(
+    marker: StarMarkerDefinition,
+    engine: StarAstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    observedAt: Date,
+  ): StarEquatorResult {
+    if (marker.representative.kind === 'fixed-equatorial') {
+      return {
+        ra: marker.representative.rightAscensionHours,
+        dec: marker.representative.declinationDegrees,
+      };
+    }
+
+    const body = engine.Body[marker.representative.body];
+    if (!body || !engine.Equator) {
+      throw this.dataUnavailable(
+        `Astronomy Engine body unavailable for ${marker.name}`,
+      );
+    }
+
+    return engine.Equator(body, observedAt, observer, true, true);
   }
 
   private localDateRange(
@@ -350,6 +560,28 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     }
 
     return 'Waning Crescent';
+  }
+
+  private visibilityFromAltitude(altitude: number): StarMarkerVisibility {
+    if (altitude >= 20) {
+      return 'prominent';
+    }
+    if (altitude >= 5) {
+      return 'visible';
+    }
+    if (altitude >= 0) {
+      return 'low';
+    }
+
+    return 'below-horizon';
+  }
+
+  private directionFromAzimuth(azimuth: number): string {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const normalized = ((azimuth % 360) + 360) % 360;
+    const index = Math.round(normalized / 45) % directions.length;
+
+    return directions[index];
   }
 
   private closestPhase(date: Date, phases: MoonPhase[]): MoonPhase | undefined {

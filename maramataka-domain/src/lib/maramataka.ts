@@ -1,5 +1,9 @@
+import { StarMarker } from '@maramataka-calendar/astronomy';
 import { Mata, MaramatakaVersion } from './mata';
-import { MaramatakaRuleSetSummary } from './maramataka-rule-set';
+import {
+  MaramatakaRuleSetSummary,
+  StarMonthNote,
+} from './maramataka-rule-set';
 
 export interface MaramatakaNight {
   mata: Mata;
@@ -38,6 +42,15 @@ export interface MaramatakaCycleAnchor {
   mata?: Mata;
 }
 
+export interface MaramatakaStarMonth {
+  name: string;
+  marker: StarMarker;
+  rule: string;
+  source: string;
+  sourceUrl?: string;
+  note?: StarMonthNote;
+}
+
 export interface MaramatakaCycleDetails {
   version: MaramatakaVersion;
   ruleSet: MaramatakaRuleSetSummary;
@@ -50,4 +63,6 @@ export interface MaramatakaCycleDetails {
     nextWhiro: MaramatakaCycleAnchor;
   };
   nights: MaramatakaNight[];
+  starMonth?: MaramatakaStarMonth;
+  starMarkers?: StarMarker[];
 }

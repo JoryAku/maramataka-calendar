@@ -8,6 +8,8 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  StarMarker,
+  StarMarkerDefinition,
 } from './astronomy-provider';
 
 export class CachedAstronomyProvider implements AstronomyProvider {
@@ -18,6 +20,7 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   private moonRiseSetCache = new Map<string, Promise<MoonRiseSet>>();
   private moonTransitCache = new Map<string, Promise<MoonTransit>>();
   private moonDetailsCache = new Map<string, Promise<MoonDetails>>();
+  private starMarkerCache = new Map<string, Promise<StarMarker[]>>();
 
   constructor(private readonly provider: AstronomyProvider) {}
 
@@ -140,7 +143,35 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     return request;
   }
 
+  async getStarMarkers(
+    date: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]> {
+    const key = `${this.locationCacheKey(date, location)}:${this.starMarkerCacheKey(markers)}`;
+
+    const cachedRequest = this.starMarkerCache.get(key);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = (
+      this.provider.getStarMarkers?.(date, location, markers) ??
+      Promise.resolve([])
+    ).catch((error) => {
+      this.starMarkerCache.delete(key);
+      throw error;
+    });
+
+    this.starMarkerCache.set(key, request);
+    return request;
+  }
+
   private locationCacheKey(date: string, location: Location): string {
     return `${date}:${location.latitude}:${location.longitude}:${location.timezone}`;
+  }
+
+  private starMarkerCacheKey(markers?: StarMarkerDefinition[]): string {
+    return markers?.map((marker) => marker.id).join(',') ?? 'default';
   }
 }

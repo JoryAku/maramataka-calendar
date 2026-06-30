@@ -20,6 +20,36 @@ describe('MaramatakaPage', () => {
     mataBoundary: 'moonrise-to-moonrise',
     calibration: 'full-moon-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
+    starMonthNaming: {
+      strategy:
+        'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      sampleTimeLocal: '06:00',
+      source:
+        'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+      sourceUrl:
+        'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+      months: [
+        {
+          sequence: 1,
+          name: 'Puanga',
+          markerIds: ['puanga'],
+          description:
+            'The first seasonal month is associated with Puanga appearing in the morning.',
+          sourceText:
+            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+        },
+      ],
+      markers: [
+        {
+          id: 'puanga',
+          name: 'Puanga',
+          type: 'star',
+          englishName: 'Rigel',
+          seasonalAssociation: 'New year / first seasonal month',
+          confidence: 'confirmed',
+        },
+      ],
+    },
   };
 
   beforeEach(() => {
@@ -64,8 +94,19 @@ describe('MaramatakaPage', () => {
         req.url === '/api/maramataka/moon-details' &&
         req.params.get('location') === locationId,
     );
+    const starMarkersRequest = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/star-markers' &&
+        req.params.get('location') === locationId,
+    );
 
-    return { monthRequest, cycleRequest, todayRequest, moonDetailsRequest };
+    return {
+      monthRequest,
+      cycleRequest,
+      todayRequest,
+      moonDetailsRequest,
+      starMarkersRequest,
+    };
   }
 
   function locationsFixture() {
@@ -152,6 +193,45 @@ describe('MaramatakaPage', () => {
           source: 'astronomy-engine moonrise',
         },
       },
+      starMonth: {
+        name: 'Puanga',
+        marker: {
+          id: 'puanga',
+          name: 'Puanga',
+          type: 'star',
+          englishName: 'Rigel',
+          description: 'A dawn marker associated with the Māori new year.',
+          seasonalAssociation: 'New year / first seasonal month',
+          source:
+            'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+          sourceUrl:
+            'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+          confidence: 'confirmed',
+          observedAt: '2026-01-10T17:00:00.000Z',
+          altitudeDegrees: 24,
+          azimuthDegrees: 74,
+          direction: 'E',
+          visibility: 'prominent',
+          calculation:
+            'Dawn sky position sampled at 06:00 local time for the selected location.',
+        },
+        rule:
+          'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+        source:
+          'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+        sourceUrl:
+          'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+        note: {
+          sequence: 1,
+          name: 'Puanga',
+          markerIds: ['puanga'],
+          description:
+            'The first seasonal month is associated with Puanga appearing in the morning.',
+          sourceText:
+            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+        },
+      },
+      starMarkers: starMarkersFixture(),
       nights: [],
     };
   }
@@ -181,17 +261,44 @@ describe('MaramatakaPage', () => {
     };
   }
 
+  function starMarkersFixture(): Record<string, unknown>[] {
+    return [
+      {
+        id: 'puanga',
+        name: 'Puanga',
+        type: 'star',
+        englishName: 'Rigel',
+        description: 'A dawn marker associated with the Māori new year.',
+        seasonalAssociation:
+          'Associated with the first month and the appearance of Puanga in the morning.',
+        source: 'Dr. Thomson seasonal star account',
+        sourceUrl:
+          'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+        confidence: 'confirmed',
+        observedAt: '2026-01-10T17:00:00.000Z',
+        altitudeDegrees: 24,
+        azimuthDegrees: 74,
+        direction: 'E',
+        visibility: 'prominent',
+        calculation:
+          'Dawn sky position sampled at 06:00 local time for the selected location.',
+      },
+    ];
+  }
+
   function flushSuccessfulMaramatakaRequests(
     requests: ReturnType<typeof flushMaramatakaRequests>,
     month = monthFixture(),
     today = todayFixture(),
     cycle = cycleFixture(),
     moonDetails = moonDetailsFixture(),
+    starMarkers = starMarkersFixture(),
   ): void {
     requests.monthRequest.flush(month);
     requests.cycleRequest.flush(cycle);
     requests.todayRequest.flush(today);
     requests.moonDetailsRequest.flush(moonDetails);
+    requests.starMarkersRequest.flush(starMarkers);
   }
 
   it('shows loading states before data arrives', () => {
@@ -224,8 +331,13 @@ describe('MaramatakaPage', () => {
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
     const requests = flushMaramatakaRequests();
-    const { monthRequest, cycleRequest, todayRequest, moonDetailsRequest } =
-      requests;
+    const {
+      monthRequest,
+      cycleRequest,
+      todayRequest,
+      moonDetailsRequest,
+      starMarkersRequest,
+    } = requests;
 
     expect(monthRequest.request.params.get('date')).toBe('2026-01-11');
     expect(monthRequest.request.params.has('tz')).toBe(false);
@@ -234,6 +346,7 @@ describe('MaramatakaPage', () => {
     );
     expect(cycleRequest.request.params.get('date')).toBe('2026-01-11');
     expect(moonDetailsRequest.request.params.get('date')).toBe('2026-01-11');
+    expect(starMarkersRequest.request.params.get('date')).toBe('2026-01-11');
 
     flushSuccessfulMaramatakaRequests(
       requests,
@@ -262,6 +375,19 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Waxing Crescent');
     expect(content).toContain('17%');
     expect(content).toContain('Meridian');
+    expect(content).toContain('Dawn sky markers');
+    expect(content).toContain('Puanga');
+    expect(content).toContain('Rigel');
+    expect(content).toContain('Star month: Puanga');
+    expect(content).toContain('Puanga appearing in the morning');
+    expect(content).toContain('June is the first month of the year');
+    expect(
+      fixture.nativeElement
+        .querySelector('[data-testid="star-marker-layer"] a')
+        ?.getAttribute('href'),
+    ).toBe(
+      'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+    );
     expect(content).toContain('Fishing guidance');
     expect(content).toContain('Mo te hi');
     expect(
@@ -439,6 +565,9 @@ describe('MaramatakaPage', () => {
     expect(requests.moonDetailsRequest.request.params.get('date')).toBe(
       '2026-06-26',
     );
+    expect(requests.starMarkersRequest.request.params.get('date')).toBe(
+      '2026-06-26',
+    );
 
     flushSuccessfulMaramatakaRequests(requests, monthFixture(), {
       mata: { index: 2, name: 'Tirea' },
@@ -489,6 +618,9 @@ describe('MaramatakaPage', () => {
     expect(secondRequests.moonDetailsRequest.request.params.get('date')).toBe(
       '2026-01-02',
     );
+    expect(secondRequests.starMarkersRequest.request.params.get('date')).toBe(
+      '2026-01-02',
+    );
 
     flushSuccessfulMaramatakaRequests(secondRequests);
   });
@@ -518,13 +650,22 @@ describe('MaramatakaPage', () => {
 
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
-    const { monthRequest, cycleRequest, todayRequest, moonDetailsRequest } =
-      flushMaramatakaRequests();
+    const {
+      monthRequest,
+      cycleRequest,
+      todayRequest,
+      moonDetailsRequest,
+      starMarkersRequest,
+    } = flushMaramatakaRequests();
 
     monthRequest.flush(monthFixture());
     cycleRequest.flush(cycleFixture());
     todayRequest.flush('Failure', { status: 500, statusText: 'Server Error' });
     moonDetailsRequest.flush('Failure', {
+      status: 500,
+      statusText: 'Server Error',
+    });
+    starMarkersRequest.flush('Failure', {
       status: 500,
       statusText: 'Server Error',
     });
@@ -542,6 +683,11 @@ describe('MaramatakaPage', () => {
         '[data-testid="moon-details-error-state"]',
       ),
     ).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="star-markers-error-state"]',
+      ),
+    ).not.toBeNull();
   });
 
   it('shows location, month, and today errors when locations fail to load', () => {

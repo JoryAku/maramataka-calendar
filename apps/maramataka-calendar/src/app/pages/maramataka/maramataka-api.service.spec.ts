@@ -6,7 +6,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { MaramatakaApiService } from './maramataka-api.service';
-import { MaramatakaCycleDetails } from './maramataka.models';
+import { MaramatakaCycleDetails, StarMarker } from './maramataka.models';
 
 describe('MaramatakaApiService', () => {
   let httpTestingController: HttpTestingController;
@@ -23,6 +23,34 @@ describe('MaramatakaApiService', () => {
     mataBoundary: 'moonrise-to-moonrise',
     calibration: 'full-moon-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
+    starMonthNaming: {
+      strategy:
+        'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      sampleTimeLocal: '06:00',
+      source:
+        'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+      months: [
+        {
+          sequence: 1,
+          name: 'Puanga',
+          markerIds: ['puanga'],
+          description:
+            'The first seasonal month is associated with Puanga appearing in the morning.',
+          sourceText:
+            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+        },
+      ],
+      markers: [
+        {
+          id: 'puanga',
+          name: 'Puanga',
+          type: 'star',
+          englishName: 'Rigel',
+          seasonalAssociation: 'New year / first seasonal month',
+          confidence: 'confirmed',
+        },
+      ],
+    },
   };
 
   beforeEach(() => {
@@ -117,6 +145,61 @@ describe('MaramatakaApiService', () => {
           },
         },
       },
+      starMonth: {
+        name: 'Puanga',
+        marker: {
+          id: 'puanga',
+          name: 'Puanga',
+          type: 'star',
+          englishName: 'Rigel',
+          description: 'A dawn marker associated with the Māori new year.',
+          seasonalAssociation:
+            'Associated with the first month and the appearance of Puanga in the morning.',
+          source: 'Dr. Thomson seasonal star account',
+          confidence: 'confirmed',
+          observedAt: '2026-09-14T18:00:00.000Z',
+          altitudeDegrees: 21,
+          azimuthDegrees: 79,
+          direction: 'E',
+          visibility: 'prominent',
+          calculation:
+            'Dawn sky position sampled at 06:00 local time for the selected location.',
+        },
+        rule:
+          'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+        source: 'Dr. Thomson seasonal star account',
+        note: {
+          sequence: 1,
+          name: 'Puanga',
+          markerIds: ['puanga'],
+          description:
+            'The first seasonal month is associated with Puanga appearing in the morning.',
+          sourceText:
+            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+        },
+      },
+      starMarkers: [
+        {
+          id: 'puanga',
+          name: 'Puanga',
+          type: 'star',
+          englishName: 'Rigel',
+          description: 'A dawn marker associated with the Māori new year.',
+          seasonalAssociation:
+            'Associated with the first month and the appearance of Puanga in the morning.',
+          source: 'Dr. Thomson seasonal star account',
+          sourceUrl:
+            'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+          confidence: 'confirmed',
+          observedAt: '2026-09-14T18:00:00.000Z',
+          altitudeDegrees: 21,
+          azimuthDegrees: 79,
+          direction: 'E',
+          visibility: 'prominent',
+          calculation:
+            'Dawn sky position sampled at 06:00 local time for the selected location.',
+        },
+      ],
       nights: [
         {
           mata: {
@@ -142,6 +225,60 @@ describe('MaramatakaApiService', () => {
       new Date('2026-10-10T17:17:00.000Z'),
     );
     expect(cycle?.nights[0].mata).toBe('Ohua');
+    expect(cycle?.starMarkers?.[0].name).toBe('Puanga');
+    expect(cycle?.starMarkers?.[0].observedAt).toEqual(
+      new Date('2026-09-14T18:00:00.000Z'),
+    );
+    expect(cycle?.starMonth?.name).toBe('Puanga');
+    expect(cycle?.starMonth?.marker.observedAt).toEqual(
+      new Date('2026-09-14T18:00:00.000Z'),
+    );
+    expect(cycle?.starMonth?.note?.sourceText).toContain(
+      'June is the first month of the year',
+    );
+  });
+
+  it('maps star markers from the API', () => {
+    let markers: StarMarker[] | undefined;
+
+    service
+      .getStarMarkers('wellington', new Date('2026-06-24T12:00:00.000Z'))
+      .subscribe((response) => {
+        markers = response;
+      });
+
+    const request = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/star-markers' &&
+        req.params.get('location') === 'wellington',
+    );
+
+    expect(request.request.params.get('date')).toBe('2026-06-25');
+    request.flush([
+      {
+        id: 'tautoru',
+        name: 'Tautoru',
+        type: 'asterism',
+        englishName: "Orion's Belt",
+        description: 'A seasonal dawn marker.',
+        seasonalAssociation:
+          'Associated with July alongside Kōpū in the seasonal star account.',
+        source: 'Dr. Thomson seasonal star account',
+        confidence: 'confirmed',
+        observedAt: '2026-06-24T18:00:00.000Z',
+        altitudeDegrees: 18,
+        azimuthDegrees: 82,
+        direction: 'E',
+        visibility: 'visible',
+        calculation:
+          'Dawn sky position sampled at 06:00 local time for the selected location.',
+      },
+    ]);
+
+    expect(markers?.[0].name).toBe('Tautoru');
+    expect(markers?.[0].observedAt).toEqual(
+      new Date('2026-06-24T18:00:00.000Z'),
+    );
   });
 
   it('uses the configured API base URL', () => {

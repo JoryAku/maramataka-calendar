@@ -18,8 +18,10 @@ import {
 } from './api-query.dto';
 import {
   MoonDetailsResponseDto,
+  StarMarkerResponseDto,
   TodayMaramatakaNightResponseDto,
   toMoonDetailsResponse,
+  toStarMarkersResponse,
   toTodayMaramatakaNightResponse,
 } from './maramataka-response.dto';
 
@@ -90,6 +92,19 @@ export class MaramatakaController {
     );
 
     return toMoonDetailsResponse(details);
+  }
+
+  @Get('star-markers')
+  async getStarMarkers(
+    @Query() query: DateLocationQueryDto,
+  ): Promise<StarMarkerResponseDto[]> {
+    const { date, location } = this.validateDateLocationQuery(query);
+    const markers = await this.handleAstronomyErrors(
+      'maramataka.star-markers',
+      () => this.maramatakaService.getStarMarkers(location, date),
+    );
+
+    return toStarMarkersResponse(markers);
   }
 
   private validateDateLocationQuery(

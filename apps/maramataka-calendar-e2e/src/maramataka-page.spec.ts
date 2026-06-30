@@ -15,6 +15,56 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     mataBoundary: 'moonrise-to-moonrise',
     calibration: 'full-moon-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
+    starMonthNaming: {
+      strategy:
+        'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      sampleTimeLocal: '06:00',
+      source:
+        'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+      sourceUrl:
+        'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+      months: [
+        {
+          sequence: 1,
+          name: 'Puanga',
+          markerIds: ['puanga'],
+          description:
+            'The first seasonal month is associated with Puanga appearing in the morning.',
+          sourceText:
+            'June is the first month of the year, and it is recognized by the appearance of the Puanga star in the morning.',
+        },
+      ],
+      markers: [
+        {
+          id: 'puanga',
+          name: 'Puanga',
+          type: 'star',
+          englishName: 'Rigel',
+          seasonalAssociation: 'New year / first seasonal month',
+          confidence: 'confirmed',
+        },
+      ],
+    },
+  };
+  const starMarker = {
+    id: 'puanga',
+    name: 'Puanga',
+    type: 'star',
+    englishName: 'Rigel',
+    description: 'A dawn marker associated with the Māori new year.',
+    seasonalAssociation: 'New year / first seasonal month',
+    source:
+      'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+    sourceUrl:
+      'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+    confidence: 'confirmed',
+    observedAt: '2026-06-24T18:00:00.000Z',
+    altitudeDegrees: 24,
+    azimuthDegrees: 74,
+    direction: 'E',
+    visibility: 'prominent',
+    calculation:
+      'Dawn sky position sampled at 06:00 local time for the selected location.',
   };
 
   await page.addInitScript(
@@ -176,6 +226,15 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
             mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
           },
         },
+        starMonth: {
+          name: 'Puanga',
+          marker: starMarker,
+          rule: ruleSet.starMonthNaming.strategy,
+          source: ruleSet.starMonthNaming.source,
+          sourceUrl: ruleSet.starMonthNaming.sourceUrl,
+          note: ruleSet.starMonthNaming.months[0],
+        },
+        starMarkers: [starMarker],
         nights: [
           {
             mata,
@@ -290,6 +349,13 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     });
   });
 
+  await page.route('**/api/maramataka/star-markers**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify([starMarker]),
+    });
+  });
+
   await page.goto('/pages/maramataka');
 
   await expect(page.getByTestId('today-card')).toContainText('Whiro');
@@ -314,6 +380,13 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByTestId('moon-details-panel')).toContainText('25%');
   await expect(page.getByTestId('moon-details-panel')).toContainText(
     '2.5 days',
+  );
+  await expect(page.getByTestId('star-marker-layer')).toContainText('Puanga');
+  await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
+    'Star month: Puanga',
+  );
+  await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
+    'Puanga appearing in the morning',
   );
   await expect(page.getByLabel('Moon timings')).toContainText('Moonset');
   await expect(page.getByLabel('Moon timings')).toContainText('Meridian');

@@ -14,6 +14,8 @@ import {
   NewMoon,
   PersistentCachedAstronomyProvider,
   parseLocalDateTimeInTimezone,
+  StarMarker,
+  StarMarkerDefinition,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
 import { join } from 'node:path';
@@ -134,6 +136,56 @@ class StubAstronomyProvider implements AstronomyProvider {
       transit,
       source: 'stub',
     };
+  }
+
+  async getStarMarkers(
+    date: string,
+    location: Location,
+    _markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]> {
+    const observedAt = this.localDateTimeToUtc(
+      Number(date.slice(0, 4)),
+      Number(date.slice(5, 7)),
+      Number(date.slice(8, 10)),
+      6,
+      location,
+    );
+
+    return [
+      {
+        id: 'puanga',
+        name: 'Puanga',
+        type: 'star',
+        englishName: 'Rigel',
+        description:
+          'New-year marker associated with appearance in the morning sky.',
+        seasonalAssociation: 'New year / first seasonal month',
+        source: 'stub',
+        confidence: 'confirmed',
+        observedAt,
+        altitudeDegrees: 24,
+        azimuthDegrees: 74,
+        direction: 'E',
+        visibility: 'prominent',
+        calculation: 'Stub dawn sky marker for deterministic local testing.',
+      },
+      {
+        id: 'tautoru',
+        name: 'Tautoru',
+        type: 'asterism',
+        englishName: "Orion's Belt",
+        description: 'Orion Belt marker represented in the dawn sky.',
+        seasonalAssociation: 'Second seasonal month marker',
+        source: 'stub',
+        confidence: 'confirmed',
+        observedAt,
+        altitudeDegrees: 18,
+        azimuthDegrees: 82,
+        direction: 'E',
+        visibility: 'visible',
+        calculation: 'Stub dawn sky marker for deterministic local testing.',
+      },
+    ];
   }
 
   private localDateTimeToUtc(
