@@ -8,8 +8,8 @@ technical decisions can be reviewed together.
 
 For the MVP, a mata is defined by moonrise-to-next-moonrise.
 
-1. Get the astronomical New Moon date from USNO New Moon data, interpreted in
-   the selected location and timezone.
+1. Get the astronomical New Moon date from Astronomy Engine New Moon data,
+   interpreted in the selected location and timezone.
 2. Find the moonrise on that local New Moon date. If that date has no moonrise,
    use the first moonrise after the exact New Moon instant.
 3. Mark the interval from that moonrise to the next moonrise as Whiro.
@@ -17,13 +17,13 @@ For the MVP, a mata is defined by moonrise-to-next-moonrise.
    counting forward through the 30 mata sequence.
 5. Resolve a current timestamp to the mata whose moonrise-to-moonrise interval
    contains that timestamp.
-6. Treat every USNO New Moon date as a hard Whiro anchor. If the next New Moon
-   date lands before the previous 30-mata cycle has finished, the matching
-   moonrise-to-moonrise interval carries both meanings: its position in the
-   previous cycle and Whiro for the next cycle.
+6. Treat every Astronomy Engine New Moon date as a hard Whiro anchor. If the
+   next New Moon date lands before the previous 30-mata cycle has finished, the
+   matching moonrise-to-moonrise interval carries both meanings: its position in
+   the previous cycle and Whiro for the next cycle.
 
 This means Whiro is anchored to the New Moon date's moonrise. The New Moon date
-comes from USNO New Moon data, but the mata boundary is the local
+comes from Astronomy Engine New Moon data, but the mata boundary is the local
 moonrise-to-next-moonrise interval for that date. One maramataka cycle contains
 Whiro plus the next 29 moonrise-to-moonrise intervals. Cycles may overlap rather
 than being forced into a clean cut between New Moons.
@@ -78,14 +78,12 @@ state until the core moon tracking is trusted.
 
 ## Astronomy Provider Resilience
 
-The MVP treats USNO as the authoritative astronomy provider for New Moon,
-Full Moon, moonrise, moonset, transit, phase, and illumination data.
+The MVP treats Astronomy Engine as the authoritative astronomy provider for New
+Moon, Full Moon, moonrise, moonset, transit, phase, and illumination data.
 
 Provider calls must fail predictably:
 
-- Every USNO request has a timeout.
-- HTTP failures, request timeouts, invalid JSON, and response-shape changes are
-  surfaced as typed astronomy provider errors.
+- Provider calculation failures are surfaced as typed astronomy provider errors.
 - Missing moon events, for example a date with no moonrise, are explicit
   data-unavailable errors rather than implicit nulls.
 - API responses map provider failures to a stable unavailable response instead
@@ -96,7 +94,7 @@ slice is file-backed and dependency-free:
 
 - Default path: `.cache/astronomy.json`.
 - Deployment override: `MARAMATAKA_ASTRONOMY_CACHE_PATH`.
-- Cached values are normalized astronomy results, not raw USNO responses.
+- Cached values are normalized astronomy results, not raw provider responses.
 - Cache files and entries carry schema versions so incompatible data can be
   ignored predictably.
 - Cached date strings are revived as `Date` values before reaching domain code.

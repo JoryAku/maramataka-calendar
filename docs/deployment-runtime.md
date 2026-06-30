@@ -97,8 +97,8 @@ MARAMATAKA_ASTRONOMY_MODE=stub
 ```
 
 Do not set `MARAMATAKA_ASTRONOMY_MODE=stub` in production unless intentionally
-running a non-real-data environment. When unset, the API uses the USNO-backed
-astronomy provider wrapped in persistent cache layers.
+running a non-real-data environment. When unset, the API uses Astronomy Engine
+wrapped in persistent cache layers.
 
 ## Environment Variables
 
@@ -127,15 +127,15 @@ Production should set an explicit path:
 MARAMATAKA_ASTRONOMY_CACHE_PATH=/var/cache/maramataka/astronomy.json
 ```
 
-The cache stores normalized astronomy results, not raw USNO responses. The cache
-file currently uses schema version `1`, and each cache entry also carries entry
-schema version `1`.
+The cache stores normalized astronomy results, not raw provider responses. The
+cache file currently uses schema version `2`, and each cache entry also carries
+entry schema version `2`.
 
 Recommended production behaviour:
 
 - Put the cache on persistent storage if the hosting platform supports it.
-- If the platform filesystem is ephemeral, the app will still work, but USNO
-  calls will be repeated after restarts.
+- If the platform filesystem is ephemeral, the app will still work, but
+  astronomy calculations will be repeated after restarts.
 - Treat the cache as rebuildable operational data, not as source-of-truth data.
 - Backups are optional for MVP because the cache can be regenerated.
 
@@ -146,11 +146,12 @@ astronomical results for a date/location are stable once fetched.
 
 Stale-cache behaviour:
 
-- A cache hit is treated as authoritative and does not call USNO.
-- If USNO is unavailable and a matching cache entry exists, the cached value is
-  returned.
-- If USNO is unavailable and no matching cache entry exists, the request fails
-  with the provider error and the API maps that to a `503`.
+- A cache hit is treated as authoritative and does not call the wrapped
+  provider.
+- If the astronomy provider is unavailable and a matching cache entry exists,
+  the cached value is returned.
+- If the astronomy provider is unavailable and no matching cache entry exists,
+  the request fails with the provider error and the API maps that to a `503`.
 - Unsupported cache file versions are ignored and the cache starts empty.
 - Unsupported cache entry versions are ignored individually.
 - Corrupt cache files are discarded in memory and rewritten on the next
@@ -166,7 +167,7 @@ The API will recreate the cache file on the next successful astronomy fetch.
 
 When to reset:
 
-- USNO provider parsing changes.
+- Astronomy provider calculation changes.
 - Cache schema changes.
 - A bad provider response was cached.
 - The `Location` or timezone contract changes in a way that affects cache keys.
@@ -261,7 +262,8 @@ Before deployment, run:
 npm run ci
 ```
 
-CI uses stub astronomy data so it does not depend on live USNO availability.
+CI uses stub astronomy data so it does not depend on live astronomy
+availability.
 
 For a production smoke test after deployment:
 

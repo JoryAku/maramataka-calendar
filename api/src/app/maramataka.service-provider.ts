@@ -1,5 +1,6 @@
 import { Provider } from '@nestjs/common';
 import {
+  AstronomyEngineProvider,
   AstronomyProvider,
   CachedAstronomyProvider,
   FileAstronomyCacheStore,
@@ -13,7 +14,6 @@ import {
   NewMoon,
   PersistentCachedAstronomyProvider,
   parseLocalDateTimeInTimezone,
-  UsnoAstronomyProvider,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
 import { join } from 'node:path';
@@ -163,7 +163,7 @@ const createAstronomyProvider = (): AstronomyProvider => {
   }
 
   return new PersistentCachedAstronomyProvider(
-    new UsnoAstronomyProvider(),
+    new AstronomyEngineProvider(),
     new FileAstronomyCacheStore(getAstronomyCachePath()),
   );
 };
