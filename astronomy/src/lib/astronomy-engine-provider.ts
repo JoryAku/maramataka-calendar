@@ -31,31 +31,6 @@ interface StarEquatorResult {
   dec: number;
 }
 
-interface StarHorizonResult {
-  altitude: number;
-  azimuth: number;
-}
-
-interface StarAstronomyEngineModule extends AstronomyEngineModule {
-  Body: AstronomyEngineModule['Body'] & {
-    Venus?: unknown;
-  };
-  Equator?: (
-    body: unknown,
-    date: Date,
-    observer: InstanceType<AstronomyEngineModule['Observer']>,
-    ofDate: boolean,
-    aberration: boolean,
-  ) => StarEquatorResult;
-  Horizon?: (
-    date: Date,
-    observer: InstanceType<AstronomyEngineModule['Observer']>,
-    ra: number,
-    dec: number,
-    refraction: string,
-  ) => StarHorizonResult;
-}
-
 const STAR_MARKER_SOURCE_URL =
   'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
 
@@ -335,22 +310,17 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     markers = DEFAULT_STAR_MARKERS,
   ): Promise<StarMarker[]> {
     return this.calculate('star markers', async (engine) => {
-      const starEngine = engine as StarAstronomyEngineModule;
-      if (!starEngine.Horizon) {
-        throw this.dataUnavailable('Astronomy Engine Horizon API unavailable');
-      }
-
       const observedAt = this.localDateAtTime(date, location, 6, 0);
       const observer = this.observer(engine, location);
 
       return markers.map((marker) => {
         const coordinates = this.markerCoordinates(
           marker,
-          starEngine,
+          engine,
           observer,
           observedAt,
         );
-        const horizon = starEngine.Horizon!(
+        const horizon = engine.Horizon(
           observedAt,
           observer,
           coordinates.ra,
@@ -428,7 +398,7 @@ export class AstronomyEngineProvider implements AstronomyProvider {
 
   private markerCoordinates(
     marker: StarMarkerDefinition,
-    engine: StarAstronomyEngineModule,
+    engine: AstronomyEngineModule,
     observer: InstanceType<AstronomyEngineModule['Observer']>,
     observedAt: Date,
   ): StarEquatorResult {
@@ -440,7 +410,7 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     }
 
     const body = engine.Body[marker.representative.body];
-    if (!body || !engine.Equator) {
+    if (!body) {
       throw this.dataUnavailable(
         `Astronomy Engine body unavailable for ${marker.name}`,
       );
