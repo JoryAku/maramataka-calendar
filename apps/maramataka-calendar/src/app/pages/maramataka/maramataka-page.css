@@ -49,7 +49,7 @@ h2 {
   text-transform: uppercase;
 }
 
-.demo-controls {
+.controls {
   display: grid;
   grid-template-columns: minmax(16rem, 1fr) minmax(22rem, 1fr);
   gap: 1rem;
@@ -321,7 +321,7 @@ dd {
     display: grid;
   }
 
-  .demo-controls {
+  .controls {
     grid-template-columns: 1fr;
   }
 
