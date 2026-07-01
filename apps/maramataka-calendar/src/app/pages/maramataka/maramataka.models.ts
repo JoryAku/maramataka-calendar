@@ -58,10 +58,40 @@ export interface StarMonthNote {
   sourceText: string;
 }
 
+export interface MaramatakaYear<TDate = Date> {
+  version: string;
+  ruleSet: MaramatakaRuleSet;
+  year: number;
+  timezone: string;
+  startsAt: TDate;
+  endsAt: TDate;
+  months: MaramatakaYearMonth<TDate>[];
+}
+
+export interface MaramatakaYearMonth<TDate = Date> {
+  sequence: number;
+  name: string;
+  starMonth?: MaramatakaStarMonth<TDate>;
+  starMarkers?: StarMarker<TDate>[];
+  isEstimated?: boolean;
+  unavailableReason?: string;
+  startsAt: TDate;
+  endsAt: TDate;
+  durationDays: number;
+  nightsCount: number;
+  repeatedMata: string[];
+  anchors: {
+    whiro: MaramatakaCycleAnchor<TDate>;
+    fullMoon?: MaramatakaCycleAnchor<TDate>;
+    nextWhiro: MaramatakaCycleAnchor<TDate>;
+  };
+}
+
 export interface MaramatakaCycleAnchor<TDate = Date> {
   type: 'whiro' | 'full-moon' | 'next-whiro';
   label: string;
   occursAt: TDate;
+  astronomicalOccursAt?: TDate;
   localDate: string;
   localTime: string;
   timezone: string;
@@ -229,4 +259,5 @@ export type ApiMaramatakaCycleDetails = Omit<
 };
 
 export type ApiMoonDetails = MoonDetails<string>;
+export type ApiMaramatakaYear = MaramatakaYear<string>;
 export type ApiStarMarker = StarMarker<string>;

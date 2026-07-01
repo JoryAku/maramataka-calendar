@@ -11,12 +11,21 @@
       </div>
       @if (cycle()?.anchors?.fullMoon) {
       <div>
-        <dt>Rakaunui</dt>
+        <dt>Rakaunui observation</dt>
         <dd>
           {{
             cycle()!.anchors.fullMoon!.occursAt
               | date: 'd MMM, h:mm a' : nzTimeZone
           }}
+          @if (cycle()!.anchors.fullMoon!.astronomicalOccursAt) {
+          <small>
+            Full Moon
+            {{
+              cycle()!.anchors.fullMoon!.astronomicalOccursAt
+                | date: 'd MMM, h:mm a' : nzTimeZone
+            }}
+          </small>
+          }
         </dd>
       </div>
       }
