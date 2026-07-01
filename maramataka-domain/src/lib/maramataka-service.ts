@@ -294,6 +294,9 @@ export class MaramatakaService {
   ): StarMarker[] {
     const markerIds = starMonth?.note?.markerIds;
     if (markerIds) {
+      // Once a named marama is selected, show the current details for its
+      // mentioned markers. Do not hide them merely because they are below the
+      // horizon or away from the eastern dawn sky at the sample time.
       return starMarkers.filter((marker) => markerIds.includes(marker.id));
     }
 
@@ -319,6 +322,9 @@ export class MaramatakaService {
         ['NE', 'E', 'SE'].includes(candidate.direction),
     );
     const note = this.findStarMonthNote(starMonthSequence);
+    // Month naming follows the rule-set sequence from the star-year start.
+    // Visible eastern markers are only a fallback when there is no sequence
+    // note, not the primary naming rule.
     const marker = note
       ? starMarkers.find((candidate) =>
           note.markerIds.includes(candidate.id),

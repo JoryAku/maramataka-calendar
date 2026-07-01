@@ -4,6 +4,11 @@ import { Mata, MaramatakaVersion } from './mata';
 export interface StarMonthNote {
   sequence: number;
   name: string;
+  /**
+   * Rule-set marker IDs named or implied for this month. Once the month is
+   * selected by sequence, these markers are returned with their current sky
+   * details even when they are not visible above the eastern horizon.
+   */
   markerIds: string[];
   description: string;
   sourceText: string;
@@ -11,13 +16,26 @@ export interface StarMonthNote {
 
 export interface StarMonthNamingRuleSet {
   strategy: string;
+  /**
+   * Current PoC dawn sample time. This is intentionally explicit because it
+   * should later become a sunrise-relative rule-set setting.
+   */
   sampleTimeLocal: string;
   yearStartMarkerId: string;
   yearStartDescription: string;
   source: string;
   sourceUrl?: string;
   sourceQuote?: string;
+  /**
+   * Candidate markers the astronomy layer can calculate for the selected
+   * location/date. Fixed stars and asterisms use stored coordinates; supported
+   * solar-system bodies use Astronomy Engine body calculations.
+   */
   markers: StarMarkerDefinition[];
+  /**
+   * Named marama sequence for the star year. Month naming is selected from this
+   * sequence, not from whichever marker happens to be visible first.
+   */
   months: StarMonthNote[];
 }
 
