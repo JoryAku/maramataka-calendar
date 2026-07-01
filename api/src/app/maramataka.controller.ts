@@ -11,6 +11,7 @@ import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaService,
+  MaramatakaYear,
 } from '@maramataka-calendar/maramataka-domain';
 import {
   DateLocationQueryDto,
@@ -60,6 +61,18 @@ export class MaramatakaController {
     }
 
     return cycle;
+  }
+
+  @Get('year')
+  async getYear(
+    @Query() query: DateLocationQueryDto,
+  ): Promise<MaramatakaYear> {
+    const { date, location } = this.validateDateLocationQuery(query);
+
+    return this.handleAstronomyErrors(
+      'maramataka.year',
+      () => this.maramatakaService.getYear(location, date),
+    );
   }
 
   @Get('today')

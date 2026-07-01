@@ -40,6 +40,14 @@
   font-weight: 700;
 }
 
+.cycle-summary dd small {
+  display: block;
+  margin-top: 0.15rem;
+  color: #8ca49a;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .balance-note {
   margin: 0;
   padding: 0.75rem 0.9rem;

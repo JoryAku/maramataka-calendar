@@ -36,6 +36,7 @@ export interface MaramatakaCycleAnchor {
   type: 'whiro' | 'full-moon' | 'next-whiro';
   label: string;
   occursAt: Date;
+  astronomicalOccursAt?: Date;
   localDate: string;
   localTime: string;
   timezone: string;
@@ -66,4 +67,33 @@ export interface MaramatakaCycleDetails {
   nights: MaramatakaNight[];
   starMonth?: MaramatakaStarMonth;
   starMarkers?: StarMarker[];
+}
+
+export interface MaramatakaYear {
+  version: MaramatakaVersion;
+  ruleSet: MaramatakaRuleSetSummary;
+  year: number;
+  timezone: string;
+  startsAt: Date;
+  endsAt: Date;
+  months: MaramatakaYearMonth[];
+}
+
+export interface MaramatakaYearMonth {
+  sequence: number;
+  name: string;
+  starMonth?: MaramatakaStarMonth;
+  starMarkers?: StarMarker[];
+  isEstimated?: boolean;
+  unavailableReason?: string;
+  startsAt: Date;
+  endsAt: Date;
+  durationDays: number;
+  nightsCount: number;
+  repeatedMata: string[];
+  anchors: {
+    whiro: MaramatakaCycleAnchor;
+    fullMoon?: MaramatakaCycleAnchor;
+    nextWhiro: MaramatakaCycleAnchor;
+  };
 }

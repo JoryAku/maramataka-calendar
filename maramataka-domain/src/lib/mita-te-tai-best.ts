@@ -395,9 +395,9 @@ export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   source: MITA_TE_TAI_BEST_SOURCE,
   sourceQuote: MITA_TE_TAI_BEST_BALANCING_QUOTE,
   tradition: 'Mita Te Tai / Best',
-  maramaStart: 'new-moon-moonrise',
+  maramaStart: 'new-moon-observation-window-moonrise',
   mataBoundary: 'moonrise-to-moonrise',
-  calibration: 'full-moon-ohua',
+  calibration: 'full-moon-observation-window-ohua',
   balancing: 'duplicate-ohua-drop-final-mata',
   starMonthNaming: {
     strategy:

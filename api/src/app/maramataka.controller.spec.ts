@@ -10,6 +10,7 @@ import {
   CurrentMaramatakaNight,
   MaramatakaCycleDetails,
   MaramatakaMonth,
+  MaramatakaYear,
   MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET,
   MaramatakaService,
   summarizeRuleSet,
@@ -23,6 +24,7 @@ describe('MaramatakaController', () => {
   let getMonthMock: jest.Mock;
   let getCurrentNightMock: jest.Mock;
   let getCycleDetailsMock: jest.Mock;
+  let getYearMock: jest.Mock;
   let getMoonDetailsMock: jest.Mock;
   let getStarMarkersMock: jest.Mock;
 
@@ -50,6 +52,7 @@ describe('MaramatakaController', () => {
     getCurrentNightMock = jest.fn();
     useMonthBackedCurrentNightMock();
     getCycleDetailsMock = jest.fn();
+    getYearMock = jest.fn();
     getMoonDetailsMock = jest.fn();
     getStarMarkersMock = jest.fn();
 
@@ -62,6 +65,7 @@ describe('MaramatakaController', () => {
             getMonth: getMonthMock,
             getCurrentNight: getCurrentNightMock,
             getCycleDetails: getCycleDetailsMock,
+            getYear: getYearMock,
             getMoonDetails: getMoonDetailsMock,
             getStarMarkers: getStarMarkersMock,
           },
@@ -82,6 +86,7 @@ describe('MaramatakaController', () => {
     getMonthMock.mockReset();
     getCurrentNightMock.mockReset();
     getCycleDetailsMock.mockReset();
+    getYearMock.mockReset();
     getMoonDetailsMock.mockReset();
     getStarMarkersMock.mockReset();
     useMonthBackedCurrentNightMock();
@@ -184,6 +189,27 @@ describe('MaramatakaController', () => {
       nights: month.nights,
     };
   };
+
+  const createYearFixture = (): MaramatakaYear => ({
+    version: 'mita-te-tai-best',
+    ruleSet,
+    year: 2026,
+    timezone: 'Pacific/Auckland',
+    startsAt: new Date('2025-12-31T11:00:00.000Z'),
+    endsAt: new Date('2026-12-31T11:00:00.000Z'),
+    months: [
+      {
+        sequence: 1,
+        name: 'Marama 1',
+        startsAt: new Date('2026-01-01T07:47:00.000Z'),
+        endsAt: new Date('2026-01-30T07:47:00.000Z'),
+        durationDays: 29,
+        nightsCount: 29,
+        repeatedMata: [],
+        anchors: createCycleFixture().anchors,
+      },
+    ],
+  });
 
   it('returns HTTP 200 for a valid request', async () => {
     getMonthMock.mockResolvedValue({
@@ -453,6 +479,53 @@ describe('MaramatakaController', () => {
       expect(response.data.message).toBe(
         'No Maramataka cycle found for supplied date and location',
       );
+    });
+  });
+
+  describe('GET /maramataka/year', () => {
+    it('returns year timeline months for the selected date', async () => {
+      getYearMock.mockResolvedValue(createYearFixture());
+
+      const response = await axios.get(`${baseUrl}/maramataka/year`, {
+        params: {
+          date: '2026-01-02',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data).toMatchObject({
+        version: 'mita-te-tai-best',
+        ruleSet,
+        year: 2026,
+        timezone: 'Pacific/Auckland',
+        startsAt: '2025-12-31T11:00:00.000Z',
+        endsAt: '2026-12-31T11:00:00.000Z',
+        months: [
+          {
+            sequence: 1,
+            name: 'Marama 1',
+            startsAt: '2026-01-01T07:47:00.000Z',
+            endsAt: '2026-01-30T07:47:00.000Z',
+            durationDays: 29,
+            nightsCount: 29,
+            repeatedMata: [],
+          },
+        ],
+      });
+      expect(getYearMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg, dateArg] = getYearMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezone: string },
+        Date,
+      ];
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezone: 'Pacific/Auckland',
+      });
+      expect(dateArg.toISOString()).toBe('2026-01-01T23:00:00.000Z');
     });
   });
 

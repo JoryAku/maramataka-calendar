@@ -16,6 +16,8 @@ import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaToday,
+  MaramatakaYear,
+  MaramatakaYearMonth,
   MoonDetails,
   StarMarker,
 } from './maramataka.models';
@@ -50,6 +52,9 @@ export class MaramatakaPage implements OnInit {
   protected readonly moonDetailsLoading = signal(true);
   protected readonly moonDetailsError = signal<string | null>(null);
   protected readonly moonDetails = signal<MoonDetails | null>(null);
+  protected readonly yearLoading = signal(true);
+  protected readonly yearError = signal<string | null>(null);
+  protected readonly year = signal<MaramatakaYear | null>(null);
   protected readonly starMarkersLoading = signal(true);
   protected readonly starMarkersError = signal<string | null>(null);
   protected readonly starMarkers = signal<StarMarker[]>([]);
@@ -185,6 +190,7 @@ export class MaramatakaPage implements OnInit {
           this.cycleLoading.set(false);
           this.todayLoading.set(false);
           this.moonDetailsLoading.set(false);
+          this.yearLoading.set(false);
           this.starMarkersLoading.set(false);
           this.monthError.set(
             'Unable to load maramataka month because locations could not be loaded.',
@@ -197,6 +203,9 @@ export class MaramatakaPage implements OnInit {
           );
           this.moonDetailsError.set(
             'Unable to load moon details because locations could not be loaded.',
+          );
+          this.yearError.set(
+            'Unable to load maramataka year because locations could not be loaded.',
           );
           this.starMarkersError.set(
             'Unable to load star markers because locations could not be loaded.',
@@ -221,16 +230,19 @@ export class MaramatakaPage implements OnInit {
     this.cycleLoading.set(true);
     this.todayLoading.set(true);
     this.moonDetailsLoading.set(true);
+    this.yearLoading.set(true);
     this.starMarkersLoading.set(true);
     this.monthError.set(null);
     this.cycleError.set(null);
     this.todayError.set(null);
     this.moonDetailsError.set(null);
+    this.yearError.set(null);
     this.starMarkersError.set(null);
     this.month.set(null);
     this.cycle.set(null);
     this.today.set(null);
     this.moonDetails.set(null);
+    this.year.set(null);
     this.starMarkers.set([]);
 
     const generation = ++this.requestGeneration;
@@ -332,6 +344,29 @@ export class MaramatakaPage implements OnInit {
       });
 
     this.api
+      .getYear(locationId, requestDate)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (year) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.year.set(year);
+          this.yearLoading.set(false);
+        },
+        error: () => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.year.set(null);
+          this.yearLoading.set(false);
+          this.yearError.set('Unable to load maramataka year timeline.');
+        },
+      });
+
+    this.api
       .getStarMarkers(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -385,6 +420,52 @@ export class MaramatakaPage implements OnInit {
     }
 
     return new Date(`${localDate}T12:00:00+12:00`);
+  }
+
+  protected monthFlex(month: MaramatakaYearMonth): number {
+    return Math.max(month.durationDays, 1);
+  }
+
+  protected anchorOffsetPercent(
+    month: MaramatakaYearMonth,
+    anchorDate: Date,
+  ): number {
+    const duration = month.endsAt.getTime() - month.startsAt.getTime();
+    if (duration <= 0) {
+      return 0;
+    }
+
+    const offset =
+      ((anchorDate.getTime() - month.startsAt.getTime()) / duration) * 100;
+
+    return Math.min(100, Math.max(0, offset));
+  }
+
+  protected yearMaramaAriaLabel(month: MaramatakaYearMonth): string {
+    const parts = [
+      month.name,
+      `Whiro ${this.formatShortDate(month.anchors.whiro.occursAt)}`,
+    ];
+
+    if (month.anchors.fullMoon) {
+      parts.push(
+        `Full Moon ${this.formatShortDate(month.anchors.fullMoon.occursAt)}`,
+      );
+    }
+
+    parts.push(
+      `next Whiro ${this.formatShortDate(month.anchors.nextWhiro.occursAt)}`,
+    );
+
+    return parts.join(', ');
+  }
+
+  private formatShortDate(date: Date): string {
+    return new Intl.DateTimeFormat('en-NZ', {
+      timeZone: this.nzTimeZone,
+      day: 'numeric',
+      month: 'short',
+    }).format(date);
   }
 
   private relevantStarMarkers(markers: StarMarker[]): StarMarker[] {

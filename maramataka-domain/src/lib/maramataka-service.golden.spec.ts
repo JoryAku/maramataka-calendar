@@ -179,11 +179,12 @@ describe('MaramatakaService golden date fixtures', () => {
         fullMoon: {
           type: 'full-moon',
           label: 'Rakaunui / Full Moon',
-          occursAt: new Date(fixture.fullMoons[0]),
-          localDate: '2026-09-27',
-          localTime: '05:49:00',
+          occursAt: new Date('2026-09-26T05:39:00.000Z'),
+          astronomicalOccursAt: new Date(fixture.fullMoons[0]),
+          localDate: '2026-09-26',
+          localTime: '17:39:00',
           timezone: 'Pacific/Auckland',
-          source: 'astronomy-engine',
+          source: 'astronomy-engine observation moonrise',
           mata: { name: 'Ohua' },
         },
         nextWhiro: {
