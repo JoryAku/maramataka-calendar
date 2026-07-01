@@ -8,6 +8,7 @@ import {
   FullMoon,
   MoonRise,
   NewMoon,
+  StarMarker,
 } from '@maramataka-calendar/astronomy';
 import {
   CurrentMaramatakaNight,
@@ -15,6 +16,7 @@ import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaNight,
+  MaramatakaStarMonth,
 } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
 import {
@@ -156,13 +158,20 @@ export class MaramatakaService {
     );
 
     try {
-      return this.generateMaramatakaMonthFn({
-        version: this.version,
-        ruleSet: summarizeRuleSet(this.ruleSet),
-        whiroStartsAt,
-        mata: balancedMata,
-        moonRises: monthMoonRises,
-      });
+      return {
+        ...this.generateMaramatakaMonthFn({
+          version: this.version,
+          ruleSet: summarizeRuleSet(this.ruleSet),
+          whiroStartsAt,
+          mata: balancedMata,
+          moonRises: monthMoonRises,
+        }),
+        starMonthSequence: this.calculateStarMonthSequence(
+          newMoons,
+          relevantNewMoon,
+          location,
+        ),
+      };
     } catch (error) {
       throw new Error(
         `Failed to generate Maramataka month: ${this.getErrorMessage(error)}`,
@@ -174,6 +183,18 @@ export class MaramatakaService {
     const localDate = this.formatIsoDateForLocation(date, location);
 
     return this.astronomyProvider.getMoonDetails(localDate, location);
+  }
+
+  async getStarMarkers(location: Location, date: Date): Promise<StarMarker[]> {
+    const localDate = this.formatIsoDateForLocation(date, location);
+
+    return (
+      this.astronomyProvider.getStarMarkers?.(
+        localDate,
+        location,
+        this.ruleSet.starMonthNaming?.markers,
+      ) ?? []
+    );
   }
 
   async getCurrentNight(
@@ -219,6 +240,11 @@ export class MaramatakaService {
     if (!nextWhiroStartsAt) {
       return undefined;
     }
+    const starMarkers = await this.getStarMarkers(location, month.whiroStartsAt);
+    const starMonth = this.selectStarMonth(
+      starMarkers,
+      month.starMonthSequence,
+    );
 
     return {
       version: month.version,
@@ -257,7 +283,83 @@ export class MaramatakaService {
         }),
       },
       nights: month.nights,
+      starMonth,
+      starMarkers: this.selectRelevantStarMarkers(starMarkers, starMonth),
     };
+  }
+
+  private selectRelevantStarMarkers(
+    starMarkers: StarMarker[],
+    starMonth: MaramatakaStarMonth | undefined,
+  ): StarMarker[] {
+    const markerIds = starMonth?.note?.markerIds;
+    if (markerIds) {
+      // Once a named marama is selected, show the current details for its
+      // mentioned markers. Do not hide them merely because they are below the
+      // horizon or away from the eastern dawn sky at the sample time.
+      return starMarkers.filter((marker) => markerIds.includes(marker.id));
+    }
+
+    if (starMonth?.marker) {
+      return [starMonth.marker];
+    }
+
+    return starMarkers.filter((marker) => marker.visibility !== 'below-horizon');
+  }
+
+  private selectStarMonth(
+    starMarkers: StarMarker[],
+    starMonthSequence: number | undefined,
+  ): MaramatakaStarMonth | undefined {
+    const starMonthNaming = this.ruleSet.starMonthNaming;
+    if (!starMonthNaming) {
+      return undefined;
+    }
+
+    const visibleEasternMarkers = starMarkers.filter(
+      (candidate) =>
+        candidate.visibility !== 'below-horizon' &&
+        ['NE', 'E', 'SE'].includes(candidate.direction),
+    );
+    const note = this.findStarMonthNote(starMonthSequence);
+    // Month naming follows the rule-set sequence from the star-year start.
+    // Visible eastern markers are only a fallback when there is no sequence
+    // note, not the primary naming rule.
+    const marker = note
+      ? starMarkers.find((candidate) =>
+          note.markerIds.includes(candidate.id),
+        )
+      : visibleEasternMarkers[0];
+    if (!note && !marker) {
+      return undefined;
+    }
+
+    return {
+      name: note?.name ?? marker!.name,
+      marker,
+      rule: starMonthNaming.strategy,
+      source: starMonthNaming.source,
+      sourceUrl: starMonthNaming.sourceUrl,
+      note,
+    };
+  }
+
+  private findStarMonthNote(starMonthSequence: number | undefined) {
+    const starMonthNaming = this.ruleSet.starMonthNaming;
+    if (
+      !starMonthNaming ||
+      !starMonthNaming.months.length ||
+      starMonthSequence === undefined
+    ) {
+      return undefined;
+    }
+
+    const wrappedSequence =
+      ((starMonthSequence - 1) % starMonthNaming.months.length) + 1;
+
+    return starMonthNaming.months.find(
+      (month) => month.sequence === wrappedSequence,
+    );
   }
 
   private async getCurrentNightContext(
@@ -322,6 +424,54 @@ export class MaramatakaService {
   ): NewMoon | undefined {
     return newMoons
       .filter((newMoon) => newMoon.occursAt.getTime() > currentNewMoonTime)
+      .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime())[0];
+  }
+
+  private calculateStarMonthSequence(
+    newMoons: NewMoon[],
+    relevantNewMoon: NewMoon,
+    location: Location,
+  ): number | undefined {
+    const starMonthNaming = this.ruleSet.starMonthNaming;
+    if (!starMonthNaming?.months.length) {
+      return undefined;
+    }
+
+    const relevantLocalDate = this.formatIsoDateForLocation(
+      relevantNewMoon.occursAt,
+      location,
+    );
+    const relevantYear = Number(relevantLocalDate.slice(0, 4));
+    const relevantMonth = Number(relevantLocalDate.slice(5, 7));
+    const yearStart = this.findStarYearStartNewMoon(
+      newMoons,
+      relevantMonth >= 6 ? relevantYear : relevantYear - 1,
+      location,
+    );
+    if (!yearStart) {
+      return undefined;
+    }
+
+    return newMoons.filter(
+      (newMoon) =>
+        newMoon.occursAt.getTime() >= yearStart.occursAt.getTime() &&
+        newMoon.occursAt.getTime() <= relevantNewMoon.occursAt.getTime(),
+    ).length;
+  }
+
+  private findStarYearStartNewMoon(
+    newMoons: NewMoon[],
+    year: number,
+    location: Location,
+  ): NewMoon | undefined {
+    const earliestStartDate = `${year}-06-01`;
+
+    return newMoons
+      .filter(
+        (newMoon) =>
+          this.formatIsoDateForLocation(newMoon.occursAt, location) >=
+          earliestStartDate,
+      )
       .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime())[0];
   }
 

@@ -66,6 +66,58 @@ export interface MoonDetails {
   source: string;
 }
 
+export type StarMarkerType = 'star' | 'planet' | 'asterism' | 'sky-figure';
+export type StarMarkerConfidence = 'confirmed' | 'working' | 'uncertain';
+export type StarMarkerVisibility =
+  | 'prominent'
+  | 'visible'
+  | 'low'
+  | 'below-horizon';
+
+export interface StarMarker {
+  id: string;
+  name: string;
+  type: StarMarkerType;
+  englishName?: string;
+  description: string;
+  seasonalAssociation: string;
+  source: string;
+  sourceUrl?: string;
+  confidence: StarMarkerConfidence;
+  observedAt: Date;
+  altitudeDegrees: number;
+  azimuthDegrees: number;
+  direction: string;
+  visibility: StarMarkerVisibility;
+  calculation: string;
+}
+
+export interface FixedEquatorialStarMarkerRepresentative {
+  kind: 'fixed-equatorial';
+  rightAscensionHours: number;
+  declinationDegrees: number;
+}
+
+export interface BodyStarMarkerRepresentative {
+  kind: 'body';
+  body: 'Venus';
+}
+
+export interface StarMarkerDefinition {
+  id: string;
+  name: string;
+  type: StarMarkerType;
+  englishName?: string;
+  description: string;
+  seasonalAssociation: string;
+  source: string;
+  sourceUrl?: string;
+  confidence: StarMarkerConfidence;
+  representative:
+    | FixedEquatorialStarMarkerRepresentative
+    | BodyStarMarkerRepresentative;
+}
+
 export interface AstronomyProvider {
   getMoonPhases(year: number): Promise<MoonPhase[]>;
   getNewMoons(year: number): Promise<NewMoon[]>;
@@ -74,4 +126,9 @@ export interface AstronomyProvider {
   getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet>;
   getMoonTransit(date: string, location: Location): Promise<MoonTransit>;
   getMoonDetails(date: string, location: Location): Promise<MoonDetails>;
+  getStarMarkers?(
+    date: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]>;
 }

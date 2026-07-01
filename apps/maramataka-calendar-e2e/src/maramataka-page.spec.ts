@@ -15,6 +15,70 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     mataBoundary: 'moonrise-to-moonrise',
     calibration: 'full-moon-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
+    starMonthNaming: {
+      strategy:
+        'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      sampleTimeLocal: '06:00',
+      yearStartMarkerId: 'matariki',
+      yearStartDescription:
+        'The year commences with Matariki appearing on the horizon at dawn.',
+      source: 'Elsdon Best, The Maori Division of Time',
+      months: [
+        {
+          sequence: 1,
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
+          description:
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
+        },
+      ],
+      markers: [
+        {
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          confidence: 'confirmed',
+        },
+      ],
+    },
+  };
+  const starMarker = {
+    id: 'matariki',
+    name: 'Matariki',
+    type: 'asterism',
+    englishName: 'Pleiades',
+    description: 'Pleiades; year-start marker appearing on the dawn horizon.',
+    seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+    source: 'Elsdon Best, The Maori Division of Time',
+    confidence: 'confirmed',
+    observedAt: '2026-06-24T18:00:00.000Z',
+    altitudeDegrees: 24,
+    azimuthDegrees: 74,
+    direction: 'E',
+    visibility: 'prominent',
+    calculation:
+      'Dawn sky position sampled at 06:00 local time for the selected location.',
+  };
+  const otherVisibleStarMarker = {
+    id: 'puanga',
+    name: 'Puanga',
+    type: 'star',
+    englishName: 'Rigel',
+    description:
+      'A visible marker that is not assigned to the active named month.',
+    seasonalAssociation: 'Another rule-set marker',
+    source: 'Elsdon Best, The Maori Division of Time',
+    confidence: 'confirmed',
+    observedAt: '2026-06-24T18:00:00.000Z',
+    altitudeDegrees: 18,
+    azimuthDegrees: 80,
+    direction: 'E',
+    visibility: 'visible',
+    calculation:
+      'Dawn sky position sampled at 06:00 local time for the selected location.',
   };
 
   await page.addInitScript(
@@ -176,6 +240,14 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
             mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
           },
         },
+        starMonth: {
+          name: 'Te Tahi o Pipiri',
+          marker: starMarker,
+          rule: ruleSet.starMonthNaming.strategy,
+          source: ruleSet.starMonthNaming.source,
+          note: ruleSet.starMonthNaming.months[0],
+        },
+        starMarkers: [starMarker],
         nights: [
           {
             mata,
@@ -290,6 +362,13 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     });
   });
 
+  await page.route('**/api/maramataka/star-markers**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify([starMarker, otherVisibleStarMarker]),
+    });
+  });
+
   await page.goto('/pages/maramataka');
 
   await expect(page.getByTestId('today-card')).toContainText('Whiro');
@@ -314,6 +393,21 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByTestId('moon-details-panel')).toContainText('25%');
   await expect(page.getByTestId('moon-details-panel')).toContainText(
     '2.5 days',
+  );
+  await expect(page.getByTestId('star-marker-layer')).toContainText(
+    'Matariki',
+  );
+  await expect(page.getByTestId('star-marker-layer')).not.toContainText(
+    'Rigel',
+  );
+  await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
+    'Star month: Te Tahi o Pipiri',
+  );
+  await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
+    'The First of Pipiri',
+  );
+  await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
+    'Matariki (Pleiades) on the horizon at dawn',
   );
   await expect(page.getByLabel('Moon timings')).toContainText('Moonset');
   await expect(page.getByLabel('Moon timings')).toContainText('Meridian');

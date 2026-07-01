@@ -21,6 +21,7 @@ export interface MaramatakaMonth {
   version: string;
   ruleSet: MaramatakaRuleSet;
   whiroStartsAt: Date;
+  starMonthSequence?: number;
   nights: MaramatakaNight[];
 }
 
@@ -36,6 +37,25 @@ export interface MaramatakaCycleDetails<TDate = Date> {
     nextWhiro: MaramatakaCycleAnchor<TDate>;
   };
   nights: MaramatakaNight[];
+  starMonth?: MaramatakaStarMonth<TDate>;
+  starMarkers?: StarMarker<TDate>[];
+}
+
+export interface MaramatakaStarMonth<TDate = Date> {
+  name: string;
+  marker?: StarMarker<TDate>;
+  rule: string;
+  source: string;
+  sourceUrl?: string;
+  note?: StarMonthNote;
+}
+
+export interface StarMonthNote {
+  sequence: number;
+  name: string;
+  markerIds: string[];
+  description: string;
+  sourceText: string;
 }
 
 export interface MaramatakaCycleAnchor<TDate = Date> {
@@ -81,6 +101,24 @@ export interface MaramatakaRuleSet {
   mataBoundary: string;
   calibration: string;
   balancing: string;
+  starMonthNaming?: {
+    strategy: string;
+    sampleTimeLocal: string;
+    yearStartMarkerId: string;
+    yearStartDescription: string;
+    source: string;
+    sourceUrl?: string;
+    sourceQuote?: string;
+    months: StarMonthNote[];
+    markers: Array<{
+      id: string;
+      name: string;
+      type: StarMarkerType;
+      englishName?: string;
+      seasonalAssociation: string;
+      confidence: StarMarkerConfidence;
+    }>;
+  };
 }
 
 export interface MoonDetails<TDate = Date> {
@@ -107,6 +145,32 @@ export interface MoonDetailsPhase<TDate = Date> {
 export interface MoonDetailsEvent<TDate = Date> {
   occursAt: TDate;
   source: string;
+}
+
+export type StarMarkerType = 'star' | 'planet' | 'asterism' | 'sky-figure';
+export type StarMarkerConfidence = 'confirmed' | 'working' | 'uncertain';
+export type StarMarkerVisibility =
+  | 'prominent'
+  | 'visible'
+  | 'low'
+  | 'below-horizon';
+
+export interface StarMarker<TDate = Date> {
+  id: string;
+  name: string;
+  type: StarMarkerType;
+  englishName?: string;
+  description: string;
+  seasonalAssociation: string;
+  source: string;
+  sourceUrl?: string;
+  confidence: StarMarkerConfidence;
+  observedAt: TDate;
+  altitudeDegrees: number;
+  azimuthDegrees: number;
+  direction: string;
+  visibility: StarMarkerVisibility;
+  calculation: string;
 }
 
 export interface ApiMaramatakaNight {
@@ -152,6 +216,7 @@ export interface ApiMaramatakaMonth {
   version: string;
   ruleSet: MaramatakaRuleSet;
   whiroStartsAt: string;
+  starMonthSequence?: number;
   nights: ApiMaramatakaNight[];
 }
 
@@ -164,3 +229,4 @@ export type ApiMaramatakaCycleDetails = Omit<
 };
 
 export type ApiMoonDetails = MoonDetails<string>;
+export type ApiStarMarker = StarMarker<string>;

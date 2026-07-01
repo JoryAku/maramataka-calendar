@@ -2,7 +2,10 @@ import axios from 'axios';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AddressInfo } from 'node:net';
-import { AstronomyProviderError } from '@maramataka-calendar/astronomy';
+import {
+  AstronomyProviderError,
+  StarMarker,
+} from '@maramataka-calendar/astronomy';
 import {
   CurrentMaramatakaNight,
   MaramatakaCycleDetails,
@@ -21,6 +24,7 @@ describe('MaramatakaController', () => {
   let getCurrentNightMock: jest.Mock;
   let getCycleDetailsMock: jest.Mock;
   let getMoonDetailsMock: jest.Mock;
+  let getStarMarkersMock: jest.Mock;
 
   const useMonthBackedCurrentNightMock = () => {
     getCurrentNightMock.mockImplementation(async (location, date: Date) => {
@@ -47,6 +51,7 @@ describe('MaramatakaController', () => {
     useMonthBackedCurrentNightMock();
     getCycleDetailsMock = jest.fn();
     getMoonDetailsMock = jest.fn();
+    getStarMarkersMock = jest.fn();
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [MaramatakaController],
@@ -58,6 +63,7 @@ describe('MaramatakaController', () => {
             getCurrentNight: getCurrentNightMock,
             getCycleDetails: getCycleDetailsMock,
             getMoonDetails: getMoonDetailsMock,
+            getStarMarkers: getStarMarkersMock,
           },
         },
       ],
@@ -77,6 +83,7 @@ describe('MaramatakaController', () => {
     getCurrentNightMock.mockReset();
     getCycleDetailsMock.mockReset();
     getMoonDetailsMock.mockReset();
+    getStarMarkersMock.mockReset();
     useMonthBackedCurrentNightMock();
   });
 
@@ -1103,6 +1110,77 @@ describe('MaramatakaController', () => {
       expect(response.status).toBe(400);
       expect(response.data.message).toBe('date must be in YYYY-MM-DD format');
       expect(getMoonDetailsMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /maramataka/star-markers', () => {
+    it('returns dawn sky star markers for a valid request', async () => {
+      const starMarkers: StarMarker[] = [
+        {
+          id: 'puanga',
+          name: 'Puanga',
+          type: 'star',
+          englishName: 'Rigel',
+          description: 'A dawn marker associated with the Māori new year.',
+          seasonalAssociation:
+            'Associated with the first month and the appearance of Puanga in the morning.',
+          source: 'Elsdon Best, The Maori Division of Time',
+          sourceUrl:
+            'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+          confidence: 'confirmed',
+          observedAt: new Date('2026-06-24T18:00:00.000Z'),
+          altitudeDegrees: 24,
+          azimuthDegrees: 74,
+          direction: 'E',
+          visibility: 'prominent',
+          calculation:
+            'Dawn sky position sampled at 06:00 local time for the selected location.',
+        },
+      ];
+      getStarMarkersMock.mockResolvedValue(starMarkers);
+
+      const response = await axios.get(`${baseUrl}/maramataka/star-markers`, {
+        params: {
+          date: '2026-06-25',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual([
+        {
+          ...starMarkers[0],
+          observedAt: '2026-06-24T18:00:00.000Z',
+        },
+      ]);
+      expect(getStarMarkersMock).toHaveBeenCalledTimes(1);
+
+      const [locationArg, dateArg] = getStarMarkersMock.mock.calls[0] as [
+        { latitude: number; longitude: number; timezone: string },
+        Date,
+      ];
+
+      expect(locationArg).toEqual({
+        latitude: -41.2865,
+        longitude: 174.7762,
+        timezone: 'Pacific/Auckland',
+      });
+      expect(dateArg.toISOString()).toBe('2026-06-25T00:00:00.000Z');
+    });
+
+    it('returns HTTP 400 for invalid star marker date', async () => {
+      const response = await axios.get(`${baseUrl}/maramataka/star-markers`, {
+        params: {
+          date: 'bad-date',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.message).toBe('date must be in YYYY-MM-DD format');
+      expect(getStarMarkersMock).not.toHaveBeenCalled();
     });
   });
 });

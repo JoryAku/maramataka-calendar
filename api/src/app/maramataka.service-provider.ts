@@ -14,6 +14,8 @@ import {
   NewMoon,
   PersistentCachedAstronomyProvider,
   parseLocalDateTimeInTimezone,
+  StarMarker,
+  StarMarkerDefinition,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
 import { join } from 'node:path';
@@ -134,6 +136,60 @@ class StubAstronomyProvider implements AstronomyProvider {
       transit,
       source: 'stub',
     };
+  }
+
+  async getStarMarkers(
+    date: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]> {
+    const observedAt = this.localDateTimeToUtc(
+      Number(date.slice(0, 4)),
+      Number(date.slice(5, 7)),
+      Number(date.slice(8, 10)),
+      6,
+      location,
+    );
+
+    const markerDefinitions: StarMarkerDefinition[] =
+      markers?.length
+        ? markers
+        : [
+            {
+              id: 'matariki',
+              name: 'Matariki',
+              type: 'asterism' as const,
+              englishName: 'Pleiades',
+              description:
+                'Pleiades; year-start marker in the dawn sky.',
+              seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+              source: 'stub',
+              confidence: 'confirmed' as const,
+              representative: {
+                kind: 'fixed-equatorial' as const,
+                rightAscensionHours: 3.7914,
+                declinationDegrees: 24.1051,
+              },
+            },
+          ];
+
+    return markerDefinitions.map((marker, index) => ({
+      id: marker.id,
+      name: marker.name,
+      type: marker.type,
+      englishName: marker.englishName,
+      description: marker.description,
+      seasonalAssociation: marker.seasonalAssociation,
+      source: marker.source,
+      sourceUrl: marker.sourceUrl,
+      confidence: marker.confidence,
+      observedAt,
+      altitudeDegrees: Math.max(6, 24 - index * 2),
+      azimuthDegrees: 74 + index,
+      direction: 'E',
+      visibility: index === 0 ? 'prominent' : 'visible',
+      calculation: 'Stub dawn sky marker for deterministic local testing.',
+    }));
   }
 
   private localDateTimeToUtc(

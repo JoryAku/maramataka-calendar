@@ -20,6 +20,35 @@ describe('MaramatakaPage', () => {
     mataBoundary: 'moonrise-to-moonrise',
     calibration: 'full-moon-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
+    starMonthNaming: {
+      strategy:
+        'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      sampleTimeLocal: '06:00',
+      yearStartMarkerId: 'matariki',
+      yearStartDescription:
+        'The year commences with Matariki appearing on the horizon at dawn.',
+      source: 'Elsdon Best, The Maori Division of Time',
+      months: [
+        {
+          sequence: 1,
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
+          description:
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
+        },
+      ],
+      markers: [
+        {
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          confidence: 'confirmed',
+        },
+      ],
+    },
   };
 
   beforeEach(() => {
@@ -64,8 +93,19 @@ describe('MaramatakaPage', () => {
         req.url === '/api/maramataka/moon-details' &&
         req.params.get('location') === locationId,
     );
+    const starMarkersRequest = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/star-markers' &&
+        req.params.get('location') === locationId,
+    );
 
-    return { monthRequest, cycleRequest, todayRequest, moonDetailsRequest };
+    return {
+      monthRequest,
+      cycleRequest,
+      todayRequest,
+      moonDetailsRequest,
+      starMarkersRequest,
+    };
   }
 
   function locationsFixture() {
@@ -152,6 +192,39 @@ describe('MaramatakaPage', () => {
           source: 'astronomy-engine moonrise',
         },
       },
+      starMonth: {
+        name: 'Te Tahi o Pipiri',
+        marker: {
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          description:
+            'Pleiades; year-start marker appearing on the dawn horizon.',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          source: 'Elsdon Best, The Maori Division of Time',
+          confidence: 'confirmed',
+          observedAt: '2026-01-10T17:00:00.000Z',
+          altitudeDegrees: 24,
+          azimuthDegrees: 74,
+          direction: 'E',
+          visibility: 'prominent',
+          calculation:
+            'Dawn sky position sampled at 06:00 local time for the selected location.',
+        },
+        rule:
+          'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+        source: 'Elsdon Best, The Maori Division of Time',
+        note: {
+          sequence: 1,
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
+          description:
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
+        },
+      },
+      starMarkers: starMarkersFixture(),
       nights: [],
     };
   }
@@ -181,17 +254,60 @@ describe('MaramatakaPage', () => {
     };
   }
 
+  function starMarkersFixture(): Record<string, unknown>[] {
+    return [
+      {
+        id: 'matariki',
+        name: 'Matariki',
+        type: 'asterism',
+        englishName: 'Pleiades',
+        description:
+          'Pleiades; year-start marker appearing on the dawn horizon.',
+        seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+        source: 'Elsdon Best, The Maori Division of Time',
+        confidence: 'confirmed',
+        observedAt: '2026-01-10T17:00:00.000Z',
+        altitudeDegrees: 24,
+        azimuthDegrees: 74,
+        direction: 'E',
+        visibility: 'prominent',
+        calculation:
+          'Dawn sky position sampled at 06:00 local time for the selected location.',
+      },
+      {
+        id: 'puanga',
+        name: 'Puanga',
+        type: 'star',
+        englishName: 'Rigel',
+        description:
+          'A dawn marker that is visible but not assigned to this named month.',
+        seasonalAssociation: 'Another rule-set marker',
+        source: 'Elsdon Best, The Maori Division of Time',
+        confidence: 'confirmed',
+        observedAt: '2026-01-10T17:00:00.000Z',
+        altitudeDegrees: 18,
+        azimuthDegrees: 80,
+        direction: 'E',
+        visibility: 'visible',
+        calculation:
+          'Dawn sky position sampled at 06:00 local time for the selected location.',
+      },
+    ];
+  }
+
   function flushSuccessfulMaramatakaRequests(
     requests: ReturnType<typeof flushMaramatakaRequests>,
     month = monthFixture(),
     today = todayFixture(),
     cycle = cycleFixture(),
     moonDetails = moonDetailsFixture(),
+    starMarkers = starMarkersFixture(),
   ): void {
     requests.monthRequest.flush(month);
     requests.cycleRequest.flush(cycle);
     requests.todayRequest.flush(today);
     requests.moonDetailsRequest.flush(moonDetails);
+    requests.starMarkersRequest.flush(starMarkers);
   }
 
   it('shows loading states before data arrives', () => {
@@ -224,8 +340,13 @@ describe('MaramatakaPage', () => {
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
     const requests = flushMaramatakaRequests();
-    const { monthRequest, cycleRequest, todayRequest, moonDetailsRequest } =
-      requests;
+    const {
+      monthRequest,
+      cycleRequest,
+      todayRequest,
+      moonDetailsRequest,
+      starMarkersRequest,
+    } = requests;
 
     expect(monthRequest.request.params.get('date')).toBe('2026-01-11');
     expect(monthRequest.request.params.has('tz')).toBe(false);
@@ -234,6 +355,7 @@ describe('MaramatakaPage', () => {
     );
     expect(cycleRequest.request.params.get('date')).toBe('2026-01-11');
     expect(moonDetailsRequest.request.params.get('date')).toBe('2026-01-11');
+    expect(starMarkersRequest.request.params.get('date')).toBe('2026-01-11');
 
     flushSuccessfulMaramatakaRequests(
       requests,
@@ -262,6 +384,14 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Waxing Crescent');
     expect(content).toContain('17%');
     expect(content).toContain('Meridian');
+    expect(content).toContain('Dawn sky markers');
+    expect(content).toContain('Matariki');
+    expect(content).toContain('Pleiades');
+    expect(content).not.toContain('Rigel');
+    expect(content).toContain('Star month: Te Tahi o Pipiri');
+    expect(content).toContain('Himiona Tikitu');
+    expect(content).toContain('The First of Pipiri');
+    expect(content).toContain('Matariki (Pleiades) on the horizon at dawn');
     expect(content).toContain('Fishing guidance');
     expect(content).toContain('Mo te hi');
     expect(
@@ -439,6 +569,9 @@ describe('MaramatakaPage', () => {
     expect(requests.moonDetailsRequest.request.params.get('date')).toBe(
       '2026-06-26',
     );
+    expect(requests.starMarkersRequest.request.params.get('date')).toBe(
+      '2026-06-26',
+    );
 
     flushSuccessfulMaramatakaRequests(requests, monthFixture(), {
       mata: { index: 2, name: 'Tirea' },
@@ -489,6 +622,9 @@ describe('MaramatakaPage', () => {
     expect(secondRequests.moonDetailsRequest.request.params.get('date')).toBe(
       '2026-01-02',
     );
+    expect(secondRequests.starMarkersRequest.request.params.get('date')).toBe(
+      '2026-01-02',
+    );
 
     flushSuccessfulMaramatakaRequests(secondRequests);
   });
@@ -518,13 +654,22 @@ describe('MaramatakaPage', () => {
 
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
-    const { monthRequest, cycleRequest, todayRequest, moonDetailsRequest } =
-      flushMaramatakaRequests();
+    const {
+      monthRequest,
+      cycleRequest,
+      todayRequest,
+      moonDetailsRequest,
+      starMarkersRequest,
+    } = flushMaramatakaRequests();
 
     monthRequest.flush(monthFixture());
     cycleRequest.flush(cycleFixture());
     todayRequest.flush('Failure', { status: 500, statusText: 'Server Error' });
     moonDetailsRequest.flush('Failure', {
+      status: 500,
+      statusText: 'Server Error',
+    });
+    starMarkersRequest.flush('Failure', {
       status: 500,
       statusText: 'Server Error',
     });
@@ -542,6 +687,11 @@ describe('MaramatakaPage', () => {
         '[data-testid="moon-details-error-state"]',
       ),
     ).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="star-markers-error-state"]',
+      ),
+    ).not.toBeNull();
   });
 
   it('shows location, month, and today errors when locations fail to load', () => {

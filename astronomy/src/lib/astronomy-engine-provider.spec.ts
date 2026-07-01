@@ -25,6 +25,7 @@ function createEngine(overrides: Record<string, unknown> = {}) {
   const engine = {
     Body: {
       Moon: 'Moon',
+      Venus: 'Venus',
     },
     Observer: FakeObserver,
     SearchMoonQuarter: jest.fn(() => quarters[0]),
@@ -60,6 +61,22 @@ function createEngine(overrides: Record<string, unknown> = {}) {
       phase_fraction: 0.17,
       geo_dist: 0.00243,
     })),
+    Equator: jest.fn(() => ({
+      ra: 4.2,
+      dec: -14.4,
+    })),
+    Horizon: jest.fn(
+      (
+        _date: Date,
+        _observer: FakeObserver,
+        ra: number,
+        dec: number,
+        _refraction: string,
+      ) => ({
+        altitude: ra === 4.2 ? 12.345 : dec + 30,
+        azimuth: ra === 4.2 ? 81.234 : ra * 15,
+      }),
+    ),
     ...overrides,
   };
 
@@ -155,6 +172,33 @@ describe('AstronomyEngineProvider', () => {
         source: 'astronomy-engine',
       },
     });
+  });
+
+  it('returns dawn sky markers from fixed stars and planets', async () => {
+    const provider = new AstronomyEngineProvider(createEngine());
+
+    const markers = await provider.getStarMarkers('2026-06-25', wellington);
+
+    expect(markers.find((marker) => marker.id === 'puanga')).toMatchObject({
+      id: 'puanga',
+      name: 'Puanga',
+      englishName: 'Rigel',
+      type: 'star',
+      altitudeDegrees: 21.8,
+      direction: 'E',
+      visibility: 'prominent',
+      source: 'Elsdon Best, The Maori Division of Time',
+    });
+    expect(markers.find((marker) => marker.id === 'kopu')).toMatchObject({
+      name: 'Kōpū',
+      type: 'planet',
+      altitudeDegrees: 12.3,
+      direction: 'E',
+      visibility: 'visible',
+    });
+    expect(markers.every((marker) => marker.observedAt instanceof Date)).toBe(
+      true,
+    );
   });
 
   it('throws a typed provider error when moonrise is unavailable', async () => {

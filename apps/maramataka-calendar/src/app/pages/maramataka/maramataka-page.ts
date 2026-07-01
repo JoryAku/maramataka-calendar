@@ -17,6 +17,7 @@ import {
   MaramatakaMonth,
   MaramatakaToday,
   MoonDetails,
+  StarMarker,
 } from './maramataka.models';
 import { NZ_TIMEZONE } from './maramataka.constants';
 
@@ -49,6 +50,9 @@ export class MaramatakaPage implements OnInit {
   protected readonly moonDetailsLoading = signal(true);
   protected readonly moonDetailsError = signal<string | null>(null);
   protected readonly moonDetails = signal<MoonDetails | null>(null);
+  protected readonly starMarkersLoading = signal(true);
+  protected readonly starMarkersError = signal<string | null>(null);
+  protected readonly starMarkers = signal<StarMarker[]>([]);
   protected readonly now = signal(new Date());
   protected readonly selectedDate = signal(this.api.formatDate(new Date()));
   protected readonly useLiveDate = signal(true);
@@ -94,6 +98,16 @@ export class MaramatakaPage implements OnInit {
         layer.id === 'fishing-guidance' && layer.status === 'available',
     ),
   );
+  protected readonly visibleStarMarkers = computed(() =>
+    this.relevantStarMarkers(this.starMarkers()).slice(0, 3),
+  );
+  protected readonly starMonthNaming = computed(
+    () =>
+      this.cycle()?.ruleSet.starMonthNaming ??
+      this.month()?.ruleSet.starMonthNaming ??
+      this.today()?.ruleSet.starMonthNaming,
+  );
+  protected readonly starMonth = computed(() => this.cycle()?.starMonth);
 
   ngOnInit(): void {
     this.loadLocations();
@@ -171,6 +185,7 @@ export class MaramatakaPage implements OnInit {
           this.cycleLoading.set(false);
           this.todayLoading.set(false);
           this.moonDetailsLoading.set(false);
+          this.starMarkersLoading.set(false);
           this.monthError.set(
             'Unable to load maramataka month because locations could not be loaded.',
           );
@@ -182,6 +197,9 @@ export class MaramatakaPage implements OnInit {
           );
           this.moonDetailsError.set(
             'Unable to load moon details because locations could not be loaded.',
+          );
+          this.starMarkersError.set(
+            'Unable to load star markers because locations could not be loaded.',
           );
           this.locationsError.set(
             'Unable to load locations. Please try again.',
@@ -203,14 +221,17 @@ export class MaramatakaPage implements OnInit {
     this.cycleLoading.set(true);
     this.todayLoading.set(true);
     this.moonDetailsLoading.set(true);
+    this.starMarkersLoading.set(true);
     this.monthError.set(null);
     this.cycleError.set(null);
     this.todayError.set(null);
     this.moonDetailsError.set(null);
+    this.starMarkersError.set(null);
     this.month.set(null);
     this.cycle.set(null);
     this.today.set(null);
     this.moonDetails.set(null);
+    this.starMarkers.set([]);
 
     const generation = ++this.requestGeneration;
 
@@ -309,6 +330,29 @@ export class MaramatakaPage implements OnInit {
           this.moonDetailsError.set('Unable to load moon details.');
         },
       });
+
+    this.api
+      .getStarMarkers(locationId, requestDate)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (markers) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.starMarkers.set(markers);
+          this.starMarkersLoading.set(false);
+        },
+        error: () => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.starMarkers.set([]);
+          this.starMarkersLoading.set(false);
+          this.starMarkersError.set('Unable to load star markers.');
+        },
+      });
   }
 
   private refreshIfDateChanged(): void {
@@ -341,5 +385,22 @@ export class MaramatakaPage implements OnInit {
     }
 
     return new Date(`${localDate}T12:00:00+12:00`);
+  }
+
+  private relevantStarMarkers(markers: StarMarker[]): StarMarker[] {
+    const markerIds = this.starMonth()?.note?.markerIds;
+    if (markerIds?.length) {
+      return markers.filter((marker) => markerIds.includes(marker.id));
+    }
+
+    const visibleMarkers = markers.filter(
+      (marker) => marker.visibility !== 'below-horizon',
+    );
+    const starMonthMarkerId = this.starMonth()?.marker?.id;
+    if (starMonthMarkerId) {
+      return visibleMarkers.filter((marker) => marker.id === starMonthMarkerId);
+    }
+
+    return visibleMarkers;
   }
 }

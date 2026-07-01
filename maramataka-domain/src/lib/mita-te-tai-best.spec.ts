@@ -1,4 +1,7 @@
-import { MITA_TE_TAI_BEST_MATA } from './mita-te-tai-best';
+import {
+  MITA_TE_TAI_BEST_MATA,
+  MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET,
+} from './mita-te-tai-best';
 
 describe('MITA_TE_TAI_BEST_MATA', () => {
   it('starts with Whiro', () => {
@@ -83,5 +86,41 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
       'Mo te turanga pawai',
       'Mo te ngaro kai, &c.',
     ]);
+  });
+
+  it('defines star month naming on the rule set', () => {
+    expect(
+      MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming,
+    ).toMatchObject({
+      strategy:
+        'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      sampleTimeLocal: '06:00',
+      yearStartMarkerId: 'matariki',
+      source: 'Elsdon Best, The Maori Division of Time',
+    });
+    expect(
+      MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers.map(
+        (marker) => marker.name,
+      ),
+    ).toEqual([
+      'Matariki',
+      'Puanga',
+      'Kōpū',
+      'Takurua',
+      'Tautoru',
+      'Whakaahu',
+      'Rehua',
+      'Uruao',
+    ]);
+    expect(
+      MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.months,
+    ).toHaveLength(12);
+    expect(
+      MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.months[0],
+    ).toMatchObject({
+      name: 'Te Tahi o Pipiri',
+      markerIds: ['matariki'],
+      sourceText: expect.stringContaining('Matariki'),
+    });
   });
 });

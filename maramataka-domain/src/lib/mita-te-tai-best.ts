@@ -1,8 +1,12 @@
+import { StarMarkerDefinition } from '@maramataka-calendar/astronomy';
 import { Mata, MataContentLayer, MataMoonWeek } from './mata';
 import { MaramatakaRuleSet } from './maramataka-rule-set';
 
 export const MITA_TE_TAI_BEST_BALANCING_QUOTE =
   '"In the original, No. 1 (the Whiro night) is marked "kohititanga" a word employed to denote the appearance of the new moon. Nos. 15, 16, and 17 are marked "huanga," denoting full moon. Apparently the commencement of the lunar month was not always precisely fixed, for Metara\'s notebook contained a statement to the effect that sometimes the full moon (Ohua) appeared on the 16th night, or even on the 17th, in which latter case the 15th, 16th, and 17th nights would all be called Ohua, and several of the final night names of the list would be dropped for that month. This would be for the purpose of balancing the lunar month."';
+
+export const MITA_TE_TAI_BEST_STAR_MONTH_QUOTE =
+  '"The following names are those of the twelve months as known to the latter tribe, supplied by Himiona Tikitu: 1. Te Tahi o Pipiri, The First of Pipiri. 2. Te Rua o Takurua, The Second of Takurua. 3. Te Toru o Hereturi-koka, The Third of Hereturi-koka. 4. Te Wha o Mahuru, The Fourth of Mahuru. 5. Te Rima o Kopu, The Fifth of Kopu. 6. Whitianaunau. 7. Hakihea. 8. Kai-tatea. 9. Ruhi-te-rangi. 10. Poutu-te-rangi. 11. Paenga-whawha. 12. Haki-haratua." "Without exception, stars were the ariki (controllers, heads) of these months. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn."';
 
 type MoonWeekKey = 'whiro' | 'tamatea' | 'rakaunui' | 'korekoreTangaroa';
 
@@ -21,6 +25,233 @@ const MITA_TE_TAI_BEST_SOURCE =
   'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference';
 const MITA_TE_TAI_BEST_SOURCE_URL =
   'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
+const MITA_TE_TAI_BEST_STAR_MONTH_SOURCE =
+  'Elsdon Best, The Maori Division of Time';
+
+const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
+  {
+    id: 'matariki',
+    name: 'Matariki',
+    type: 'asterism',
+    englishName: 'Pleiades',
+    description:
+      'Pleiades; Best records Matariki appearing on the dawn horizon as the commencement of the year.',
+    seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 3.7914,
+      declinationDegrees: 24.1051,
+    },
+  },
+  {
+    id: 'puanga',
+    name: 'Puanga',
+    type: 'star',
+    englishName: 'Rigel',
+    description:
+      'New-year marker associated with appearance in the morning sky.',
+    seasonalAssociation: 'New year / first seasonal month',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 5.2423,
+      declinationDegrees: -8.2016,
+    },
+  },
+  {
+    id: 'kopu',
+    name: 'Kōpū',
+    type: 'planet',
+    englishName: 'Venus',
+    description: 'Venus as a morning-star marker in the seasonal account.',
+    seasonalAssociation: 'Second seasonal month marker',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'body',
+      body: 'Venus',
+    },
+  },
+  {
+    id: 'takurua',
+    name: 'Takurua',
+    type: 'star',
+    englishName: 'Sirius',
+    description: 'Sirius; Best notes Takurua is also a name for winter.',
+    seasonalAssociation: 'Second named month marker',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 6.7525,
+      declinationDegrees: -16.7161,
+    },
+  },
+  {
+    id: 'tautoru',
+    name: 'Tautoru',
+    type: 'asterism',
+    englishName: "Orion's Belt",
+    description:
+      'Orion Belt marker; represented here by Alnilam for sky-position calculation.',
+    seasonalAssociation: 'Second seasonal month marker',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 5.6036,
+      declinationDegrees: -1.2019,
+    },
+  },
+  {
+    id: 'whakaahu',
+    name: 'Whakaahu',
+    type: 'star',
+    englishName: 'Castor',
+    description:
+      'Gemini marker; represented by Castor, with Pollux retained for later review.',
+    seasonalAssociation: 'Late winter / early spring marker',
+    source: 'Te Aka / project star-marker notes',
+    confidence: 'working',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 7.5767,
+      declinationDegrees: 31.8883,
+    },
+  },
+  {
+    id: 'rehua',
+    name: 'Rehua',
+    type: 'star',
+    englishName: 'Antares',
+    description: 'Summer marker associated with the Rehua star.',
+    seasonalAssociation: 'Summer marker',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    confidence: 'confirmed',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 16.4901,
+      declinationDegrees: -26.432,
+    },
+  },
+  {
+    id: 'uruao',
+    name: 'Uruao',
+    type: 'sky-figure',
+    englishName: 'Tail of Scorpion working marker',
+    description:
+      "Working project interpretation for Tamarereti's Canoe / Tail of Scorpion context.",
+    seasonalAssociation: 'Provisional sky-figure marker',
+    source: 'Project working interpretation',
+    confidence: 'working',
+    representative: {
+      kind: 'fixed-equatorial',
+      rightAscensionHours: 17.5601,
+      declinationDegrees: -37.1038,
+    },
+  },
+] satisfies StarMarkerDefinition[];
+
+const MITA_TE_TAI_BEST_STAR_MONTH_NOTES = [
+  {
+    sequence: 1,
+    name: 'Te Tahi o Pipiri',
+    markerIds: ['matariki'],
+    description:
+      'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+    sourceText:
+      'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
+  },
+  {
+    sequence: 2,
+    name: 'Te Rua o Takurua',
+    markerIds: ['takurua'],
+    description:
+      'The second named month is Te Rua o Takurua. Best notes Takurua is Sirius and also a name for winter.',
+    sourceText:
+      'Te Rua o Takurua .. The Second of Takurua.',
+  },
+  {
+    sequence: 3,
+    name: 'Te Toru o Hereturi-koka',
+    markerIds: [],
+    description:
+      'The third named month is Te Toru o Hereturi-koka.',
+    sourceText:
+      'Te Toru o Hereturi-koka .. The Third of Hereturi-koka.',
+  },
+  {
+    sequence: 4,
+    name: 'Te Wha o Mahuru',
+    markerIds: [],
+    description:
+      'The fourth named month is Te Wha o Mahuru.',
+    sourceText:
+      'Te Wha o Mahuru .. The Fourth of Mahuru.',
+  },
+  {
+    sequence: 5,
+    name: 'Te Rima o Kōpū',
+    markerIds: ['kopu'],
+    description:
+      'The fifth named month is Te Rima o Kōpū. Best notes Kōpū is Venus.',
+    sourceText:
+      'Te Rima o Kopu .. The Fifth of Kopu.',
+  },
+  {
+    sequence: 6,
+    name: 'Whitianaunau',
+    markerIds: [],
+    description:
+      'The sixth named month is Whitianaunau. Best notes it differs from the inland list.',
+    sourceText: 'Whitianaunau.',
+  },
+  {
+    sequence: 7,
+    name: 'Hakihea',
+    markerIds: [],
+    description: 'The seventh named month is Hakihea.',
+    sourceText: 'Hakihea.',
+  },
+  {
+    sequence: 8,
+    name: 'Kai-tatea',
+    markerIds: [],
+    description: 'The eighth named month is Kai-tatea.',
+    sourceText: 'Kai-tatea.',
+  },
+  {
+    sequence: 9,
+    name: 'Ruhi-te-rangi',
+    markerIds: [],
+    description: 'The ninth named month is Ruhi-te-rangi.',
+    sourceText: 'Ruhi-te-rangi.',
+  },
+  {
+    sequence: 10,
+    name: 'Poutu-te-rangi',
+    markerIds: [],
+    description: 'The tenth named month is Poutu-te-rangi.',
+    sourceText: 'Poutu-te-rangi.',
+  },
+  {
+    sequence: 11,
+    name: 'Paenga-whāwhā',
+    markerIds: [],
+    description: 'The eleventh named month is Paenga-whāwhā.',
+    sourceText: 'Paenga-whawha.',
+  },
+  {
+    sequence: 12,
+    name: 'Haki-haratua',
+    markerIds: [],
+    description: 'The twelfth named month is Haki-haratua.',
+    sourceText: 'Haki-haratua.',
+  },
+];
 
 const FISHING_GUIDANCE_BY_MATA_INDEX: Record<number, string[]> = {
   1: ['Mo te hi', 'Mo te rama'],
@@ -168,6 +399,18 @@ export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   mataBoundary: 'moonrise-to-moonrise',
   calibration: 'full-moon-ohua',
   balancing: 'duplicate-ohua-drop-final-mata',
+  starMonthNaming: {
+    strategy:
+      'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+    sampleTimeLocal: '06:00',
+    yearStartMarkerId: 'matariki',
+    yearStartDescription:
+      'The year commences with Matariki appearing on the horizon at dawn.',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    sourceQuote: MITA_TE_TAI_BEST_STAR_MONTH_QUOTE,
+    markers: MITA_TE_TAI_BEST_STAR_MONTH_MARKERS,
+    months: MITA_TE_TAI_BEST_STAR_MONTH_NOTES,
+  },
   mataVersion: 'mita-te-tai-best',
   mata: MITA_TE_TAI_BEST_MATA,
 };

@@ -8,6 +8,8 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  StarMarker,
+  StarMarkerDefinition,
 } from './astronomy-provider';
 import { AstronomyCacheStore } from './persistent-astronomy-cache';
 
@@ -123,6 +125,24 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     );
   }
 
+  async getStarMarkers(
+    date: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]> {
+    return this.getOrSet(
+      `star-markers:${this.locationCacheKey(date, location)}:${this.starMarkerCacheKey(markers)}`,
+      () =>
+        this.provider.getStarMarkers?.(date, location, markers) ??
+        Promise.resolve([]),
+      (markers) =>
+        markers.map((marker) => ({
+          ...marker,
+          observedAt: new Date(marker.observedAt),
+        })),
+    );
+  }
+
   private async getOrSet<T>(
     key: string,
     fetchValue: () => Promise<T>,
@@ -161,5 +181,9 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
       location.longitude,
       location.timezone,
     ].join(':');
+  }
+
+  private starMarkerCacheKey(markers?: StarMarkerDefinition[]): string {
+    return markers?.map((marker) => marker.id).join(',') ?? 'default';
   }
 }

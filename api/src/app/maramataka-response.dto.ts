@@ -1,4 +1,4 @@
-import { MoonDetails } from '@maramataka-calendar/astronomy';
+import { MoonDetails, StarMarker } from '@maramataka-calendar/astronomy';
 import {
   CurrentMaramatakaNight,
   MaramatakaRuleSetSummary,
@@ -52,6 +52,8 @@ export interface MoonDetailsResponseDto {
   unavailable: Array<'lunarAgeDays' | 'distanceKm'>;
   source: string;
 }
+
+export type StarMarkerResponseDto = StarMarker;
 
 export function toTodayMaramatakaNightResponse(
   currentNight: CurrentMaramatakaNight,
@@ -120,4 +122,10 @@ export function toMoonDetailsResponse(
     ],
     source: details.source,
   };
+}
+
+export function toStarMarkersResponse(
+  markers: StarMarker[],
+): StarMarkerResponseDto[] {
+  return markers;
 }

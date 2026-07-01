@@ -24,6 +24,13 @@ export class MaramatakaMonthView {
   now = input.required<Date>();
   cycle = input<MaramatakaCycleDetails | null>(null);
 
+  protected readonly cycleStarMarkers = computed(() => {
+    const cycleMarkers = this.cycle()?.starMarkers ?? [];
+
+    return cycleMarkers.slice(0, 4);
+  });
+  protected readonly starMonth = computed(() => this.cycle()?.starMonth);
+
   protected readonly wheelSegments = computed(() => {
     const nights = this.month().nights;
     const total = nights.length;

@@ -6,7 +6,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { MaramatakaApiService } from './maramataka-api.service';
-import { MaramatakaCycleDetails } from './maramataka.models';
+import { MaramatakaCycleDetails, StarMarker } from './maramataka.models';
 
 describe('MaramatakaApiService', () => {
   let httpTestingController: HttpTestingController;
@@ -23,6 +23,35 @@ describe('MaramatakaApiService', () => {
     mataBoundary: 'moonrise-to-moonrise',
     calibration: 'full-moon-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
+    starMonthNaming: {
+      strategy:
+        'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      sampleTimeLocal: '06:00',
+      yearStartMarkerId: 'matariki',
+      yearStartDescription:
+        'The year commences with Matariki appearing on the horizon at dawn.',
+      source: 'Elsdon Best, The Maori Division of Time',
+      months: [
+        {
+          sequence: 1,
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
+          description:
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
+        },
+      ],
+      markers: [
+        {
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          confidence: 'confirmed',
+        },
+      ],
+    },
   };
 
   beforeEach(() => {
@@ -117,6 +146,58 @@ describe('MaramatakaApiService', () => {
           },
         },
       },
+      starMonth: {
+        name: 'Te Tahi o Pipiri',
+        marker: {
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          description:
+            'Pleiades; year-start marker appearing on the dawn horizon.',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          source: 'Elsdon Best, The Maori Division of Time',
+          confidence: 'confirmed',
+          observedAt: '2026-09-14T18:00:00.000Z',
+          altitudeDegrees: 21,
+          azimuthDegrees: 79,
+          direction: 'E',
+          visibility: 'prominent',
+          calculation:
+            'Dawn sky position sampled at 06:00 local time for the selected location.',
+        },
+        rule:
+          'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+        source: 'Elsdon Best, The Maori Division of Time',
+        note: {
+          sequence: 1,
+          name: 'Te Tahi o Pipiri',
+          markerIds: ['matariki'],
+          description:
+            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
+          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
+        },
+      },
+      starMarkers: [
+        {
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          description:
+            'Pleiades; year-start marker appearing on the dawn horizon.',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          source: 'Elsdon Best, The Maori Division of Time',
+          confidence: 'confirmed',
+          observedAt: '2026-09-14T18:00:00.000Z',
+          altitudeDegrees: 21,
+          azimuthDegrees: 79,
+          direction: 'E',
+          visibility: 'prominent',
+          calculation:
+            'Dawn sky position sampled at 06:00 local time for the selected location.',
+        },
+      ],
       nights: [
         {
           mata: {
@@ -142,6 +223,63 @@ describe('MaramatakaApiService', () => {
       new Date('2026-10-10T17:17:00.000Z'),
     );
     expect(cycle?.nights[0].mata).toBe('Ohua');
+    expect(cycle?.starMarkers?.[0].name).toBe('Matariki');
+    expect(cycle?.starMarkers?.[0].observedAt).toEqual(
+      new Date('2026-09-14T18:00:00.000Z'),
+    );
+    expect(cycle?.starMonth?.name).toBe('Te Tahi o Pipiri');
+    expect(cycle?.starMonth?.marker?.observedAt).toEqual(
+      new Date('2026-09-14T18:00:00.000Z'),
+    );
+    expect(cycle?.starMonth?.note?.sourceText).toContain(
+      'The First of Pipiri',
+    );
+    expect(cycle?.starMonth?.note?.sourceText).toContain(
+      'Matariki (Pleiades) on the horizon at dawn',
+    );
+  });
+
+  it('maps star markers from the API', () => {
+    let markers: StarMarker[] | undefined;
+
+    service
+      .getStarMarkers('wellington', new Date('2026-06-24T12:00:00.000Z'))
+      .subscribe((response) => {
+        markers = response;
+      });
+
+    const request = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/star-markers' &&
+        req.params.get('location') === 'wellington',
+    );
+
+    expect(request.request.params.get('date')).toBe('2026-06-25');
+    request.flush([
+      {
+        id: 'tautoru',
+        name: 'Tautoru',
+        type: 'asterism',
+        englishName: "Orion's Belt",
+        description: 'A seasonal dawn marker.',
+        seasonalAssociation:
+          'Associated with July alongside Kōpū in the seasonal star account.',
+        source: 'Elsdon Best, The Maori Division of Time',
+        confidence: 'confirmed',
+        observedAt: '2026-06-24T18:00:00.000Z',
+        altitudeDegrees: 18,
+        azimuthDegrees: 82,
+        direction: 'E',
+        visibility: 'visible',
+        calculation:
+          'Dawn sky position sampled at 06:00 local time for the selected location.',
+      },
+    ]);
+
+    expect(markers?.[0].name).toBe('Tautoru');
+    expect(markers?.[0].observedAt).toEqual(
+      new Date('2026-06-24T18:00:00.000Z'),
+    );
   });
 
   it('uses the configured API base URL', () => {

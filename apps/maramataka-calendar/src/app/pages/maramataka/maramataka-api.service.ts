@@ -8,12 +8,14 @@ import {
   ApiMaramatakaMonth,
   ApiMata,
   ApiMoonDetails,
+  ApiStarMarker,
   LocationSummary,
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaNight,
   MaramatakaToday,
   MoonDetails,
+  StarMarker,
 } from './maramataka.models';
 
 @Injectable({ providedIn: 'root' })
@@ -76,6 +78,22 @@ export class MaramatakaApiService {
       .pipe(map((response) => this.mapMoonDetails(response)));
   }
 
+  getStarMarkers(locationId: string, date: Date): Observable<StarMarker[]> {
+    const params = new HttpParams()
+      .set('date', this.toYyyyMmDd(date))
+      .set('location', locationId);
+
+    return this.http
+      .get<ApiStarMarker[]>(this.apiUrl('/maramataka/star-markers'), {
+        params,
+      })
+      .pipe(
+        map((response) =>
+          response.map((marker) => this.mapStarMarker(marker)),
+        ),
+      );
+  }
+
   private apiUrl(path: string): string {
     return `${this.config.apiBaseUrl}${path}`;
   }
@@ -85,6 +103,7 @@ export class MaramatakaApiService {
       version: apiMonth.version,
       ruleSet: apiMonth.ruleSet,
       whiroStartsAt: new Date(apiMonth.whiroStartsAt),
+      starMonthSequence: apiMonth.starMonthSequence,
       nights: apiMonth.nights.map((night) => this.mapNight(night)),
     };
   }
@@ -129,6 +148,17 @@ export class MaramatakaApiService {
         },
       },
       nights: apiCycle.nights.map((night) => this.mapNight(night)),
+      starMonth: apiCycle.starMonth
+        ? {
+            ...apiCycle.starMonth,
+            marker: apiCycle.starMonth.marker
+              ? this.mapStarMarker(apiCycle.starMonth.marker)
+              : undefined,
+          }
+        : undefined,
+      starMarkers: apiCycle.starMarkers?.map((marker) =>
+        this.mapStarMarker(marker),
+      ),
     };
   }
 
@@ -174,6 +204,13 @@ export class MaramatakaApiService {
             occursAt: new Date(apiDetails.transit.occursAt),
           }
         : undefined,
+    };
+  }
+
+  private mapStarMarker(apiMarker: ApiStarMarker): StarMarker {
+    return {
+      ...apiMarker,
+      observedAt: new Date(apiMarker.observedAt),
     };
   }
 
