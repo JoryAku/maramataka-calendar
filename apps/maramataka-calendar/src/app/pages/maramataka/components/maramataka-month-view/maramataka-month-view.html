@@ -76,7 +76,11 @@
       @for (marker of cycleStarMarkers(); track marker.id) {
       <li>
         <strong>{{ marker.name }}</strong>
+        @if (marker.visibility === 'below-horizon') {
+        <span>{{ marker.altitudeDegrees }}° below horizon</span>
+        } @else {
         <span>{{ marker.altitudeDegrees }}° {{ marker.direction }}</span>
+        }
       </li>
       }
     </ul>

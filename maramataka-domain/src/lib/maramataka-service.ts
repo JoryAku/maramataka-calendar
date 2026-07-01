@@ -294,10 +294,7 @@ export class MaramatakaService {
   ): StarMarker[] {
     const markerIds = starMonth?.note?.markerIds;
     if (markerIds) {
-      return starMarkers.filter(
-        (marker) =>
-          marker.visibility !== 'below-horizon' && markerIds.includes(marker.id),
-      );
+      return starMarkers.filter((marker) => markerIds.includes(marker.id));
     }
 
     if (starMonth?.marker) {
@@ -322,11 +319,11 @@ export class MaramatakaService {
         ['NE', 'E', 'SE'].includes(candidate.direction),
     );
     const note = this.findStarMonthNote(starMonthSequence);
-    const marker = note?.markerIds.length
-      ? visibleEasternMarkers.find((candidate) =>
+    const marker = note
+      ? starMarkers.find((candidate) =>
           note.markerIds.includes(candidate.id),
         )
-      : undefined;
+      : visibleEasternMarkers[0];
     if (!note && !marker) {
       return undefined;
     }

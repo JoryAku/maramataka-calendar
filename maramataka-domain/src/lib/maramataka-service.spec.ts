@@ -121,7 +121,7 @@ describe('MaramatakaService', () => {
     });
   });
 
-  it('returns only star markers relevant to the active named month', async () => {
+  it('returns current details for star markers mentioned by the active named month', async () => {
     const whiroStartsAt = new Date('2026-06-10T05:00:00Z');
     const generatedMonth = {
       version: 'mita-te-tai-best' as const,
@@ -170,10 +170,10 @@ describe('MaramatakaService', () => {
             source: 'Elsdon Best, The Maori Division of Time',
             confidence: 'confirmed',
             observedAt: whiroStartsAt,
-            altitudeDegrees: 6,
-            azimuthDegrees: 80,
-            direction: 'E',
-            visibility: 'visible',
+            altitudeDegrees: -3,
+            azimuthDegrees: 310,
+            direction: 'NW',
+            visibility: 'below-horizon',
             calculation: 'Test marker.',
           },
           {
@@ -205,6 +205,7 @@ describe('MaramatakaService', () => {
 
     expect(cycle?.starMonth?.name).toBe('Te Tahi o Pipiri');
     expect(cycle?.starMonth?.marker?.name).toBe('Matariki');
+    expect(cycle?.starMonth?.marker?.visibility).toBe('below-horizon');
     expect(cycle?.starMarkers?.map((marker) => marker.name)).toEqual([
       'Matariki',
     ]);

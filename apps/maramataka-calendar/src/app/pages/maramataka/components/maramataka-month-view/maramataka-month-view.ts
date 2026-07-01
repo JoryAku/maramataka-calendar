@@ -27,9 +27,7 @@ export class MaramatakaMonthView {
   protected readonly cycleStarMarkers = computed(() => {
     const cycleMarkers = this.cycle()?.starMarkers ?? [];
 
-    return cycleMarkers
-      .filter((marker) => marker.visibility !== 'below-horizon')
-      .slice(0, 4);
+    return cycleMarkers.slice(0, 4);
   });
   protected readonly starMonth = computed(() => this.cycle()?.starMonth);
 

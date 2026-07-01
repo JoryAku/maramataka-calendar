@@ -164,8 +164,12 @@
               <span>{{ marker.englishName }}</span>
               }
               <em>
-                {{ marker.visibility }} - {{ marker.altitudeDegrees }}° above
-                {{ marker.direction }}
+                {{ marker.visibility }} -
+                @if (marker.visibility === 'below-horizon') {
+                {{ marker.altitudeDegrees }}° below horizon
+                } @else {
+                {{ marker.altitudeDegrees }}° above {{ marker.direction }}
+                }
               </em>
             </li>
             }
