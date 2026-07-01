@@ -22,6 +22,7 @@ export interface MaramatakaMonth {
   version: MaramatakaVersion;
   ruleSet: MaramatakaRuleSetSummary;
   whiroStartsAt: Date;
+  starMonthSequence?: number;
   nights: MaramatakaNight[];
 }
 
@@ -44,7 +45,7 @@ export interface MaramatakaCycleAnchor {
 
 export interface MaramatakaStarMonth {
   name: string;
-  marker: StarMarker;
+  marker?: StarMarker;
   rule: string;
   source: string;
   sourceUrl?: string;

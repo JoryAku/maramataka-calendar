@@ -103,6 +103,7 @@ export class MaramatakaApiService {
       version: apiMonth.version,
       ruleSet: apiMonth.ruleSet,
       whiroStartsAt: new Date(apiMonth.whiroStartsAt),
+      starMonthSequence: apiMonth.starMonthSequence,
       nights: apiMonth.nights.map((night) => this.mapNight(night)),
     };
   }
@@ -150,7 +151,9 @@ export class MaramatakaApiService {
       starMonth: apiCycle.starMonth
         ? {
             ...apiCycle.starMonth,
-            marker: this.mapStarMarker(apiCycle.starMonth.marker),
+            marker: apiCycle.starMonth.marker
+              ? this.mapStarMarker(apiCycle.starMonth.marker)
+              : undefined,
           }
         : undefined,
       starMarkers: apiCycle.starMarkers?.map((marker) =>

@@ -49,9 +49,15 @@
   <section class="cycle-star-layer" data-testid="cycle-star-marker-layer">
     @if (starMonth()) {
     <p>Star month: {{ starMonth()!.name }}</p>
+    @if (starMonth()!.marker) {
     <span>
-      Named from {{ starMonth()!.marker.name }} at dawn around Whiro.
+      Named from {{ starMonth()!.marker!.name }} at dawn around Whiro.
     </span>
+    } @else {
+    <span>
+      Named by sequence from the Matariki year start; no specific star marker is configured for this month yet.
+    </span>
+    }
     @if (starMonth()!.note) {
     <span>
       {{ starMonth()!.note!.description }}

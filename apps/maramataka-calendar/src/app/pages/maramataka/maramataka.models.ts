@@ -21,6 +21,7 @@ export interface MaramatakaMonth {
   version: string;
   ruleSet: MaramatakaRuleSet;
   whiroStartsAt: Date;
+  starMonthSequence?: number;
   nights: MaramatakaNight[];
 }
 
@@ -42,7 +43,7 @@ export interface MaramatakaCycleDetails<TDate = Date> {
 
 export interface MaramatakaStarMonth<TDate = Date> {
   name: string;
-  marker: StarMarker<TDate>;
+  marker?: StarMarker<TDate>;
   rule: string;
   source: string;
   sourceUrl?: string;
@@ -215,6 +216,7 @@ export interface ApiMaramatakaMonth {
   version: string;
   ruleSet: MaramatakaRuleSet;
   whiroStartsAt: string;
+  starMonthSequence?: number;
   nights: ApiMaramatakaNight[];
 }
 

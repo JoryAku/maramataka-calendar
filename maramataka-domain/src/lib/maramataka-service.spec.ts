@@ -115,7 +115,10 @@ describe('MaramatakaService', () => {
       moonRises: moonRises.slice(0, 3),
       overlaps: undefined,
     });
-    expect(result).toBe(generatedMonth);
+    expect(result).toEqual({
+      ...generatedMonth,
+      starMonthSequence: 1,
+    });
   });
 
   it('returns only star markers relevant to the active named month', async () => {
@@ -201,10 +204,68 @@ describe('MaramatakaService', () => {
     );
 
     expect(cycle?.starMonth?.name).toBe('Te Tahi o Pipiri');
-    expect(cycle?.starMonth?.marker.name).toBe('Matariki');
+    expect(cycle?.starMonth?.marker?.name).toBe('Matariki');
     expect(cycle?.starMarkers?.map((marker) => marker.name)).toEqual([
       'Matariki',
     ]);
+  });
+
+  it('names the star month by Whiro sequence without borrowing unrelated visible markers', async () => {
+    const whiroStartsAt = new Date('2026-08-10T05:00:00Z');
+    const generatedMonth = {
+      version: 'mita-te-tai-best' as const,
+      ruleSet: summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET),
+      whiroStartsAt,
+      starMonthSequence: 3,
+      nights: [
+        {
+          mata: MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.mata[0],
+          startsAt: whiroStartsAt,
+          endsAt: new Date('2026-08-11T05:00:00Z'),
+        },
+      ],
+    };
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons: jest.fn(),
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn().mockResolvedValue([]),
+        getMoonRise: jest.fn(),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+        getStarMarkers: jest.fn().mockResolvedValue([
+          {
+            id: 'puanga',
+            name: 'Puanga',
+            type: 'star',
+            englishName: 'Rigel',
+            description: 'Visible but not the active month ariki.',
+            seasonalAssociation: 'Another marker',
+            source: 'Elsdon Best, The Maori Division of Time',
+            confidence: 'confirmed',
+            observedAt: whiroStartsAt,
+            altitudeDegrees: 18,
+            azimuthDegrees: 82,
+            direction: 'E',
+            visibility: 'visible',
+            calculation: 'Test marker.',
+          },
+        ]),
+      },
+      calculateWhiroStartFn: jest.fn(),
+      generateMaramatakaMonthFn: jest.fn().mockReturnValue(generatedMonth),
+    });
+    jest.spyOn(service, 'getMonth').mockResolvedValue(generatedMonth);
+
+    const cycle = await service.getCycleDetails(
+      location,
+      new Date('2026-08-10T06:00:00Z'),
+    );
+
+    expect(cycle?.starMonth?.name).toBe('Te Toru o Hereturi-koka');
+    expect(cycle?.starMonth?.marker).toBeUndefined();
+    expect(cycle?.starMarkers).toEqual([]);
   });
 
   it('closes the marama at the next Whiro moonrise', async () => {

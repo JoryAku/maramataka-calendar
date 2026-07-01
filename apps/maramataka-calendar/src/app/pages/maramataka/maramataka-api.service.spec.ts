@@ -228,7 +228,7 @@ describe('MaramatakaApiService', () => {
       new Date('2026-09-14T18:00:00.000Z'),
     );
     expect(cycle?.starMonth?.name).toBe('Te Tahi o Pipiri');
-    expect(cycle?.starMonth?.marker.observedAt).toEqual(
+    expect(cycle?.starMonth?.marker?.observedAt).toEqual(
       new Date('2026-09-14T18:00:00.000Z'),
     );
     expect(cycle?.starMonth?.note?.sourceText).toContain(

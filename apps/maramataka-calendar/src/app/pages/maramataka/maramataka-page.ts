@@ -396,7 +396,7 @@ export class MaramatakaPage implements OnInit {
       return visibleMarkers.filter((marker) => markerIds.includes(marker.id));
     }
 
-    const starMonthMarkerId = this.starMonth()?.marker.id;
+    const starMonthMarkerId = this.starMonth()?.marker?.id;
     if (starMonthMarkerId) {
       return visibleMarkers.filter((marker) => marker.id === starMonthMarkerId);
     }

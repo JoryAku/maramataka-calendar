@@ -152,9 +152,10 @@
         <p class="state error compact" data-testid="star-markers-error-state">
           {{ starMarkersError() }}
         </p>
-        } @else if (visibleStarMarkers().length) {
+        } @else if (visibleStarMarkers().length || starMonth()?.note) {
         <section class="star-layer" data-testid="star-marker-layer">
           <p class="guidance-title">Dawn sky markers</p>
+          @if (visibleStarMarkers().length) {
           <ul>
             @for (marker of visibleStarMarkers(); track marker.id) {
             <li>
@@ -169,16 +170,25 @@
             </li>
             }
           </ul>
+          } @else {
+          <p class="state compact">
+            No specific dawn marker is configured for this named month yet.
+          </p>
+          }
           <p class="guidance-source">
             Star month rule:
             {{ starMonthNaming()?.strategy ?? 'dawn sky marker visibility' }}.
             Source:
-            {{ starMonthNaming()?.source ?? visibleStarMarkers()[0].source }}
-            @if (starMonthNaming()?.sourceUrl || visibleStarMarkers()[0].sourceUrl) {
+            {{
+              starMonthNaming()?.source ??
+                visibleStarMarkers()[0]?.source ??
+                'Star month rule set'
+            }}
+            @if (starMonthNaming()?.sourceUrl || visibleStarMarkers()[0]?.sourceUrl) {
             <a
               [href]="
                 starMonthNaming()?.sourceUrl ??
-                visibleStarMarkers()[0].sourceUrl
+                visibleStarMarkers()[0]?.sourceUrl
               "
               target="_blank"
               rel="noreferrer"
