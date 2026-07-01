@@ -8,6 +8,7 @@ import {
   FullMoon,
   MoonRise,
   NewMoon,
+  parseLocalDateTimeInTimezone,
   StarMarker,
 } from '@maramataka-calendar/astronomy';
 import {
@@ -17,6 +18,8 @@ import {
   MaramatakaMonth,
   MaramatakaNight,
   MaramatakaStarMonth,
+  MaramatakaYear,
+  MaramatakaYearMonth,
 } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
 import {
@@ -183,6 +186,50 @@ export class MaramatakaService {
     const localDate = this.formatIsoDateForLocation(date, location);
 
     return this.astronomyProvider.getMoonDetails(localDate, location);
+  }
+
+  async getYear(location: Location, date: Date): Promise<MaramatakaYear> {
+    const localYear = Number(
+      this.formatIsoDateForLocation(date, location).slice(0, 4),
+    );
+    const [previousYearNewMoons, yearNewMoons, nextYearNewMoons] =
+      await Promise.all([
+        this.astronomyProvider.getNewMoons(localYear - 1),
+        this.astronomyProvider.getNewMoons(localYear),
+        this.astronomyProvider.getNewMoons(localYear + 1),
+      ]);
+    const newMoons = [
+      ...this.asArray(previousYearNewMoons),
+      ...this.asArray(yearNewMoons),
+      ...this.asArray(nextYearNewMoons),
+    ].sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
+    const months = (
+      await Promise.all(
+        newMoons
+          .filter(
+            (newMoon) =>
+              this.formatIsoDateForLocation(newMoon.occursAt, location).slice(
+                0,
+                4,
+              ) === String(localYear),
+          )
+          .map((newMoon, index) =>
+            this.createYearMonth(newMoon, location, index + 1),
+          ),
+      )
+    ).filter(
+      (month): month is MaramatakaYearMonth => Boolean(month),
+    );
+
+    return {
+      version: this.version,
+      ruleSet: summarizeRuleSet(this.ruleSet),
+      year: localYear,
+      timezone: location.timezone,
+      startsAt: this.localYearBoundary(localYear, location, 0),
+      endsAt: this.localYearBoundary(localYear + 1, location, 0),
+      months,
+    };
   }
 
   async getStarMarkers(location: Location, date: Date): Promise<StarMarker[]> {
@@ -409,6 +456,78 @@ export class MaramatakaService {
       : undefined;
   }
 
+  private async createYearMonth(
+    newMoon: NewMoon,
+    location: Location,
+    sequence: number,
+  ): Promise<MaramatakaYearMonth | undefined> {
+    const month = await this.getMonth(location, newMoon.occursAt);
+    const nextWhiroStartsAt = month.nights[month.nights.length - 1]?.endsAt;
+    if (!nextWhiroStartsAt) {
+      return undefined;
+    }
+
+    const fullMoon = await this.findFullMoonForCycle(
+      month,
+      month.whiroStartsAt,
+    );
+    const fullMoonNight = fullMoon
+      ? this.findNightForDate(month.nights, fullMoon.occursAt)
+      : undefined;
+
+    const starMarkers = await this.getStarMarkers(location, month.whiroStartsAt);
+    const starMonth = this.selectStarMonth(
+      starMarkers,
+      month.starMonthSequence,
+    );
+
+    return {
+      sequence,
+      name: starMonth?.name ?? `Marama ${sequence}`,
+      starMonth,
+      starMarkers: this.selectRelevantStarMarkers(starMarkers, starMonth),
+      startsAt: month.whiroStartsAt,
+      endsAt: nextWhiroStartsAt,
+      durationDays: this.roundTo(
+        (nextWhiroStartsAt.getTime() - month.whiroStartsAt.getTime()) /
+          (24 * 60 * 60 * 1000),
+        2,
+      ),
+      nightsCount: month.nights.length,
+      repeatedMata: this.repeatedMataNames(month),
+      anchors: {
+        whiro: this.createCycleAnchor({
+          type: 'whiro',
+          label: 'Whiro / Kohititanga',
+          occursAt: month.whiroStartsAt,
+          location,
+          source: 'astronomy-engine moonrise',
+          mata: month.nights[0]?.mata,
+        }),
+        ...(fullMoon
+          ? {
+              fullMoon: this.createCycleAnchor({
+                type: 'full-moon',
+                label: 'Rakaunui / Full Moon',
+                occursAt: fullMoon.occursAt,
+                location,
+                source: fullMoon.source,
+                mata: fullMoonNight?.mata,
+              }),
+            }
+          : {}),
+        nextWhiro: this.createCycleAnchor({
+          type: 'next-whiro',
+          label: 'Next Whiro / Kohititanga',
+          occursAt: nextWhiroStartsAt,
+          location,
+          source: 'astronomy-engine moonrise',
+          mata: this.ruleSet.mata[0],
+        }),
+      },
+    };
+  }
+
   private findRelevantNewMoon(
     newMoons: NewMoon[],
     requestedTime: number,
@@ -631,6 +750,41 @@ export class MaramatakaService {
 
   private addMilliseconds(date: Date, milliseconds: number): Date {
     return new Date(date.getTime() + milliseconds);
+  }
+
+  private localYearBoundary(
+    year: number,
+    location: Location,
+    monthIndex: number,
+  ): Date {
+    return parseLocalDateTimeInTimezone(
+      {
+        year,
+        month: monthIndex + 1,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+      },
+      location.timezone,
+    );
+  }
+
+  private repeatedMataNames(month: MaramatakaMonth): string[] {
+    const counts = new Map<string, number>();
+    for (const night of month.nights) {
+      counts.set(night.mata.name, (counts.get(night.mata.name) ?? 0) + 1);
+    }
+
+    return Array.from(counts.entries())
+      .filter(([, count]) => count > 1)
+      .map(([name, count]) => `${name} x${count}`);
+  }
+
+  private roundTo(value: number, decimals: number): number {
+    const factor = 10 ** decimals;
+
+    return Math.round(value * factor) / factor;
   }
 
   private findMonthEndMoonRiseIndex(

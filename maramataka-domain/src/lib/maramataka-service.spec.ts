@@ -269,6 +269,106 @@ describe('MaramatakaService', () => {
     expect(cycle?.starMarkers).toEqual([]);
   });
 
+  it('generates a proportional year timeline from Whiro cycles', async () => {
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2025-12-01T00:00:00Z'), source: 'astronomy-engine' },
+      ])
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2026-01-01T00:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2026-01-30T00:00:00Z'), source: 'astronomy-engine' },
+      ])
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2027-01-01T00:00:00Z'), source: 'astronomy-engine' },
+      ]);
+    const getFullMoons = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { occursAt: new Date('2026-01-15T05:00:00Z'), source: 'astronomy-engine' },
+      ])
+      .mockResolvedValueOnce([]);
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons,
+        getMoonRise: jest.fn(),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
+    });
+    const firstMonth = {
+      version: 'mita-te-tai-best' as const,
+      ruleSet: {
+        id: 'mita-te-tai-best-observational-v1',
+        name: 'Mita Te Tai / Best observational maramataka',
+        version: '1',
+        source: 'test',
+        tradition: 'test',
+        maramaStart: 'new-moon-moonrise',
+        mataBoundary: 'moonrise-to-moonrise',
+        calibration: 'full-moon-ohua',
+        balancing: 'duplicate-ohua-drop-final-mata',
+      },
+      whiroStartsAt: new Date('2026-01-01T05:00:00Z'),
+      nights: [
+        {
+          mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
+          startsAt: new Date('2026-01-01T05:00:00Z'),
+          endsAt: new Date('2026-01-15T05:00:00Z'),
+        },
+        {
+          mata: { index: 15, name: 'Ohua', version: 'mita-te-tai-best' as const },
+          startsAt: new Date('2026-01-15T05:00:00Z'),
+          endsAt: new Date('2026-01-30T05:00:00Z'),
+        },
+      ],
+    };
+    const secondMonth = {
+      ...firstMonth,
+      whiroStartsAt: new Date('2026-01-30T05:00:00Z'),
+      nights: [
+        {
+          mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
+          startsAt: new Date('2026-01-30T05:00:00Z'),
+          endsAt: new Date('2026-02-28T05:00:00Z'),
+        },
+      ],
+    };
+    jest
+      .spyOn(service, 'getMonth')
+      .mockResolvedValueOnce(firstMonth)
+      .mockResolvedValueOnce(secondMonth);
+
+    const year = await service.getYear(
+      location,
+      new Date('2026-01-10T12:00:00Z'),
+    );
+
+    expect(year.year).toBe(2026);
+    expect(year.startsAt).toEqual(new Date('2025-12-31T11:00:00.000Z'));
+    expect(year.months).toHaveLength(2);
+    expect(year.months[0]).toMatchObject({
+      sequence: 1,
+      name: 'Marama 1',
+      durationDays: 29,
+      nightsCount: 2,
+      repeatedMata: [],
+    });
+    expect(year.months[0].anchors.fullMoon?.occursAt).toEqual(
+      new Date('2026-01-15T05:00:00Z'),
+    );
+    expect(year.months[1]).toMatchObject({
+      sequence: 2,
+      name: 'Marama 2',
+      durationDays: 29,
+      nightsCount: 1,
+    });
+  });
+
   it('closes the marama at the next Whiro moonrise', async () => {
     const mata = [
       { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },

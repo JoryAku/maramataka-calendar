@@ -67,3 +67,30 @@ export interface MaramatakaCycleDetails {
   starMonth?: MaramatakaStarMonth;
   starMarkers?: StarMarker[];
 }
+
+export interface MaramatakaYear {
+  version: MaramatakaVersion;
+  ruleSet: MaramatakaRuleSetSummary;
+  year: number;
+  timezone: string;
+  startsAt: Date;
+  endsAt: Date;
+  months: MaramatakaYearMonth[];
+}
+
+export interface MaramatakaYearMonth {
+  sequence: number;
+  name: string;
+  starMonth?: MaramatakaStarMonth;
+  starMarkers?: StarMarker[];
+  startsAt: Date;
+  endsAt: Date;
+  durationDays: number;
+  nightsCount: number;
+  repeatedMata: string[];
+  anchors: {
+    whiro: MaramatakaCycleAnchor;
+    fullMoon?: MaramatakaCycleAnchor;
+    nextWhiro: MaramatakaCycleAnchor;
+  };
+}

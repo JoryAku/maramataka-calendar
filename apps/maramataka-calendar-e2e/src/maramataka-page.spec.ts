@@ -259,6 +259,60 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     });
   });
 
+  await page.route('**/api/maramataka/year**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        version: 'mita-te-tai-best',
+        ruleSet,
+        year: 2026,
+        timezone: 'Pacific/Auckland',
+        startsAt: '2025-12-31T11:00:00.000Z',
+        endsAt: '2026-12-31T11:00:00.000Z',
+        months: [
+          {
+            sequence: 1,
+            name: 'Marama 1',
+            startsAt: '2026-06-25T04:30:00.000Z',
+            endsAt: '2026-07-24T04:30:00.000Z',
+            durationDays: 29,
+            nightsCount: 29,
+            repeatedMata: [],
+            anchors: {
+              whiro: {
+                type: 'whiro',
+                label: 'Whiro / Kohititanga',
+                occursAt: '2026-06-25T04:30:00.000Z',
+                localDate: '2026-06-25',
+                localTime: '16:30:00',
+                timezone: 'Pacific/Auckland',
+                source: 'stub moonrise',
+              },
+              fullMoon: {
+                type: 'full-moon',
+                label: 'Rakaunui / Full Moon',
+                occursAt: '2026-07-09T04:30:00.000Z',
+                localDate: '2026-07-09',
+                localTime: '16:30:00',
+                timezone: 'Pacific/Auckland',
+                source: 'stub',
+              },
+              nextWhiro: {
+                type: 'next-whiro',
+                label: 'Next Whiro / Kohititanga',
+                occursAt: '2026-07-24T04:30:00.000Z',
+                localDate: '2026-07-24',
+                localTime: '16:30:00',
+                timezone: 'Pacific/Auckland',
+                source: 'stub moonrise',
+              },
+            },
+          },
+        ],
+      }),
+    });
+  });
+
   await page.route('**/api/locations**', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
@@ -412,6 +466,9 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByLabel('Moon timings')).toContainText('Moonset');
   await expect(page.getByLabel('Moon timings')).toContainText('Meridian');
   await expect(page.locator('.cycle-wheel')).toBeVisible();
+  await expect(page.getByTestId('year-rhythm-timeline')).toContainText(
+    'Marama 1',
+  );
   await expect(page.locator('.wheel-segment')).toHaveCount(2);
   await expect(page.locator('.wheel-segment.current')).toHaveCount(1);
   await expect(page.locator('.wheel-segment.current')).toHaveAttribute(

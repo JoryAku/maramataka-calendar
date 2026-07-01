@@ -93,6 +93,11 @@ describe('MaramatakaPage', () => {
         req.url === '/api/maramataka/moon-details' &&
         req.params.get('location') === locationId,
     );
+    const yearRequest = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/year' &&
+        req.params.get('location') === locationId,
+    );
     const starMarkersRequest = httpTestingController.expectOne(
       (req) =>
         req.url === '/api/maramataka/star-markers' &&
@@ -104,6 +109,7 @@ describe('MaramatakaPage', () => {
       cycleRequest,
       todayRequest,
       moonDetailsRequest,
+      yearRequest,
       starMarkersRequest,
     };
   }
@@ -254,6 +260,92 @@ describe('MaramatakaPage', () => {
     };
   }
 
+  function yearFixture(): Record<string, unknown> {
+    const matarikiMarker = {
+      id: 'matariki',
+      name: 'Matariki',
+      type: 'asterism',
+      englishName: 'Pleiades',
+      description: 'Pleiades; year-start marker appearing on the dawn horizon.',
+      seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+      source: 'Elsdon Best, The Maori Division of Time',
+      confidence: 'confirmed',
+      observedAt: '2026-01-10T17:00:00.000Z',
+      altitudeDegrees: 24,
+      azimuthDegrees: 74,
+      direction: 'E',
+      visibility: 'prominent',
+      calculation:
+        'Dawn sky position sampled at 06:00 local time for the selected location.',
+    };
+
+    return {
+      version: 'mita-te-tai-best',
+      ruleSet,
+      year: 2026,
+      timezone: 'Pacific/Auckland',
+      startsAt: '2025-12-31T11:00:00.000Z',
+      endsAt: '2026-12-31T11:00:00.000Z',
+      months: [
+        {
+          sequence: 1,
+          name: 'Te Tahi o Pipiri',
+          starMonth: {
+            name: 'Te Tahi o Pipiri',
+            marker: matarikiMarker,
+            rule:
+              'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+            source: 'Elsdon Best, The Maori Division of Time',
+            note: {
+              sequence: 1,
+              name: 'Te Tahi o Pipiri',
+              markerIds: ['matariki'],
+              description:
+                'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri.',
+              sourceText:
+                'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
+            },
+          },
+          starMarkers: [matarikiMarker],
+          startsAt: '2026-01-10T06:45:00.000Z',
+          endsAt: '2026-02-09T06:45:00.000Z',
+          durationDays: 30,
+          nightsCount: 30,
+          repeatedMata: [],
+          anchors: {
+            whiro: {
+              type: 'whiro',
+              label: 'Whiro / Kohititanga',
+              occursAt: '2026-01-10T06:45:00.000Z',
+              localDate: '2026-01-10',
+              localTime: '19:45:00',
+              timezone: 'Pacific/Auckland',
+              source: 'astronomy-engine moonrise',
+            },
+            fullMoon: {
+              type: 'full-moon',
+              label: 'Rakaunui / Full Moon',
+              occursAt: '2026-01-25T06:45:00.000Z',
+              localDate: '2026-01-25',
+              localTime: '19:45:00',
+              timezone: 'Pacific/Auckland',
+              source: 'astronomy-engine',
+            },
+            nextWhiro: {
+              type: 'next-whiro',
+              label: 'Next Whiro / Kohititanga',
+              occursAt: '2026-02-09T06:45:00.000Z',
+              localDate: '2026-02-09',
+              localTime: '19:45:00',
+              timezone: 'Pacific/Auckland',
+              source: 'astronomy-engine moonrise',
+            },
+          },
+        },
+      ],
+    };
+  }
+
   function starMarkersFixture(): Record<string, unknown>[] {
     return [
       {
@@ -301,12 +393,14 @@ describe('MaramatakaPage', () => {
     today = todayFixture(),
     cycle = cycleFixture(),
     moonDetails = moonDetailsFixture(),
+    year = yearFixture(),
     starMarkers = starMarkersFixture(),
   ): void {
     requests.monthRequest.flush(month);
     requests.cycleRequest.flush(cycle);
     requests.todayRequest.flush(today);
     requests.moonDetailsRequest.flush(moonDetails);
+    requests.yearRequest.flush(year);
     requests.starMarkersRequest.flush(starMarkers);
   }
 
@@ -345,6 +439,7 @@ describe('MaramatakaPage', () => {
       cycleRequest,
       todayRequest,
       moonDetailsRequest,
+      yearRequest,
       starMarkersRequest,
     } = requests;
 
@@ -355,6 +450,7 @@ describe('MaramatakaPage', () => {
     );
     expect(cycleRequest.request.params.get('date')).toBe('2026-01-11');
     expect(moonDetailsRequest.request.params.get('date')).toBe('2026-01-11');
+    expect(yearRequest.request.params.get('date')).toBe('2026-01-11');
     expect(starMarkersRequest.request.params.get('date')).toBe('2026-01-11');
 
     flushSuccessfulMaramatakaRequests(
@@ -384,6 +480,8 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Waxing Crescent');
     expect(content).toContain('17%');
     expect(content).toContain('Meridian');
+    expect(content).toContain('Year rhythm');
+    expect(content).toContain('Te Tahi o Pipiri');
     expect(content).toContain('Dawn sky markers');
     expect(content).toContain('Matariki');
     expect(content).toContain('Pleiades');
@@ -659,6 +757,7 @@ describe('MaramatakaPage', () => {
       cycleRequest,
       todayRequest,
       moonDetailsRequest,
+      yearRequest,
       starMarkersRequest,
     } = flushMaramatakaRequests();
 
@@ -669,6 +768,7 @@ describe('MaramatakaPage', () => {
       status: 500,
       statusText: 'Server Error',
     });
+    yearRequest.flush('Failure', { status: 500, statusText: 'Server Error' });
     starMarkersRequest.flush('Failure', {
       status: 500,
       statusText: 'Server Error',

@@ -279,4 +279,106 @@
     ></app-maramataka-month-view>
     }
   </section>
+
+  <section class="year-section" aria-labelledby="year-heading">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">3. Year rhythm</p>
+        <h2 id="year-heading">How does this lunar year unfold?</h2>
+      </div>
+      @if (year()) {
+      <p>{{ year()!.year }}</p>
+      }
+    </div>
+
+    @if (yearLoading()) {
+    <p class="state" data-testid="year-loading-state">
+      Loading maramataka year...
+    </p>
+    } @else if (yearError()) {
+    <p class="state error" data-testid="year-error-state">
+      {{ yearError() }}
+    </p>
+    } @else if (!year() || !year()!.months.length) {
+    <p class="state" data-testid="year-empty-state">
+      No maramataka year timeline is available for this date.
+    </p>
+    } @else {
+    <div
+      class="year-timeline"
+      data-testid="year-rhythm-timeline"
+      role="list"
+      aria-label="Maramataka year rhythm timeline"
+    >
+      @for (month of year()!.months; track month.startsAt.toISOString()) {
+      <article
+        class="year-marama"
+        role="listitem"
+        tabindex="0"
+        [style.flex-grow]="monthFlex(month)"
+        [attr.aria-label]="yearMaramaAriaLabel(month)"
+      >
+        <div class="marama-track">
+          <span
+            class="year-anchor whiro"
+            [style.left.%]="0"
+            aria-hidden="true"
+          ></span>
+          @if (month.anchors.fullMoon) {
+          <span
+            class="year-anchor full"
+            [style.left.%]="
+              anchorOffsetPercent(month, month.anchors.fullMoon!.occursAt)
+            "
+            aria-hidden="true"
+          ></span>
+          }
+          <span
+            class="year-anchor next-whiro"
+            [style.left.%]="100"
+            aria-hidden="true"
+          ></span>
+        </div>
+        <div class="year-marama-label">
+          <strong>{{ month.name }}</strong>
+          @if (month.starMarkers?.length) {
+          <span>
+            {{ month.starMarkers![0].name }}
+            @if (month.starMarkers![0].englishName) {
+            ({{ month.starMarkers![0].englishName }})
+            }
+          </span>
+          }
+          <span>
+            {{ month.anchors.whiro.occursAt | date: 'd MMM' : nzTimeZone }}
+            -
+            {{ month.anchors.nextWhiro.occursAt | date: 'd MMM' : nzTimeZone }}
+          </span>
+          <small>
+            {{ month.nightsCount }} mata · {{ month.durationDays }} days
+          </small>
+          @if (month.repeatedMata.length) {
+          <small>Repeated: {{ month.repeatedMata.join(', ') }}</small>
+          }
+        </div>
+      </article>
+      }
+    </div>
+
+    <dl class="year-legend" aria-label="Year timeline legend">
+      <div>
+        <dt>Whiro</dt>
+        <dd>New Moon anchor</dd>
+      </div>
+      <div>
+        <dt>Rakaunui</dt>
+        <dd>Full Moon marker</dd>
+      </div>
+      <div>
+        <dt>Next Whiro</dt>
+        <dd>Marama close</dd>
+      </div>
+    </dl>
+    }
+  </section>
 </section>

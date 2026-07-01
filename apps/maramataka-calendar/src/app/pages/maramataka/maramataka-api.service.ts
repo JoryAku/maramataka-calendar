@@ -6,6 +6,7 @@ import { NZ_TIMEZONE } from './maramataka.constants';
 import {
   ApiMaramatakaCycleDetails,
   ApiMaramatakaMonth,
+  ApiMaramatakaYear,
   ApiMata,
   ApiMoonDetails,
   ApiStarMarker,
@@ -13,7 +14,9 @@ import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaNight,
+  MaramatakaStarMonth,
   MaramatakaToday,
+  MaramatakaYear,
   MoonDetails,
   StarMarker,
 } from './maramataka.models';
@@ -54,6 +57,16 @@ export class MaramatakaApiService {
         params,
       })
       .pipe(map((response) => this.mapCycleDetails(response)));
+  }
+
+  getYear(locationId: string, date: Date): Observable<MaramatakaYear> {
+    const params = new HttpParams()
+      .set('date', this.toYyyyMmDd(date))
+      .set('location', locationId);
+
+    return this.http
+      .get<ApiMaramatakaYear>(this.apiUrl('/maramataka/year'), { params })
+      .pipe(map((response) => this.mapYear(response)));
   }
 
   getToday(locationId: string, date: Date): Observable<MaramatakaToday> {
@@ -149,16 +162,46 @@ export class MaramatakaApiService {
       },
       nights: apiCycle.nights.map((night) => this.mapNight(night)),
       starMonth: apiCycle.starMonth
-        ? {
-            ...apiCycle.starMonth,
-            marker: apiCycle.starMonth.marker
-              ? this.mapStarMarker(apiCycle.starMonth.marker)
-              : undefined,
-          }
+        ? this.mapStarMonth(apiCycle.starMonth)
         : undefined,
       starMarkers: apiCycle.starMarkers?.map((marker) =>
         this.mapStarMarker(marker),
       ),
+    };
+  }
+
+  private mapYear(apiYear: ApiMaramatakaYear): MaramatakaYear {
+    return {
+      ...apiYear,
+      startsAt: new Date(apiYear.startsAt),
+      endsAt: new Date(apiYear.endsAt),
+      months: apiYear.months.map((month) => ({
+        ...month,
+        startsAt: new Date(month.startsAt),
+        endsAt: new Date(month.endsAt),
+        starMonth: month.starMonth
+          ? this.mapStarMonth(month.starMonth)
+          : undefined,
+        starMarkers: month.starMarkers?.map((marker) =>
+          this.mapStarMarker(marker),
+        ),
+        anchors: {
+          whiro: {
+            ...month.anchors.whiro,
+            occursAt: new Date(month.anchors.whiro.occursAt),
+          },
+          fullMoon: month.anchors.fullMoon
+            ? {
+                ...month.anchors.fullMoon,
+                occursAt: new Date(month.anchors.fullMoon.occursAt),
+              }
+            : undefined,
+          nextWhiro: {
+            ...month.anchors.nextWhiro,
+            occursAt: new Date(month.anchors.nextWhiro.occursAt),
+          },
+        },
+      })),
     };
   }
 
@@ -203,6 +246,17 @@ export class MaramatakaApiService {
             ...apiDetails.transit,
             occursAt: new Date(apiDetails.transit.occursAt),
           }
+        : undefined,
+    };
+  }
+
+  private mapStarMonth(
+    apiStarMonth: MaramatakaStarMonth<string>,
+  ): MaramatakaStarMonth {
+    return {
+      ...apiStarMonth,
+      marker: apiStarMonth.marker
+        ? this.mapStarMarker(apiStarMonth.marker)
         : undefined,
     };
   }
