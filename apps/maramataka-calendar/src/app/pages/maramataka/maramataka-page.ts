@@ -61,6 +61,7 @@ export class MaramatakaPage implements OnInit {
   protected readonly starMarkers = signal<StarMarker[]>([]);
   protected readonly now = signal(new Date());
   protected readonly selectedDate = signal(this.api.formatDate(new Date()));
+  private readonly selectedDateInstant = signal<Date | null>(null);
   protected readonly useLiveDate = signal(true);
   protected readonly hasNights = computed(
     () => (this.month()?.nights.length ?? 0) > 0,
@@ -152,16 +153,20 @@ export class MaramatakaPage implements OnInit {
 
     this.useLiveDate.set(false);
     this.selectedDate.set(date);
+    this.selectedDateInstant.set(this.nzMiddayForDate(date));
     this.reloadData();
   }
 
   protected selectDate(date: Date): void {
     const selectedDate = this.api.formatDate(date);
     const shouldReload =
-      selectedDate !== this.selectedDate() || this.useLiveDate();
+      selectedDate !== this.selectedDate() ||
+      this.selectedDateInstant()?.getTime() !== date.getTime() ||
+      this.useLiveDate();
 
     this.useLiveDate.set(false);
     this.selectedDate.set(selectedDate);
+    this.selectedDateInstant.set(date);
 
     if (shouldReload) {
       this.reloadData();
@@ -180,6 +185,7 @@ export class MaramatakaPage implements OnInit {
 
     this.useLiveDate.set(true);
     this.selectedDate.set(today);
+    this.selectedDateInstant.set(null);
     this.reloadData();
   }
 
@@ -431,7 +437,7 @@ export class MaramatakaPage implements OnInit {
       return new Date();
     }
 
-    return this.nzMiddayForDate(this.selectedDate());
+    return this.selectedDateInstant() ?? this.nzMiddayForDate(this.selectedDate());
   }
 
   private nzMiddayForDate(localDate: string): Date {

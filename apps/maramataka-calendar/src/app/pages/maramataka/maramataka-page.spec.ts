@@ -663,8 +663,8 @@ describe('MaramatakaPage', () => {
     expect(mataRequests.monthRequest.request.params.get('date')).toBe(
       '2026-01-11',
     );
-    expect(mataRequests.todayRequest.request.params.get('dateTime')).toContain(
-      '2026-01-11',
+    expect(mataRequests.todayRequest.request.params.get('dateTime')).toBe(
+      '2026-01-11T19:45:00',
     );
     flushSuccessfulMaramatakaRequests(mataRequests);
     fixture.detectChanges();
@@ -680,7 +680,7 @@ describe('MaramatakaPage', () => {
     );
     expect(
       yearMonthRequests.todayRequest.request.params.get('dateTime'),
-    ).toContain('2026-01-10');
+    ).toBe('2026-01-10T19:45:00');
     flushSuccessfulMaramatakaRequests(yearMonthRequests);
   });
 
