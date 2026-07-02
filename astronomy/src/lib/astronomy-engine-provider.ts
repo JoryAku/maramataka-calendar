@@ -339,40 +339,58 @@ export class AstronomyEngineProvider implements AstronomyProvider {
       const observedAt = this.localDateAtTime(date, location, 6, 0);
       const observer = this.observer(engine, location);
 
-      return markers.map((marker) => {
-        const coordinates = this.markerCoordinates(
-          marker,
-          engine,
-          observer,
-          observedAt,
-        );
-        const horizon = engine.Horizon(
-          observedAt,
-          observer,
-          coordinates.ra,
-          coordinates.dec,
-          'normal',
-        );
-
-        return {
-          id: marker.id,
-          name: marker.name,
-          type: marker.type,
-          englishName: marker.englishName,
-          description: marker.description,
-          seasonalAssociation: marker.seasonalAssociation,
-          source: marker.source,
-          sourceUrl: marker.sourceUrl,
-          confidence: marker.confidence,
-          observedAt,
-          altitudeDegrees: this.roundTo(horizon.altitude, 1),
-          azimuthDegrees: this.roundTo(horizon.azimuth, 1),
-          direction: this.directionFromAzimuth(horizon.azimuth),
-          visibility: this.visibilityFromAltitude(horizon.altitude),
-          calculation:
+      return markers
+        .map((marker) =>
+          this.calculateStarMarker(
+            marker,
+            engine,
+            observer,
+            observedAt,
             'Dawn sky position sampled at 06:00 local time for the selected location.',
-        };
-      }).sort((a, b) => b.altitudeDegrees - a.altitudeDegrees);
+          ),
+        )
+        .sort((a, b) => b.altitudeDegrees - a.altitudeDegrees);
+    });
+  }
+
+  async getStarFirstAppearances(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers = DEFAULT_STAR_MARKERS,
+  ): Promise<StarMarker[]> {
+    return this.calculate('star first appearances', async (engine) => {
+      const appearances: StarMarker[] = [];
+      const remainingMarkers = new Map(
+        markers.map((marker) => [marker.id, marker]),
+      );
+      let date = startDate;
+
+      while (date < endDate && remainingMarkers.size > 0) {
+        const observedAt = this.localDateAtTime(date, location, 6, 0);
+        const observer = this.observer(engine, location);
+
+        for (const marker of [...remainingMarkers.values()]) {
+          const starMarker = this.calculateStarMarker(
+            marker,
+            engine,
+            observer,
+            observedAt,
+            'First dawn sample in this maramataka year where the marker is above the eastern horizon.',
+          );
+
+          if (this.isEasternHorizonAppearance(starMarker)) {
+            appearances.push(starMarker);
+            remainingMarkers.delete(marker.id);
+          }
+        }
+
+        date = this.addIsoDateDays(date, 1);
+      }
+
+      return appearances.sort(
+        (a, b) => a.observedAt.getTime() - b.observedAt.getTime(),
+      );
     });
   }
 
@@ -443,6 +461,54 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     }
 
     return engine.Equator(body, observedAt, observer, true, true);
+  }
+
+  private calculateStarMarker(
+    marker: StarMarkerDefinition,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    observedAt: Date,
+    calculation: string,
+  ): StarMarker {
+    const coordinates = this.markerCoordinates(
+      marker,
+      engine,
+      observer,
+      observedAt,
+    );
+    const horizon = engine.Horizon(
+      observedAt,
+      observer,
+      coordinates.ra,
+      coordinates.dec,
+      'normal',
+    );
+
+    return {
+      id: marker.id,
+      name: marker.name,
+      type: marker.type,
+      englishName: marker.englishName,
+      description: marker.description,
+      seasonalAssociation: marker.seasonalAssociation,
+      source: marker.source,
+      sourceUrl: marker.sourceUrl,
+      confidence: marker.confidence,
+      observedAt,
+      altitudeDegrees: this.roundTo(horizon.altitude, 1),
+      azimuthDegrees: this.roundTo(horizon.azimuth, 1),
+      direction: this.directionFromAzimuth(horizon.azimuth),
+      visibility: this.visibilityFromAltitude(horizon.altitude),
+      calculation,
+    };
+  }
+
+  private isEasternHorizonAppearance(marker: StarMarker): boolean {
+    return (
+      marker.altitudeDegrees >= 0 &&
+      marker.azimuthDegrees >= 45 &&
+      marker.azimuthDegrees <= 135
+    );
   }
 
   private localDateRange(

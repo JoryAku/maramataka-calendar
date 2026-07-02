@@ -447,6 +447,50 @@ export class MaramatakaPage implements OnInit {
     return `year-event ${event.type}`;
   }
 
+  protected yearEventSymbol(event: MaramatakaYearEvent): string {
+    switch (event.type) {
+      case 'star-marker':
+        return '★';
+      case 'new-moon':
+        return '◐';
+      case 'full-moon':
+        return '●';
+      case 'month-start':
+        return '◇';
+    }
+  }
+
+  protected yearEventTypeLabel(event: MaramatakaYearEvent): string {
+    switch (event.type) {
+      case 'star-marker':
+        return 'Star marker';
+      case 'new-moon':
+        return 'New Moon';
+      case 'full-moon':
+        return 'Full Moon';
+      case 'month-start':
+        return 'Month start';
+    }
+  }
+
+  protected yearMonthOffsetPercent(month: MaramatakaYearMonth): number {
+    const year = this.year();
+    if (!year) {
+      return 0;
+    }
+
+    const duration = year.endsAt.getTime() - year.startsAt.getTime();
+    if (duration <= 0) {
+      return 0;
+    }
+
+    const offset =
+      ((month.startsAt.getTime() - year.startsAt.getTime()) / duration) *
+      100;
+
+    return Math.min(100, Math.max(0, offset));
+  }
+
   protected yearEventAriaLabel(event: MaramatakaYearEvent): string {
     const parts = [
       event.name,

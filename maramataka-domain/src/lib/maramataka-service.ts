@@ -301,6 +301,14 @@ export class MaramatakaService {
         });
       }
     }
+    const starFirstAppearances =
+      yearStartsAt && yearEndsAt
+        ? await this.getOptionalStarFirstAppearances(
+            location,
+            this.formatIsoDateForLocation(yearStartsAt.occursAt, location),
+            this.formatIsoDateForLocation(yearEndsAt.occursAt, location),
+          )
+        : [];
 
     return {
       version: this.version,
@@ -316,7 +324,12 @@ export class MaramatakaService {
         months[months.length - 1]?.anchors.nextWhiro.occursAt ??
         this.localYearBoundary(starYear + 1, location, 5),
       months,
-      events: this.createYearEvents(months, yearStartsAt, yearEndsAt),
+      events: this.createYearEvents(
+        months,
+        yearStartsAt,
+        yearEndsAt,
+        starFirstAppearances,
+      ),
       diagnostics,
     };
   }
@@ -654,6 +667,7 @@ export class MaramatakaService {
     months: MaramatakaYearMonth[],
     yearStartsAt?: NewMoon,
     yearEndsAt?: NewMoon,
+    starFirstAppearances: StarMarker[] = [],
   ): MaramatakaYearEvent[] {
     const events = months.flatMap((month) => {
       const monthEvents: MaramatakaYearEvent[] = [
@@ -695,20 +709,18 @@ export class MaramatakaService {
         });
       }
 
-      for (const marker of month.starMarkers ?? []) {
-        monthEvents.push({
-          type: 'star-marker',
-          name: marker.name,
-          occursAt: marker.observedAt,
-          monthSequence: month.sequence,
-          monthName: month.name,
-          description: marker.seasonalAssociation,
-          source: marker.source,
-        });
-      }
-
       return monthEvents;
     });
+
+    for (const marker of starFirstAppearances) {
+      events.push({
+        type: 'star-marker',
+        name: marker.name,
+        occursAt: marker.observedAt,
+        description: marker.seasonalAssociation,
+        source: marker.source,
+      });
+    }
 
     if (
       yearStartsAt &&
@@ -854,6 +866,25 @@ export class MaramatakaService {
   ): Promise<StarMarker[]> {
     try {
       return await this.getStarMarkers(location, date);
+    } catch {
+      return [];
+    }
+  }
+
+  private async getOptionalStarFirstAppearances(
+    location: Location,
+    startDate: string,
+    endDate: string,
+  ): Promise<StarMarker[]> {
+    try {
+      return await (
+        this.astronomyProvider.getStarFirstAppearances?.(
+          startDate,
+          endDate,
+          location,
+          this.ruleSet.starMonthNaming?.markers,
+        ) ?? []
+      );
     } catch {
       return [];
     }

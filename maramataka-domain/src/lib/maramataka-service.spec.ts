@@ -300,6 +300,25 @@ describe('MaramatakaService', () => {
         getMoonRiseSet: jest.fn(),
         getMoonTransit: jest.fn(),
         getMoonDetails: jest.fn(),
+        getStarFirstAppearances: jest.fn().mockResolvedValue([
+          {
+            id: 'matariki',
+            name: 'Matariki',
+            type: 'asterism',
+            englishName: 'Pleiades',
+            description: 'Year-start marker.',
+            seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+            source: 'test',
+            confidence: 'confirmed',
+            observedAt: new Date('2026-06-16T18:00:00Z'),
+            altitudeDegrees: 1,
+            azimuthDegrees: 80,
+            direction: 'E',
+            visibility: 'low',
+            calculation:
+              'First dawn sample in this maramataka year where the marker is above the eastern horizon.',
+          },
+        ]),
       },
     });
     const firstMonth = {
@@ -373,11 +392,18 @@ describe('MaramatakaService', () => {
     expect(year.events.map((event) => event.type)).toEqual([
       'new-moon',
       'month-start',
+      'star-marker',
       'full-moon',
       'new-moon',
       'month-start',
       'month-start',
     ]);
+    expect(
+      year.events.find((event) => event.type === 'star-marker'),
+    ).toMatchObject({
+      name: 'Matariki',
+      occursAt: new Date('2026-06-16T18:00:00Z'),
+    });
     expect(year.diagnostics).toEqual([]);
   });
 

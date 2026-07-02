@@ -143,6 +143,29 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     );
   }
 
+  async getStarFirstAppearances(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]> {
+    return this.getOrSet(
+      `star-first-appearances:${this.locationCacheKey(startDate, location)}:${endDate}:${this.starMarkerCacheKey(markers)}`,
+      () =>
+        this.provider.getStarFirstAppearances?.(
+          startDate,
+          endDate,
+          location,
+          markers,
+        ) ?? Promise.resolve([]),
+      (markers) =>
+        markers.map((marker) => ({
+          ...marker,
+          observedAt: new Date(marker.observedAt),
+        })),
+    );
+  }
+
   private async getOrSet<T>(
     key: string,
     fetchValue: () => Promise<T>,

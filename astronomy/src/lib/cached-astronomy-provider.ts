@@ -21,6 +21,7 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   private moonTransitCache = new Map<string, Promise<MoonTransit>>();
   private moonDetailsCache = new Map<string, Promise<MoonDetails>>();
   private starMarkerCache = new Map<string, Promise<StarMarker[]>>();
+  private starFirstAppearanceCache = new Map<string, Promise<StarMarker[]>>();
 
   constructor(private readonly provider: AstronomyProvider) {}
 
@@ -164,6 +165,35 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     });
 
     this.starMarkerCache.set(key, request);
+    return request;
+  }
+
+  async getStarFirstAppearances(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]> {
+    const key = `${this.locationCacheKey(startDate, location)}:${endDate}:${this.starMarkerCacheKey(markers)}`;
+
+    const cachedRequest = this.starFirstAppearanceCache.get(key);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = (
+      this.provider.getStarFirstAppearances?.(
+        startDate,
+        endDate,
+        location,
+        markers,
+      ) ?? Promise.resolve([])
+    ).catch((error) => {
+      this.starFirstAppearanceCache.delete(key);
+      throw error;
+    });
+
+    this.starFirstAppearanceCache.set(key, request);
     return request;
   }
 

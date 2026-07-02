@@ -520,6 +520,7 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Meridian');
     expect(content).toContain('Year rhythm');
     expect(content).toContain('Year view starts at Te Tahi o Pipiri');
+    expect(content).toContain('first annual horizon');
     expect(content).toContain('New Moon');
     expect(content).toContain('Full Moon');
     expect(content).toContain('Te Tahi o Pipiri');

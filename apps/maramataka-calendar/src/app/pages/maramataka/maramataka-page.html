@@ -306,8 +306,9 @@
     } @else {
     <p class="state compact year-rule-note">
       Year view starts at Te Tahi o Pipiri and uses actual dates across the
-      maramataka year. It marks month starts, sampled star-marker observations,
-      astronomical New Moons, and astronomical Full Moons.
+      maramataka year. It marks Māori month starts, first annual horizon
+      appearances for configured star markers, astronomical New Moons, and
+      astronomical Full Moons.
     </p>
     @if (year()!.diagnostics.length) {
     <div class="year-diagnostics" data-testid="year-diagnostics">
@@ -338,7 +339,18 @@
         <span>{{ year()!.endsAt | date: 'd MMM y' : nzTimeZone }}</span>
       </div>
       <div class="year-event-track">
+        <div class="year-rail" aria-hidden="true"></div>
+        @for (month of year()!.months; track month.startsAt.toISOString()) {
+        <span
+          class="year-month-tick"
+          [style.left.%]="yearMonthOffsetPercent(month)"
+          aria-hidden="true"
+        >
+          <span>{{ month.name }}</span>
+        </span>
+        }
         @for (event of year()!.events; track event.type + event.name + event.occursAt.toISOString()) {
+        @if (event.type !== 'month-start') {
         <article
           role="listitem"
           tabindex="0"
@@ -346,13 +358,17 @@
           [style.left.%]="yearEventOffsetPercent(event)"
           [attr.aria-label]="yearEventAriaLabel(event)"
         >
-          <span class="event-dot" aria-hidden="true"></span>
-          <strong>{{ event.name }}</strong>
-          @if (event.monthName && event.type !== 'month-start') {
-          <small>{{ event.monthName }}</small>
-          }
-          <small>{{ event.occursAt | date: 'd MMM' : nzTimeZone }}</small>
+          <div class="event-label">
+            <small>{{ yearEventTypeLabel(event) }}</small>
+            <strong>{{ event.name }}</strong>
+            <span>{{ event.occursAt | date: 'd MMM, h:mm a' : nzTimeZone }}</span>
+          </div>
+          <span class="event-stem" aria-hidden="true"></span>
+          <span class="event-symbol" aria-hidden="true">
+            {{ yearEventSymbol(event) }}
+          </span>
         </article>
+        }
         }
       </div>
     </div>
@@ -385,7 +401,7 @@
       </div>
       <div>
         <dt>Star marker</dt>
-        <dd>Dawn sample</dd>
+        <dd>First horizon appearance</dd>
       </div>
       <div>
         <dt>New / Full Moon</dt>
