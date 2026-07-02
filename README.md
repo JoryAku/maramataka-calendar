@@ -74,6 +74,9 @@ GitHub Actions runs CI for pull requests targeting `main`, pushes to `main`, and
 
 Production runtime configuration is documented in [docs/deployment-runtime.md](docs/deployment-runtime.md). Start from `.env.example` when configuring API environment variables.
 
+Current release confidence and open accuracy gates are summarized in
+[docs/are-we-ready.md](docs/are-we-ready.md).
+
 ## Workspace Layout
 
 - `apps/maramataka-calendar`: Angular frontend.
