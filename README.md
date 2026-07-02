@@ -1,6 +1,9 @@
 # Maramataka Calendar
 
-Maramataka Calendar is an Nx workspace for a modern Maramataka app. The current product focus is an accurate moon tracker: current mata, moonrise and moonset, lunar phase anchors, and a cycle/month view.
+Maramataka Calendar is an Nx workspace for a modern Maramataka app. The current
+product focus is an accurate moon tracker with current mata, moonrise and
+moonset, lunar phase anchors, cycle/month views, and a year rhythm view that
+shows marama boundaries plus dawn star and moon events.
 
 ## Requirements
 

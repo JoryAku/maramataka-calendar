@@ -11,14 +11,14 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     source:
       'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
     tradition: 'Mita Te Tai / Best',
-    maramaStart: 'new-moon-moonrise',
+    maramaStart: 'new-moon-observation-window-moonrise',
     mataBoundary: 'moonrise-to-moonrise',
-    calibration: 'full-moon-ohua',
+    calibration: 'full-moon-observation-window-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
     starMonthNaming: {
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
-      sampleTimeLocal: '06:00',
+      sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
       yearStartMarkerId: 'matariki',
       yearStartDescription:
         'The year commences with Matariki appearing on the horizon at dawn.',
@@ -60,13 +60,13 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     direction: 'E',
     visibility: 'prominent',
     calculation:
-      'Dawn sky position sampled at 06:00 local time for the selected location.',
+      'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
   };
   const otherVisibleStarMarker = {
-    id: 'puanga',
-    name: 'Puanga',
+    id: 'whakaahu',
+    name: 'Whakaahu',
     type: 'star',
-    englishName: 'Rigel',
+    englishName: 'Castor',
     description:
       'A visible marker that is not assigned to the active named month.',
     seasonalAssociation: 'Another rule-set marker',
@@ -78,7 +78,7 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     direction: 'E',
     visibility: 'visible',
     calculation:
-      'Dawn sky position sampled at 06:00 local time for the selected location.',
+      'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
   };
 
   await page.addInitScript(
@@ -255,6 +255,98 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
             endsAt: '2026-06-25T05:30:00.000Z',
           },
         ],
+        events: [
+          {
+            type: 'month-start',
+            name: 'Te Tahi o Pipiri',
+            occursAt: '2026-06-25T04:30:00.000Z',
+            monthSequence: 1,
+            monthName: 'Te Tahi o Pipiri',
+            description: 'Maramataka month begins at Whiro.',
+            source: 'stub moonrise',
+          },
+          {
+            type: 'star-marker',
+            name: 'Matariki',
+            occursAt: '2026-06-25T18:00:00.000Z',
+            monthSequence: 1,
+            monthName: 'Te Tahi o Pipiri',
+            description: 'Year-start ariki for Te Tahi o Pipiri',
+            source: 'Elsdon Best, The Maori Division of Time',
+          },
+          {
+            type: 'new-moon',
+            name: 'New Moon',
+            occursAt: '2026-06-25T03:30:00.000Z',
+            monthSequence: 1,
+            monthName: 'Te Tahi o Pipiri',
+            description: 'Astronomical New Moon anchor for Whiro.',
+            source: 'stub',
+          },
+          {
+            type: 'full-moon',
+            name: 'Full Moon',
+            occursAt: '2026-07-09T04:30:00.000Z',
+            monthSequence: 1,
+            monthName: 'Te Tahi o Pipiri',
+            description: 'Astronomical Full Moon anchor for Rakaunui / Ohua.',
+            source: 'stub',
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route('**/api/maramataka/year**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        version: 'mita-te-tai-best',
+        ruleSet,
+        year: 2026,
+        timezone: 'Pacific/Auckland',
+        startsAt: '2025-12-31T11:00:00.000Z',
+        endsAt: '2026-12-31T11:00:00.000Z',
+        months: [
+          {
+            sequence: 1,
+            name: 'Marama 1',
+            startsAt: '2026-06-25T04:30:00.000Z',
+            endsAt: '2026-07-24T04:30:00.000Z',
+            durationDays: 29,
+            nightsCount: 29,
+            repeatedMata: [],
+            anchors: {
+              whiro: {
+                type: 'whiro',
+                label: 'Whiro / Kohititanga',
+                occursAt: '2026-06-25T04:30:00.000Z',
+                localDate: '2026-06-25',
+                localTime: '16:30:00',
+                timezone: 'Pacific/Auckland',
+                source: 'stub moonrise',
+              },
+              fullMoon: {
+                type: 'full-moon',
+                label: 'Rakaunui / Full Moon',
+                occursAt: '2026-07-09T04:30:00.000Z',
+                localDate: '2026-07-09',
+                localTime: '16:30:00',
+                timezone: 'Pacific/Auckland',
+                source: 'stub',
+              },
+              nextWhiro: {
+                type: 'next-whiro',
+                label: 'Next Whiro / Kohititanga',
+                occursAt: '2026-07-24T04:30:00.000Z',
+                localDate: '2026-07-24',
+                localTime: '16:30:00',
+                timezone: 'Pacific/Auckland',
+                source: 'stub moonrise',
+              },
+            },
+          },
+        ],
       }),
     });
   });
@@ -412,6 +504,12 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByLabel('Moon timings')).toContainText('Moonset');
   await expect(page.getByLabel('Moon timings')).toContainText('Meridian');
   await expect(page.locator('.cycle-wheel')).toBeVisible();
+  await expect(page.getByTestId('year-rhythm-timeline')).toContainText(
+    'Matariki',
+  );
+  await expect(page.getByTestId('year-rhythm-timeline')).toContainText(
+    'New Moon',
+  );
   await expect(page.locator('.wheel-segment')).toHaveCount(2);
   await expect(page.locator('.wheel-segment.current')).toHaveCount(1);
   await expect(page.locator('.wheel-segment.current')).toHaveAttribute(

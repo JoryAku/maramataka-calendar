@@ -17,8 +17,7 @@ export interface StarMonthNote {
 export interface StarMonthNamingRuleSet {
   strategy: string;
   /**
-   * Current PoC dawn sample time. This is intentionally explicit because it
-   * should later become a sunrise-relative rule-set setting.
+   * Dawn sampling definition used for star marker visibility calculations.
    */
   sampleTimeLocal: string;
   yearStartMarkerId: string;

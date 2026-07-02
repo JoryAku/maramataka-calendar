@@ -58,10 +58,61 @@ export interface StarMonthNote {
   sourceText: string;
 }
 
+export interface MaramatakaYear<TDate = Date> {
+  version: string;
+  ruleSet: MaramatakaRuleSet;
+  year: number;
+  timezone: string;
+  startsAt: TDate;
+  endsAt: TDate;
+  months: MaramatakaYearMonth<TDate>[];
+  events: MaramatakaYearEvent<TDate>[];
+  diagnostics: MaramatakaYearDiagnostic<TDate>[];
+}
+
+export interface MaramatakaYearEvent<TDate = Date> {
+  type: 'month-start' | 'star-marker' | 'new-moon' | 'full-moon';
+  name: string;
+  occursAt: TDate;
+  monthSequence?: number;
+  monthName?: string;
+  starMarkerScope?: 'month' | 'seasonal';
+  description?: string;
+  source?: string;
+}
+
+export interface MaramatakaYearDiagnostic<TDate = Date> {
+  type: 'phase-provider' | 'estimated-month' | 'skipped-month';
+  name: string;
+  sequence?: number;
+  anchorDate?: TDate;
+  reason: string;
+}
+
+export interface MaramatakaYearMonth<TDate = Date> {
+  sequence: number;
+  name: string;
+  starMonth?: MaramatakaStarMonth<TDate>;
+  starMarkers?: StarMarker<TDate>[];
+  isEstimated?: boolean;
+  unavailableReason?: string;
+  startsAt: TDate;
+  endsAt: TDate;
+  durationDays: number;
+  nightsCount: number;
+  repeatedMata: string[];
+  anchors: {
+    whiro: MaramatakaCycleAnchor<TDate>;
+    fullMoon?: MaramatakaCycleAnchor<TDate>;
+    nextWhiro: MaramatakaCycleAnchor<TDate>;
+  };
+}
+
 export interface MaramatakaCycleAnchor<TDate = Date> {
   type: 'whiro' | 'full-moon' | 'next-whiro';
   label: string;
   occursAt: TDate;
+  astronomicalOccursAt?: TDate;
   localDate: string;
   localTime: string;
   timezone: string;
@@ -229,4 +280,5 @@ export type ApiMaramatakaCycleDetails = Omit<
 };
 
 export type ApiMoonDetails = MoonDetails<string>;
+export type ApiMaramatakaYear = MaramatakaYear<string>;
 export type ApiStarMarker = StarMarker<string>;

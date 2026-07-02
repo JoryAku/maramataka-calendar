@@ -20,7 +20,7 @@ import {
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
 import { join } from 'node:path';
 
-class StubAstronomyProvider implements AstronomyProvider {
+export class StubAstronomyProvider implements AstronomyProvider {
   async getMoonPhases(year: number): Promise<MoonPhase[]> {
     return Array.from({ length: 12 }, (_, monthIndex) => [
       {
@@ -143,13 +143,7 @@ class StubAstronomyProvider implements AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
-    const observedAt = this.localDateTimeToUtc(
-      Number(date.slice(0, 4)),
-      Number(date.slice(5, 7)),
-      Number(date.slice(8, 10)),
-      6,
-      location,
-    );
+    const observedAt = this.stubDawnObservationTime(date, location);
 
     const markerDefinitions: StarMarkerDefinition[] =
       markers?.length
@@ -188,8 +182,53 @@ class StubAstronomyProvider implements AstronomyProvider {
       azimuthDegrees: 74 + index,
       direction: 'E',
       visibility: index === 0 ? 'prominent' : 'visible',
-      calculation: 'Stub dawn sky marker for deterministic local testing.',
+      calculation:
+        'Stub dawn sky marker sampled inside the 18° to 12° pre-sunrise dawn band.',
     }));
+  }
+
+  async getStarFirstAppearances(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]> {
+    const markerDefinitions = markers ?? [];
+    if (!markerDefinitions.length) {
+      return [];
+    }
+
+    const appearances = await Promise.all(
+      markerDefinitions.map(async (marker, index) => {
+        const candidateDate = this.addIsoDateDays(
+          startDate,
+          Math.min(index * 30, 364),
+        );
+        if (candidateDate >= endDate) {
+          return undefined;
+        }
+
+        const [starMarker] = await this.getStarMarkers(
+          candidateDate,
+          location,
+          [marker],
+        );
+
+        return starMarker;
+      }),
+    );
+
+    return appearances.filter((marker): marker is StarMarker => Boolean(marker));
+  }
+
+  private stubDawnObservationTime(date: string, location: Location): Date {
+    return this.localDateTimeToUtc(
+      Number(date.slice(0, 4)),
+      Number(date.slice(5, 7)),
+      Number(date.slice(8, 10)),
+      5,
+      location,
+    );
   }
 
   private localDateTimeToUtc(
@@ -209,6 +248,13 @@ class StubAstronomyProvider implements AstronomyProvider {
       },
       location.timezone,
     );
+  }
+
+  private addIsoDateDays(date: string, days: number): string {
+    const result = new Date(`${date}T00:00:00.000Z`);
+    result.setUTCDate(result.getUTCDate() + days);
+
+    return result.toISOString().slice(0, 10);
   }
 }
 

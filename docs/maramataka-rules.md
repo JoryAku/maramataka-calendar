@@ -47,6 +47,9 @@ the existing MVP behaviour while making the source and assumptions explicit:
 - Mata boundaries are moonrise-to-next-moonrise.
 - Ohua/Huanga is the full-moon calibration point.
 - Late full moon balancing may duplicate Ohua and drop final mata names.
+- Named marama can carry source-linked dawn markers. Te Tahi o Pipiri is
+  anchored to Matariki; Puanga is not included in the active marker set because
+  it duplicates the same year-start function in this implementation.
 
 The exact source passage used for this balancing rule is:
 
@@ -72,9 +75,26 @@ prioritise:
 - New Moon, Full Moon, and next New Moon anchor points
 - lunar age, illumination, phase direction, and distance where available
 - the 30-mata cycle wheel
+- the year rhythm view, including marama boundaries, month-scoped dawn markers,
+  seasonal dawn markers, and astronomical New Moon / Full Moon events
 
-Tide, weather, wind, year view, and three-year intercalation views are future
-state until the core moon tracking is trusted.
+Tide, weather, wind, and three-year intercalation views remain future state
+until the core moon tracking is trusted.
+
+## Dawn Star Marker Rule
+
+The star layer uses Astronomy Engine sky positions for the selected location.
+Daily marker visibility is sampled at the midpoint between the rising Sun
+crossing 18° and 12° below the horizon. Year-view first-appearance events scan
+from the Sun crossing 18° below the horizon through sunrise, so markers that
+rise after astronomical dawn, such as Kōpū/Venus in some years, can still be
+placed at their first dawn-window horizon appearance.
+
+Year-view star events are split into two scopes:
+
+- Month-scoped markers are searched within the relevant named marama.
+- Seasonal markers are searched across the maramataka year after month-scoped
+  markers have been placed.
 
 ## Astronomy Provider Resilience
 

@@ -6,7 +6,11 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { MaramatakaApiService } from './maramataka-api.service';
-import { MaramatakaCycleDetails, StarMarker } from './maramataka.models';
+import {
+  MaramatakaCycleDetails,
+  MaramatakaYear,
+  StarMarker,
+} from './maramataka.models';
 
 describe('MaramatakaApiService', () => {
   let httpTestingController: HttpTestingController;
@@ -19,14 +23,14 @@ describe('MaramatakaApiService', () => {
     source:
       'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
     tradition: 'Mita Te Tai / Best',
-    maramaStart: 'new-moon-moonrise',
+    maramaStart: 'new-moon-observation-window-moonrise',
     mataBoundary: 'moonrise-to-moonrise',
-    calibration: 'full-moon-ohua',
+    calibration: 'full-moon-observation-window-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
     starMonthNaming: {
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
-      sampleTimeLocal: '06:00',
+      sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
       yearStartMarkerId: 'matariki',
       yearStartDescription:
         'The year commences with Matariki appearing on the horizon at dawn.',
@@ -164,7 +168,7 @@ describe('MaramatakaApiService', () => {
           direction: 'E',
           visibility: 'prominent',
           calculation:
-            'Dawn sky position sampled at 06:00 local time for the selected location.',
+            'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
         },
         rule:
           'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
@@ -195,7 +199,7 @@ describe('MaramatakaApiService', () => {
           direction: 'E',
           visibility: 'prominent',
           calculation:
-            'Dawn sky position sampled at 06:00 local time for the selected location.',
+            'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
         },
       ],
       nights: [
@@ -272,13 +276,114 @@ describe('MaramatakaApiService', () => {
         direction: 'E',
         visibility: 'visible',
         calculation:
-          'Dawn sky position sampled at 06:00 local time for the selected location.',
+          'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
       },
     ]);
 
     expect(markers?.[0].name).toBe('Tautoru');
     expect(markers?.[0].observedAt).toEqual(
       new Date('2026-06-24T18:00:00.000Z'),
+    );
+  });
+
+  it('maps year timeline months from the API', () => {
+    let year: MaramatakaYear | undefined;
+
+    service
+      .getYear('gisborne', new Date('2026-09-14T12:00:00.000Z'))
+      .subscribe((response) => {
+        year = response;
+      });
+
+    const request = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/year' &&
+        req.params.get('location') === 'gisborne',
+    );
+
+    expect(request.request.params.get('date')).toBe('2026-09-15');
+    request.flush({
+      version: 'mita-te-tai-best',
+      ruleSet,
+      year: 2026,
+      timezone: 'Pacific/Auckland',
+      startsAt: '2025-12-31T11:00:00.000Z',
+      endsAt: '2026-12-31T11:00:00.000Z',
+      diagnostics: [
+        {
+          type: 'estimated-month',
+          name: 'Marama 9',
+          sequence: 9,
+          anchorDate: '2026-09-10T18:03:00.000Z',
+          reason: 'No moonrise data found for Whiro date',
+        },
+      ],
+      events: [
+        {
+          type: 'month-start',
+          name: 'Marama 9',
+          occursAt: '2026-09-10T18:03:00.000Z',
+          monthSequence: 9,
+          monthName: 'Marama 9',
+          description: 'Maramataka month begins at Whiro.',
+          source: 'astronomy-engine moonrise',
+        },
+      ],
+      months: [
+        {
+          sequence: 9,
+          name: 'Marama 9',
+          startsAt: '2026-09-10T18:03:00.000Z',
+          endsAt: '2026-10-10T17:17:00.000Z',
+          durationDays: 29.97,
+          nightsCount: 30,
+          repeatedMata: ['Ohua x2'],
+          anchors: {
+            whiro: {
+              type: 'whiro',
+              label: 'Whiro / Kohititanga',
+              occursAt: '2026-09-10T18:03:00.000Z',
+              localDate: '2026-09-11',
+              localTime: '06:03:00',
+              timezone: 'Pacific/Auckland',
+              source: 'astronomy-engine moonrise',
+            },
+            fullMoon: {
+              type: 'full-moon',
+              label: 'Rakaunui / Full Moon',
+              occursAt: '2026-09-26T16:49:00.000Z',
+              localDate: '2026-09-27',
+              localTime: '05:49:00',
+              timezone: 'Pacific/Auckland',
+              source: 'astronomy-engine',
+            },
+            nextWhiro: {
+              type: 'next-whiro',
+              label: 'Next Whiro / Kohititanga',
+              occursAt: '2026-10-10T17:17:00.000Z',
+              localDate: '2026-10-11',
+              localTime: '06:17:00',
+              timezone: 'Pacific/Auckland',
+              source: 'astronomy-engine moonrise',
+            },
+          },
+        },
+      ],
+    });
+
+    expect(year?.startsAt).toEqual(new Date('2025-12-31T11:00:00.000Z'));
+    expect(year?.months[0].startsAt).toEqual(
+      new Date('2026-09-10T18:03:00.000Z'),
+    );
+    expect(year?.months[0].anchors.fullMoon?.occursAt).toEqual(
+      new Date('2026-09-26T16:49:00.000Z'),
+    );
+    expect(year?.months[0].repeatedMata).toEqual(['Ohua x2']);
+    expect(year?.diagnostics[0].anchorDate).toEqual(
+      new Date('2026-09-10T18:03:00.000Z'),
+    );
+    expect(year?.events[0].occursAt).toEqual(
+      new Date('2026-09-10T18:03:00.000Z'),
     );
   });
 

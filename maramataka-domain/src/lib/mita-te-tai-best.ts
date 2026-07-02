@@ -46,22 +46,6 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     },
   },
   {
-    id: 'puanga',
-    name: 'Puanga',
-    type: 'star',
-    englishName: 'Rigel',
-    description:
-      'New-year marker associated with appearance in the morning sky.',
-    seasonalAssociation: 'New year / first seasonal month',
-    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
-    confidence: 'confirmed',
-    representative: {
-      kind: 'fixed-equatorial',
-      rightAscensionHours: 5.2423,
-      declinationDegrees: -8.2016,
-    },
-  },
-  {
     id: 'kopu',
     name: 'Kōpū',
     type: 'planet',
@@ -395,14 +379,14 @@ export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   source: MITA_TE_TAI_BEST_SOURCE,
   sourceQuote: MITA_TE_TAI_BEST_BALANCING_QUOTE,
   tradition: 'Mita Te Tai / Best',
-  maramaStart: 'new-moon-moonrise',
+  maramaStart: 'new-moon-observation-window-moonrise',
   mataBoundary: 'moonrise-to-moonrise',
-  calibration: 'full-moon-ohua',
+  calibration: 'full-moon-observation-window-ohua',
   balancing: 'duplicate-ohua-drop-final-mata',
   starMonthNaming: {
     strategy:
       'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
-    sampleTimeLocal: '06:00',
+    sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
     yearStartMarkerId: 'matariki',
     yearStartDescription:
       'The year commences with Matariki appearing on the horizon at dawn.',

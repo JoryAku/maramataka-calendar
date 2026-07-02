@@ -16,6 +16,9 @@ import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaToday,
+  MaramatakaYear,
+  MaramatakaYearEvent,
+  MaramatakaYearMonth,
   MoonDetails,
   StarMarker,
 } from './maramataka.models';
@@ -50,6 +53,9 @@ export class MaramatakaPage implements OnInit {
   protected readonly moonDetailsLoading = signal(true);
   protected readonly moonDetailsError = signal<string | null>(null);
   protected readonly moonDetails = signal<MoonDetails | null>(null);
+  protected readonly yearLoading = signal(true);
+  protected readonly yearError = signal<string | null>(null);
+  protected readonly year = signal<MaramatakaYear | null>(null);
   protected readonly starMarkersLoading = signal(true);
   protected readonly starMarkersError = signal<string | null>(null);
   protected readonly starMarkers = signal<StarMarker[]>([]);
@@ -185,6 +191,7 @@ export class MaramatakaPage implements OnInit {
           this.cycleLoading.set(false);
           this.todayLoading.set(false);
           this.moonDetailsLoading.set(false);
+          this.yearLoading.set(false);
           this.starMarkersLoading.set(false);
           this.monthError.set(
             'Unable to load maramataka month because locations could not be loaded.',
@@ -197,6 +204,9 @@ export class MaramatakaPage implements OnInit {
           );
           this.moonDetailsError.set(
             'Unable to load moon details because locations could not be loaded.',
+          );
+          this.yearError.set(
+            'Unable to load maramataka year because locations could not be loaded.',
           );
           this.starMarkersError.set(
             'Unable to load star markers because locations could not be loaded.',
@@ -221,16 +231,19 @@ export class MaramatakaPage implements OnInit {
     this.cycleLoading.set(true);
     this.todayLoading.set(true);
     this.moonDetailsLoading.set(true);
+    this.yearLoading.set(true);
     this.starMarkersLoading.set(true);
     this.monthError.set(null);
     this.cycleError.set(null);
     this.todayError.set(null);
     this.moonDetailsError.set(null);
+    this.yearError.set(null);
     this.starMarkersError.set(null);
     this.month.set(null);
     this.cycle.set(null);
     this.today.set(null);
     this.moonDetails.set(null);
+    this.year.set(null);
     this.starMarkers.set([]);
 
     const generation = ++this.requestGeneration;
@@ -332,6 +345,31 @@ export class MaramatakaPage implements OnInit {
       });
 
     this.api
+      .getYear(locationId, requestDate)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (year) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.year.set(year);
+          this.yearLoading.set(false);
+        },
+        error: (error: unknown) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.year.set(null);
+          this.yearLoading.set(false);
+          this.yearError.set(
+            `Unable to load maramataka year timeline.${this.formatRequestError(error)}`,
+          );
+        },
+      });
+
+    this.api
       .getStarMarkers(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -387,6 +425,155 @@ export class MaramatakaPage implements OnInit {
     return new Date(`${localDate}T12:00:00+12:00`);
   }
 
+  protected yearEventOffsetPercent(event: MaramatakaYearEvent): number {
+    const year = this.year();
+    if (!year) {
+      return 0;
+    }
+
+    const duration = year.endsAt.getTime() - year.startsAt.getTime();
+    if (duration <= 0) {
+      return 0;
+    }
+
+    const rawOffset =
+      ((event.occursAt.getTime() - year.startsAt.getTime()) / duration) *
+      100;
+    const offset = this.yearTimelineOffsetPercent(rawOffset);
+
+    return Math.min(100, Math.max(0, offset));
+  }
+
+  protected yearEventClass(event: MaramatakaYearEvent): string {
+    return `year-event ${event.type}`;
+  }
+
+  protected yearEventTopRem(event: MaramatakaYearEvent): number {
+    switch (event.type) {
+      case 'star-marker':
+        return 0.8 + this.yearEventLane(event) * 3.25;
+      case 'new-moon':
+        return 14.6;
+      case 'full-moon':
+        return 18.8;
+      case 'month-start':
+        return 23;
+    }
+  }
+
+  protected yearEventSymbol(event: MaramatakaYearEvent): string {
+    switch (event.type) {
+      case 'star-marker':
+        return '★';
+      case 'new-moon':
+        return '◐';
+      case 'full-moon':
+        return '●';
+      case 'month-start':
+        return '◇';
+    }
+  }
+
+  protected yearEventTypeLabel(event: MaramatakaYearEvent): string {
+    switch (event.type) {
+      case 'star-marker':
+        return event.starMarkerScope === 'seasonal'
+          ? 'Seasonal'
+          : 'Star';
+      case 'new-moon':
+        return 'New Moon';
+      case 'full-moon':
+        return 'Full Moon';
+      case 'month-start':
+        return 'Month start';
+    }
+  }
+
+  protected yearMonthOffsetPercent(month: MaramatakaYearMonth): number {
+    const year = this.year();
+    if (!year) {
+      return 0;
+    }
+
+    const duration = year.endsAt.getTime() - year.startsAt.getTime();
+    if (duration <= 0) {
+      return 0;
+    }
+
+    const rawOffset =
+      ((month.startsAt.getTime() - year.startsAt.getTime()) / duration) *
+      100;
+    const offset = this.yearTimelineOffsetPercent(rawOffset);
+
+    return Math.min(100, Math.max(0, offset));
+  }
+
+  private yearEventLane(event: MaramatakaYearEvent): number {
+    if (event.type !== 'star-marker') {
+      return 0;
+    }
+
+    const starMarkers =
+      this.year()?.events.filter(
+        (candidate) => candidate.type === 'star-marker',
+      ) ?? [];
+    const eventIndex = starMarkers.indexOf(event);
+    const nearbyEarlierMarkers = starMarkers.filter(
+      (candidate) =>
+        starMarkers.indexOf(candidate) < eventIndex &&
+        Math.abs(
+          this.yearEventOffsetPercent(candidate) -
+            this.yearEventOffsetPercent(event),
+        ) < 9,
+    ).length;
+
+    return nearbyEarlierMarkers ? nearbyEarlierMarkers % 4 : 0;
+  }
+
+  private yearTimelineOffsetPercent(rawOffset: number): number {
+    const startInsetPercent = 3.8;
+
+    return startInsetPercent + rawOffset * (1 - startInsetPercent / 100);
+  }
+
+  protected yearEventAriaLabel(event: MaramatakaYearEvent): string {
+    const parts = [
+      event.name,
+      this.formatShortDate(event.occursAt),
+      event.monthName,
+      event.description,
+    ].filter(Boolean);
+
+    return parts.join(', ');
+  }
+
+  protected yearMaramaAriaLabel(month: MaramatakaYearMonth): string {
+    const parts = [
+      month.name,
+      `Whiro ${this.formatShortDate(month.anchors.whiro.occursAt)}`,
+    ];
+
+    if (month.anchors.fullMoon) {
+      parts.push(
+        `Full Moon ${this.formatShortDate(month.anchors.fullMoon.occursAt)}`,
+      );
+    }
+
+    parts.push(
+      `next Whiro ${this.formatShortDate(month.anchors.nextWhiro.occursAt)}`,
+    );
+
+    return parts.join(', ');
+  }
+
+  private formatShortDate(date: Date): string {
+    return new Intl.DateTimeFormat('en-NZ', {
+      timeZone: this.nzTimeZone,
+      day: 'numeric',
+      month: 'short',
+    }).format(date);
+  }
+
   private relevantStarMarkers(markers: StarMarker[]): StarMarker[] {
     const markerIds = this.starMonth()?.note?.markerIds;
     if (markerIds?.length) {
@@ -402,5 +589,27 @@ export class MaramatakaPage implements OnInit {
     }
 
     return visibleMarkers;
+  }
+
+  private formatRequestError(error: unknown): string {
+    if (!error || typeof error !== 'object') {
+      return '';
+    }
+
+    const maybeError = error as {
+      status?: number;
+      statusText?: string;
+      message?: string;
+      error?: { message?: string } | string;
+    };
+    const detail =
+      typeof maybeError.error === 'string'
+        ? maybeError.error
+        : maybeError.error?.message ||
+          maybeError.statusText ||
+          maybeError.message;
+    const status = maybeError.status ? String(maybeError.status) : '';
+
+    return detail ? ` (${status}${status ? ': ' : ''}${detail})` : '';
   }
 }

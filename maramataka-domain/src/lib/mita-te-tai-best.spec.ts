@@ -94,7 +94,7 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
     ).toMatchObject({
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
-      sampleTimeLocal: '06:00',
+      sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
       yearStartMarkerId: 'matariki',
       source: 'Elsdon Best, The Maori Division of Time',
     });
@@ -104,7 +104,6 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
       ),
     ).toEqual([
       'Matariki',
-      'Puanga',
       'Kōpū',
       'Takurua',
       'Tautoru',

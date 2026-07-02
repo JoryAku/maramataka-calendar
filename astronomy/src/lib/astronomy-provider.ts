@@ -131,4 +131,10 @@ export interface AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]>;
+  getStarFirstAppearances?(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<StarMarker[]>;
 }
