@@ -12,6 +12,8 @@ import {
   StarMarkerDefinition,
 } from './astronomy-provider';
 
+const STAR_DAWN_SAMPLING_CACHE_VERSION = 'dawn-window-first-appearance-v1';
+
 export class CachedAstronomyProvider implements AstronomyProvider {
   private moonPhaseCache = new Map<number, Promise<MoonPhase[]>>();
   private newMoonCache = new Map<number, Promise<NewMoon[]>>();
@@ -149,7 +151,11 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
-    const key = `${this.locationCacheKey(date, location)}:${this.starMarkerCacheKey(markers)}`;
+    const key = [
+      STAR_DAWN_SAMPLING_CACHE_VERSION,
+      this.locationCacheKey(date, location),
+      this.starMarkerCacheKey(markers),
+    ].join(':');
 
     const cachedRequest = this.starMarkerCache.get(key);
     if (cachedRequest) {
@@ -174,7 +180,12 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
-    const key = `${this.locationCacheKey(startDate, location)}:${endDate}:${this.starMarkerCacheKey(markers)}`;
+    const key = [
+      STAR_DAWN_SAMPLING_CACHE_VERSION,
+      this.locationCacheKey(startDate, location),
+      endDate,
+      this.starMarkerCacheKey(markers),
+    ].join(':');
 
     const cachedRequest = this.starFirstAppearanceCache.get(key);
     if (cachedRequest) {

@@ -25,6 +25,7 @@ function createEngine(overrides: Record<string, unknown> = {}) {
   const engine = {
     Body: {
       Moon: 'Moon',
+      Sun: 'Sun',
       Venus: 'Venus',
     },
     Observer: FakeObserver,
@@ -53,8 +54,25 @@ function createEngine(overrides: Record<string, unknown> = {}) {
         };
       },
     ),
+    SearchAltitude: jest.fn(
+      (
+        _body: string,
+        _observer: FakeObserver,
+        _direction: number,
+        _dateStart: Date,
+        _limitDays: number,
+        altitude: number,
+      ) => ({
+        date:
+          altitude === -18
+            ? new Date('2026-06-24T17:10:00.000Z')
+            : altitude === -12
+              ? new Date('2026-06-24T17:50:00.000Z')
+              : new Date('2026-06-24T18:30:00.000Z'),
+      }),
+    ),
     SearchHourAngle: jest.fn(() => ({
-      time: { date: new Date('2026-01-01T11:42:00.000Z') },
+      time: { date: new Date('2025-12-31T22:42:00.000Z') },
     })),
     MoonPhase: jest.fn(() => 45),
     Illumination: jest.fn(() => ({
@@ -71,7 +89,6 @@ function createEngine(overrides: Record<string, unknown> = {}) {
         _observer: FakeObserver,
         ra: number,
         dec: number,
-        _refraction: string,
       ) => ({
         altitude: ra === 4.2 ? 12.345 : dec + 30,
         azimuth: ra === 4.2 ? 81.234 : ra * 15,
@@ -143,7 +160,7 @@ describe('AstronomyEngineProvider', () => {
       provider.getMoonTransit('2026-01-01', wellington),
     ).resolves.toEqual({
       date: '2026-01-01',
-      transitsAt: new Date('2026-01-01T11:42:00.000Z'),
+      transitsAt: new Date('2025-12-31T22:42:00.000Z'),
       source: 'astronomy-engine',
     });
   });
@@ -168,7 +185,7 @@ describe('AstronomyEngineProvider', () => {
         source: 'astronomy-engine',
       },
       transit: {
-        transitsAt: new Date('2026-01-01T11:42:00.000Z'),
+        transitsAt: new Date('2025-12-31T22:42:00.000Z'),
         source: 'astronomy-engine',
       },
     });
@@ -179,16 +196,7 @@ describe('AstronomyEngineProvider', () => {
 
     const markers = await provider.getStarMarkers('2026-06-25', wellington);
 
-    expect(markers.find((marker) => marker.id === 'puanga')).toMatchObject({
-      id: 'puanga',
-      name: 'Puanga',
-      englishName: 'Rigel',
-      type: 'star',
-      altitudeDegrees: 21.8,
-      direction: 'E',
-      visibility: 'prominent',
-      source: 'Elsdon Best, The Maori Division of Time',
-    });
+    expect(markers.find((marker) => marker.id === 'puanga')).toBeUndefined();
     expect(markers.find((marker) => marker.id === 'kopu')).toMatchObject({
       name: 'Kōpū',
       type: 'planet',
@@ -199,6 +207,59 @@ describe('AstronomyEngineProvider', () => {
     expect(markers.every((marker) => marker.observedAt instanceof Date)).toBe(
       true,
     );
+    expect(markers[0].observedAt).toEqual(
+      new Date('2026-06-24T17:30:00.000Z'),
+    );
+    expect(markers[0].calculation).toContain(
+      'midway between the rising Sun crossing 18° and 12° below the horizon',
+    );
+  });
+
+  it('finds first star appearances across the full dawn window', async () => {
+    const provider = new AstronomyEngineProvider(
+      createEngine({
+        Horizon: jest.fn((date: Date) => ({
+          altitude:
+            date.getTime() >= Date.parse('2026-06-24T18:05:00.000Z')
+              ? 0.4
+              : -1,
+          azimuth: 90,
+        })),
+      }),
+    );
+
+    const appearances = await provider.getStarFirstAppearances(
+      '2026-06-25',
+      '2026-06-26',
+      wellington,
+      [
+        {
+          id: 'late-dawn-marker',
+          name: 'Late Dawn Marker',
+          type: 'planet',
+          englishName: 'Test planet',
+          description: 'A marker that clears the horizon after nautical dawn.',
+          seasonalAssociation: 'Test seasonal marker',
+          source: 'test',
+          confidence: 'working',
+          representative: {
+            kind: 'body',
+            body: 'Venus',
+          },
+        },
+      ],
+    );
+
+    expect(appearances).toEqual([
+      expect.objectContaining({
+        id: 'late-dawn-marker',
+        observedAt: new Date('2026-06-24T18:05:00.000Z'),
+        altitudeDegrees: 0.4,
+        direction: 'E',
+        calculation:
+          'First dawn-window sample between the rising Sun crossing 18° below the horizon and sunrise where the marker is above the eastern horizon.',
+      }),
+    ]);
   });
 
   it('throws a typed provider error when moonrise is unavailable', async () => {

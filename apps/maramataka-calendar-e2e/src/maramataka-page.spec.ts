@@ -18,7 +18,7 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     starMonthNaming: {
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
-      sampleTimeLocal: '06:00',
+      sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
       yearStartMarkerId: 'matariki',
       yearStartDescription:
         'The year commences with Matariki appearing on the horizon at dawn.',
@@ -60,13 +60,13 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     direction: 'E',
     visibility: 'prominent',
     calculation:
-      'Dawn sky position sampled at 06:00 local time for the selected location.',
+      'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
   };
   const otherVisibleStarMarker = {
-    id: 'puanga',
-    name: 'Puanga',
+    id: 'whakaahu',
+    name: 'Whakaahu',
     type: 'star',
-    englishName: 'Rigel',
+    englishName: 'Castor',
     description:
       'A visible marker that is not assigned to the active named month.',
     seasonalAssociation: 'Another rule-set marker',
@@ -78,7 +78,7 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     direction: 'E',
     visibility: 'visible',
     calculation:
-      'Dawn sky position sampled at 06:00 local time for the selected location.',
+      'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
   };
 
   await page.addInitScript(

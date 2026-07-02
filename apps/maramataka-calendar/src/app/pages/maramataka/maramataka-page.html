@@ -306,9 +306,8 @@
     } @else {
     <p class="state compact year-rule-note">
       Year view starts at Te Tahi o Pipiri and uses actual dates across the
-      maramataka year. It marks Māori month starts, first annual horizon
-      appearances for configured star markers, astronomical New Moons, and
-      astronomical Full Moons.
+      maramataka year. It marks marama boundaries, month and seasonal dawn
+      appearances, astronomical New Moons, and astronomical Full Moons.
     </p>
     @if (year()!.diagnostics.length) {
     <div class="year-diagnostics" data-testid="year-diagnostics">
@@ -356,10 +355,13 @@
           tabindex="0"
           [class]="yearEventClass(event)"
           [style.left.%]="yearEventOffsetPercent(event)"
+          [style.top.rem]="yearEventTopRem(event)"
           [attr.aria-label]="yearEventAriaLabel(event)"
         >
           <div class="event-label">
+            @if (event.type === 'star-marker') {
             <small>{{ yearEventTypeLabel(event) }}</small>
+            }
             <strong>{{ event.name }}</strong>
             <span>{{ event.occursAt | date: 'd MMM, h:mm a' : nzTimeZone }}</span>
           </div>
@@ -396,16 +398,16 @@
 
     <dl class="year-legend" aria-label="Year timeline legend">
       <div>
-        <dt>Month start</dt>
-        <dd>Whiro interval</dd>
+        <dt>Marama boundaries</dt>
+        <dd>Whiro starts and month spans</dd>
       </div>
       <div>
-        <dt>Star marker</dt>
-        <dd>First horizon appearance</dd>
+        <dt>Dawn stars</dt>
+        <dd>Month and seasonal first appearances</dd>
       </div>
       <div>
-        <dt>New / Full Moon</dt>
-        <dd>Astronomical events</dd>
+        <dt>Moon events</dt>
+        <dd>Astronomical new and full moons</dd>
       </div>
     </dl>
     }

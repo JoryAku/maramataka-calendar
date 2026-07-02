@@ -96,7 +96,9 @@ describe('MaramatakaController', () => {
     await app.close();
   });
 
-  const ruleSet = summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET);
+  const ruleSet = JSON.parse(
+    JSON.stringify(summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET)),
+  ) as ReturnType<typeof summarizeRuleSet>;
 
   const createMonthFixture = (): MaramatakaMonth => ({
     version: 'mita-te-tai-best',
@@ -1192,13 +1194,12 @@ describe('MaramatakaController', () => {
     it('returns dawn sky star markers for a valid request', async () => {
       const starMarkers: StarMarker[] = [
         {
-          id: 'puanga',
-          name: 'Puanga',
+          id: 'whakaahu',
+          name: 'Whakaahu',
           type: 'star',
-          englishName: 'Rigel',
-          description: 'A dawn marker associated with the Māori new year.',
-          seasonalAssociation:
-            'Associated with the first month and the appearance of Puanga in the morning.',
+          englishName: 'Castor',
+          description: 'A dawn marker associated with late winter.',
+          seasonalAssociation: 'Late winter / early spring marker.',
           source: 'Elsdon Best, The Maori Division of Time',
           sourceUrl:
             'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
@@ -1209,7 +1210,7 @@ describe('MaramatakaController', () => {
           direction: 'E',
           visibility: 'prominent',
           calculation:
-            'Dawn sky position sampled at 06:00 local time for the selected location.',
+            'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
         },
       ];
       getStarMarkersMock.mockResolvedValue(starMarkers);

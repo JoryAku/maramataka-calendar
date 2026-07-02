@@ -436,15 +436,29 @@ export class MaramatakaPage implements OnInit {
       return 0;
     }
 
-    const offset =
+    const rawOffset =
       ((event.occursAt.getTime() - year.startsAt.getTime()) / duration) *
       100;
+    const offset = this.yearTimelineOffsetPercent(rawOffset);
 
     return Math.min(100, Math.max(0, offset));
   }
 
   protected yearEventClass(event: MaramatakaYearEvent): string {
     return `year-event ${event.type}`;
+  }
+
+  protected yearEventTopRem(event: MaramatakaYearEvent): number {
+    switch (event.type) {
+      case 'star-marker':
+        return 0.8 + this.yearEventLane(event) * 3.25;
+      case 'new-moon':
+        return 14.6;
+      case 'full-moon':
+        return 18.8;
+      case 'month-start':
+        return 23;
+    }
   }
 
   protected yearEventSymbol(event: MaramatakaYearEvent): string {
@@ -463,7 +477,9 @@ export class MaramatakaPage implements OnInit {
   protected yearEventTypeLabel(event: MaramatakaYearEvent): string {
     switch (event.type) {
       case 'star-marker':
-        return 'Star marker';
+        return event.starMarkerScope === 'seasonal'
+          ? 'Seasonal'
+          : 'Star';
       case 'new-moon':
         return 'New Moon';
       case 'full-moon':
@@ -484,11 +500,40 @@ export class MaramatakaPage implements OnInit {
       return 0;
     }
 
-    const offset =
+    const rawOffset =
       ((month.startsAt.getTime() - year.startsAt.getTime()) / duration) *
       100;
+    const offset = this.yearTimelineOffsetPercent(rawOffset);
 
     return Math.min(100, Math.max(0, offset));
+  }
+
+  private yearEventLane(event: MaramatakaYearEvent): number {
+    if (event.type !== 'star-marker') {
+      return 0;
+    }
+
+    const starMarkers =
+      this.year()?.events.filter(
+        (candidate) => candidate.type === 'star-marker',
+      ) ?? [];
+    const eventIndex = starMarkers.indexOf(event);
+    const nearbyEarlierMarkers = starMarkers.filter(
+      (candidate) =>
+        starMarkers.indexOf(candidate) < eventIndex &&
+        Math.abs(
+          this.yearEventOffsetPercent(candidate) -
+            this.yearEventOffsetPercent(event),
+        ) < 9,
+    ).length;
+
+    return nearbyEarlierMarkers ? nearbyEarlierMarkers % 4 : 0;
+  }
+
+  private yearTimelineOffsetPercent(rawOffset: number): number {
+    const startInsetPercent = 3.8;
+
+    return startInsetPercent + rawOffset * (1 - startInsetPercent / 100);
   }
 
   protected yearEventAriaLabel(event: MaramatakaYearEvent): string {

@@ -179,10 +179,10 @@ describe('MaramatakaService', () => {
             calculation: 'Test marker.',
           },
           {
-            id: 'puanga',
-            name: 'Puanga',
+            id: 'whakaahu',
+            name: 'Whakaahu',
             type: 'star',
-            englishName: 'Rigel',
+            englishName: 'Castor',
             description: 'Visible but not the active month ariki.',
             seasonalAssociation: 'Another marker',
             source: 'Elsdon Best, The Maori Division of Time',
@@ -239,10 +239,10 @@ describe('MaramatakaService', () => {
         getMoonDetails: jest.fn(),
         getStarMarkers: jest.fn().mockResolvedValue([
           {
-            id: 'puanga',
-            name: 'Puanga',
+            id: 'whakaahu',
+            name: 'Whakaahu',
             type: 'star',
-            englishName: 'Rigel',
+            englishName: 'Castor',
             description: 'Visible but not the active month ariki.',
             seasonalAssociation: 'Another marker',
             source: 'Elsdon Best, The Maori Division of Time',
@@ -291,6 +291,33 @@ describe('MaramatakaService', () => {
       ])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
+    const getStarFirstAppearances = jest
+      .fn()
+      .mockImplementation(
+        async (
+          startDate: string,
+          _endDate: string,
+          _location: Location,
+          markers: { id: string; name: string }[] = [],
+        ) =>
+          markers.map((marker) => ({
+            id: marker.id,
+            name: marker.name,
+            type: 'asterism',
+            englishName: marker.id === 'matariki' ? 'Pleiades' : undefined,
+            description: 'Month-scoped marker.',
+            seasonalAssociation: `Marker for ${marker.name}`,
+            source: 'test',
+            confidence: 'confirmed',
+            observedAt: new Date(`${startDate}T18:00:00Z`),
+            altitudeDegrees: 1,
+            azimuthDegrees: 80,
+            direction: 'E',
+            visibility: 'low',
+            calculation:
+              'First dawn sample in this maramataka month where the marker is above the eastern horizon.',
+          })),
+      );
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
@@ -300,25 +327,7 @@ describe('MaramatakaService', () => {
         getMoonRiseSet: jest.fn(),
         getMoonTransit: jest.fn(),
         getMoonDetails: jest.fn(),
-        getStarFirstAppearances: jest.fn().mockResolvedValue([
-          {
-            id: 'matariki',
-            name: 'Matariki',
-            type: 'asterism',
-            englishName: 'Pleiades',
-            description: 'Year-start marker.',
-            seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
-            source: 'test',
-            confidence: 'confirmed',
-            observedAt: new Date('2026-06-16T18:00:00Z'),
-            altitudeDegrees: 1,
-            azimuthDegrees: 80,
-            direction: 'E',
-            visibility: 'low',
-            calculation:
-              'First dawn sample in this maramataka year where the marker is above the eastern horizon.',
-          },
-        ]),
+        getStarFirstAppearances,
       },
     });
     const firstMonth = {
@@ -389,21 +398,54 @@ describe('MaramatakaService', () => {
       durationDays: 29,
       nightsCount: 1,
     });
-    expect(year.events.map((event) => event.type)).toEqual([
-      'new-moon',
-      'month-start',
-      'star-marker',
-      'full-moon',
-      'new-moon',
-      'month-start',
-      'month-start',
-    ]);
+    expect(getStarFirstAppearances).toHaveBeenNthCalledWith(
+      1,
+      '2026-06-15',
+      '2026-07-14',
+      location,
+      [expect.objectContaining({ id: 'matariki' })],
+    );
+    expect(getStarFirstAppearances).toHaveBeenNthCalledWith(
+      2,
+      '2026-07-14',
+      '2026-08-12',
+      location,
+      [expect.objectContaining({ id: 'takurua' })],
+    );
+    expect(getStarFirstAppearances).toHaveBeenNthCalledWith(
+      3,
+      '2026-06-15',
+      '2027-06-04',
+      location,
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'kopu' }),
+        expect.objectContaining({ id: 'tautoru' }),
+        expect.objectContaining({ id: 'whakaahu' }),
+        expect.objectContaining({ id: 'rehua' }),
+        expect.objectContaining({ id: 'uruao' }),
+      ]),
+    );
     expect(
-      year.events.find((event) => event.type === 'star-marker'),
-    ).toMatchObject({
-      name: 'Matariki',
-      occursAt: new Date('2026-06-16T18:00:00Z'),
-    });
+      year.events.filter((event) => event.type === 'star-marker'),
+    ).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: 'Matariki',
+        occursAt: new Date('2026-06-15T18:00:00Z'),
+        monthName: 'Marama 1',
+        starMarkerScope: 'month',
+      }),
+      expect.objectContaining({
+        name: 'Takurua',
+        occursAt: new Date('2026-07-14T18:00:00Z'),
+        monthName: 'Marama 2',
+        starMarkerScope: 'month',
+      }),
+      expect.objectContaining({
+        name: 'Kōpū',
+        occursAt: new Date('2026-06-15T18:00:00Z'),
+        starMarkerScope: 'seasonal',
+      }),
+    ]));
     expect(year.diagnostics).toEqual([]);
   });
 
@@ -458,7 +500,7 @@ describe('MaramatakaService', () => {
     expect(year.months).toHaveLength(1);
     expect(year.months[0]).toMatchObject({
       sequence: 1,
-      name: 'Marama 1',
+      name: 'Te Tahi o Pipiri',
       isEstimated: true,
       nightsCount: 0,
       unavailableReason: 'No moonrise data found for Whiro date',
@@ -476,7 +518,7 @@ describe('MaramatakaService', () => {
       {
         type: 'estimated-month',
         sequence: 1,
-        name: 'Marama 1',
+        name: 'Te Tahi o Pipiri',
         anchorDate: new Date('2026-06-15T00:00:00Z'),
         reason: 'No moonrise data found for Whiro date',
       },
@@ -551,7 +593,7 @@ describe('MaramatakaService', () => {
       {
         type: 'estimated-month',
         sequence: 1,
-        name: 'Marama 1',
+        name: 'Te Tahi o Pipiri',
         anchorDate: new Date('2026-06-15T00:00:00Z'),
         reason: 'No moonrise data found for Whiro date',
       },

@@ -5,16 +5,17 @@ visible without being treated as an implemented rule.
 
 ## Future Accuracy
 
-### Define Dawn From Sunrise For Star Marker Sampling
+### Refine Dawn Star Marker Sampling
 
-The current star marker proof of concept samples marker positions at `06:00`
-local time on the Whiro date. This is only a placeholder for dawn.
+Star marker sampling now uses solar-altitude dawn boundaries for the selected
+date and location. Single-day marker positions use the midpoint between the
+rising Sun crossing 18° and 12° below the horizon; first-appearance events scan
+from the Sun crossing 18° below the horizon through sunrise.
 
 Before the star layer is treated as production-ready:
 
-- calculate local sunrise for the selected location and Whiro date
-- define the dawn sample time relative to sunrise, for example a configurable
-  offset before sunrise
-- record that dawn definition in the active `MaramatakaRuleSet`
-- use the same dawn definition for month naming and displayed star-marker
-  details
+- decide whether different traditions should use the midpoint, the -18°
+  boundary, sunrise, or another configurable point in the dawn window
+- record the dawn definition with a more precise API field than the legacy
+  `sampleTimeLocal` name
+- validate the resulting marker dates against expert/source review

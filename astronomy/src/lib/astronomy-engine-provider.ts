@@ -23,6 +23,8 @@ import {
 const ASTRONOMY_ENGINE_SOURCE = 'astronomy-engine';
 const ASTRONOMY_ENGINE_LUNAR_AGE_SOURCE = 'astronomy-engine moon phases';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_MINUTE = 60 * 1000;
+const DAWN_FIRST_APPEARANCE_SAMPLE_MINUTES = 5;
 
 type AstronomyEngineModule = typeof import('astronomy-engine');
 
@@ -48,22 +50,6 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
       kind: 'fixed-equatorial',
       rightAscensionHours: 3.7914,
       declinationDegrees: 24.1051,
-    },
-  },
-  {
-    id: 'puanga',
-    name: 'Puanga',
-    type: 'star',
-    englishName: 'Rigel',
-    description:
-      'New-year marker associated with appearance in the morning sky.',
-    seasonalAssociation: 'New year / first seasonal month',
-    source: STAR_MARKER_SOURCE,
-    confidence: 'confirmed',
-    representative: {
-      kind: 'fixed-equatorial',
-      rightAscensionHours: 5.2423,
-      declinationDegrees: -8.2016,
     },
   },
   {
@@ -336,8 +322,15 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     markers = DEFAULT_STAR_MARKERS,
   ): Promise<StarMarker[]> {
     return this.calculate('star markers', async (engine) => {
-      const observedAt = this.localDateAtTime(date, location, 6, 0);
       const observer = this.observer(engine, location);
+      const observedAt = this.dawnObservationTime(
+        date,
+        location,
+        engine,
+        observer,
+      );
+      const calculation =
+        'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.';
 
       return markers
         .map((marker) =>
@@ -346,7 +339,7 @@ export class AstronomyEngineProvider implements AstronomyProvider {
             engine,
             observer,
             observedAt,
-            'Dawn sky position sampled at 06:00 local time for the selected location.',
+            calculation,
           ),
         )
         .sort((a, b) => b.altitudeDegrees - a.altitudeDegrees);
@@ -367,19 +360,23 @@ export class AstronomyEngineProvider implements AstronomyProvider {
       let date = startDate;
 
       while (date < endDate && remainingMarkers.size > 0) {
-        const observedAt = this.localDateAtTime(date, location, 6, 0);
         const observer = this.observer(engine, location);
+        const dawnWindow = this.dawnObservationWindow(
+          date,
+          location,
+          engine,
+          observer,
+        );
 
         for (const marker of [...remainingMarkers.values()]) {
-          const starMarker = this.calculateStarMarker(
+          const starMarker = this.findFirstDawnWindowAppearance(
             marker,
             engine,
             observer,
-            observedAt,
-            'First dawn sample in this maramataka year where the marker is above the eastern horizon.',
+            dawnWindow,
           );
 
-          if (this.isEasternHorizonAppearance(starMarker)) {
+          if (starMarker) {
             appearances.push(starMarker);
             remainingMarkers.delete(marker.id);
           }
@@ -392,6 +389,99 @@ export class AstronomyEngineProvider implements AstronomyProvider {
         (a, b) => a.observedAt.getTime() - b.observedAt.getTime(),
       );
     });
+  }
+
+  private dawnObservationTime(
+    date: string,
+    location: Location,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+  ): Date {
+    const { astronomicalDawn, nauticalDawn } = this.dawnObservationWindow(
+      date,
+      location,
+      engine,
+      observer,
+    );
+
+    return new Date(
+      (astronomicalDawn.getTime() + nauticalDawn.getTime()) / 2,
+    );
+  }
+
+  private dawnObservationWindow(
+    date: string,
+    location: Location,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+  ): { astronomicalDawn: Date; nauticalDawn: Date; sunrise: Date } {
+    const startsAt = this.localDateAtTime(date, location, 0, 0);
+    const astronomicalDawn = engine.SearchAltitude(
+      engine.Body.Sun,
+      observer,
+      1,
+      startsAt,
+      1,
+      -18,
+    )?.date;
+    const nauticalDawn = astronomicalDawn
+      ? engine.SearchAltitude(
+          engine.Body.Sun,
+          observer,
+          1,
+          astronomicalDawn,
+          1,
+          -12,
+        )?.date
+      : null;
+    const sunrise = astronomicalDawn
+      ? engine.SearchAltitude(
+          engine.Body.Sun,
+          observer,
+          1,
+          astronomicalDawn,
+          1,
+          0,
+        )?.date
+      : null;
+
+    if (!astronomicalDawn || !nauticalDawn || !sunrise) {
+      throw this.dataUnavailable(`No dawn data found for ${date}`);
+    }
+
+    return { astronomicalDawn, nauticalDawn, sunrise };
+  }
+
+  private findFirstDawnWindowAppearance(
+    marker: StarMarkerDefinition,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    dawnWindow: { astronomicalDawn: Date; sunrise: Date },
+  ): StarMarker | undefined {
+    const calculation =
+      'First dawn-window sample between the rising Sun crossing 18° below the horizon and sunrise where the marker is above the eastern horizon.';
+    let observedAt = dawnWindow.astronomicalDawn;
+
+    while (observedAt.getTime() <= dawnWindow.sunrise.getTime()) {
+      const starMarker = this.calculateStarMarker(
+        marker,
+        engine,
+        observer,
+        observedAt,
+        calculation,
+      );
+
+      if (this.isEasternHorizonAppearance(starMarker)) {
+        return starMarker;
+      }
+
+      observedAt = new Date(
+        observedAt.getTime() +
+          DAWN_FIRST_APPEARANCE_SAMPLE_MINUTES * MS_PER_MINUTE,
+      );
+    }
+
+    return undefined;
   }
 
   private async getMoonPhasesForSurroundingYears(

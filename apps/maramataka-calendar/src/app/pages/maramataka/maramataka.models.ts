@@ -76,6 +76,7 @@ export interface MaramatakaYearEvent<TDate = Date> {
   occursAt: TDate;
   monthSequence?: number;
   monthName?: string;
+  starMarkerScope?: 'month' | 'seasonal';
   description?: string;
   source?: string;
 }

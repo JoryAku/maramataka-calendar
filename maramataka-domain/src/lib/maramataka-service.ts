@@ -10,6 +10,7 @@ import {
   NewMoon,
   parseLocalDateTimeInTimezone,
   StarMarker,
+  StarMarkerDefinition,
 } from '@maramataka-calendar/astronomy';
 import {
   CurrentMaramatakaNight,
@@ -50,6 +51,18 @@ interface PhaseFetchResult<T> {
   values: T[];
   error?: string;
 }
+
+type MonthScopedStarMarker = StarMarker & {
+  monthSequence: number;
+  monthName: string;
+  scope: 'month';
+};
+
+type SeasonalStarMarker = StarMarker & {
+  scope: 'seasonal';
+  monthSequence?: undefined;
+  monthName?: undefined;
+};
 
 export interface MaramatakaServiceDependencies {
   astronomyProvider: AstronomyProvider;
@@ -301,28 +314,39 @@ export class MaramatakaService {
         });
       }
     }
-    const starFirstAppearances =
-      yearStartsAt && yearEndsAt
-        ? await this.getOptionalStarFirstAppearances(
+    const timelineStartsAt =
+      months[0]?.startsAt ??
+      yearStartsAt?.occursAt ??
+      this.localYearBoundary(starYear, location, 5);
+    const timelineEndsAt =
+      yearEndsAt?.occursAt ??
+      months[months.length - 1]?.anchors.nextWhiro.occursAt ??
+      this.localYearBoundary(starYear + 1, location, 5);
+    const monthScopedStarFirstAppearances =
+      months.length > 0
+        ? await this.getMonthScopedStarFirstAppearances(location, months)
+        : [];
+    const seasonalStarFirstAppearances =
+      months.length > 0
+        ? await this.getSeasonalStarFirstAppearances(
             location,
-            this.formatIsoDateForLocation(yearStartsAt.occursAt, location),
-            this.formatIsoDateForLocation(yearEndsAt.occursAt, location),
+            this.formatIsoDateForLocation(timelineStartsAt, location),
+            this.formatIsoDateForLocation(timelineEndsAt, location),
+            monthScopedStarFirstAppearances,
           )
         : [];
+    const starFirstAppearances = [
+      ...monthScopedStarFirstAppearances,
+      ...seasonalStarFirstAppearances,
+    ];
 
     return {
       version: this.version,
       ruleSet: summarizeRuleSet(this.ruleSet),
       year: starYear,
       timezone: location.timezone,
-      startsAt:
-        months[0]?.startsAt ??
-        yearStartsAt?.occursAt ??
-        this.localYearBoundary(starYear, location, 5),
-      endsAt:
-        yearEndsAt?.occursAt ??
-        months[months.length - 1]?.anchors.nextWhiro.occursAt ??
-        this.localYearBoundary(starYear + 1, location, 5),
+      startsAt: timelineStartsAt,
+      endsAt: timelineEndsAt,
       months,
       events: this.createYearEvents(
         months,
@@ -667,7 +691,7 @@ export class MaramatakaService {
     months: MaramatakaYearMonth[],
     yearStartsAt?: NewMoon,
     yearEndsAt?: NewMoon,
-    starFirstAppearances: StarMarker[] = [],
+    starFirstAppearances: (MonthScopedStarMarker | SeasonalStarMarker)[] = [],
   ): MaramatakaYearEvent[] {
     const events = months.flatMap((month) => {
       const monthEvents: MaramatakaYearEvent[] = [
@@ -717,6 +741,9 @@ export class MaramatakaService {
         type: 'star-marker',
         name: marker.name,
         occursAt: marker.observedAt,
+        monthSequence: marker.monthSequence,
+        monthName: marker.monthName,
+        starMarkerScope: marker.scope,
         description: marker.seasonalAssociation,
         source: marker.source,
       });
@@ -871,10 +898,80 @@ export class MaramatakaService {
     }
   }
 
+  private async getMonthScopedStarFirstAppearances(
+    location: Location,
+    months: MaramatakaYearMonth[],
+  ): Promise<MonthScopedStarMarker[]> {
+    const markerDefinitions =
+      this.ruleSet.starMonthNaming?.markers ?? [];
+    const starMonthNotes = this.ruleSet.starMonthNaming?.months ?? [];
+    const appearances = await Promise.all(
+      months.map(async (month) => {
+        const markerIds =
+          starMonthNotes.find((note) => note.sequence === month.sequence)
+            ?.markerIds ?? [];
+        const monthMarkers = markerDefinitions.filter((marker) =>
+          markerIds.includes(marker.id),
+        );
+
+        if (!monthMarkers.length) {
+          return [];
+        }
+
+        const markers = await this.getOptionalStarFirstAppearances(
+          location,
+          this.formatIsoDateForLocation(month.startsAt, location),
+          this.formatIsoDateForLocation(month.endsAt, location),
+          monthMarkers,
+        );
+
+        return markers.map((marker) => ({
+          ...marker,
+          monthSequence: month.sequence,
+          monthName: month.name,
+          scope: 'month' as const,
+        }));
+      }),
+    );
+
+    return appearances.flat();
+  }
+
+  private async getSeasonalStarFirstAppearances(
+    location: Location,
+    startDate: string,
+    endDate: string,
+    monthScopedMarkers: MonthScopedStarMarker[],
+  ): Promise<SeasonalStarMarker[]> {
+    const alreadyPlacedMarkerIds = new Set(
+      monthScopedMarkers.map((marker) => marker.id),
+    );
+    const seasonalMarkers = (this.ruleSet.starMonthNaming?.markers ?? []).filter(
+      (marker) => !alreadyPlacedMarkerIds.has(marker.id),
+    );
+
+    if (!seasonalMarkers.length) {
+      return [];
+    }
+
+    const markers = await this.getOptionalStarFirstAppearances(
+      location,
+      startDate,
+      endDate,
+      seasonalMarkers,
+    );
+
+    return markers.map((marker) => ({
+      ...marker,
+      scope: 'seasonal' as const,
+    }));
+  }
+
   private async getOptionalStarFirstAppearances(
     location: Location,
     startDate: string,
     endDate: string,
+    markers: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
     try {
       return await (
@@ -882,7 +979,7 @@ export class MaramatakaService {
           startDate,
           endDate,
           location,
-          this.ruleSet.starMonthNaming?.markers,
+          markers,
         ) ?? []
       );
     } catch {

@@ -15,6 +15,8 @@ import { AstronomyCacheStore } from './persistent-astronomy-cache';
 
 type Reviver<T> = (value: T) => T;
 
+const STAR_DAWN_SAMPLING_CACHE_VERSION = 'dawn-window-first-appearance-v1';
+
 export class PersistentCachedAstronomyProvider implements AstronomyProvider {
   constructor(
     private readonly provider: AstronomyProvider,
@@ -131,7 +133,12 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
     return this.getOrSet(
-      `star-markers:${this.locationCacheKey(date, location)}:${this.starMarkerCacheKey(markers)}`,
+      [
+        'star-markers',
+        STAR_DAWN_SAMPLING_CACHE_VERSION,
+        this.locationCacheKey(date, location),
+        this.starMarkerCacheKey(markers),
+      ].join(':'),
       () =>
         this.provider.getStarMarkers?.(date, location, markers) ??
         Promise.resolve([]),
@@ -150,7 +157,13 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
     return this.getOrSet(
-      `star-first-appearances:${this.locationCacheKey(startDate, location)}:${endDate}:${this.starMarkerCacheKey(markers)}`,
+      [
+        'star-first-appearances',
+        STAR_DAWN_SAMPLING_CACHE_VERSION,
+        this.locationCacheKey(startDate, location),
+        endDate,
+        this.starMarkerCacheKey(markers),
+      ].join(':'),
       () =>
         this.provider.getStarFirstAppearances?.(
           startDate,
