@@ -72,15 +72,15 @@ const API_GOLDEN_DATE_FIXTURES: ApiGoldenDateFixture[] = [
     ],
     expected: {
       whiroStartsAt: '2026-09-10T18:03:00.000Z',
-      nextWhiroStartsAt: '2026-10-10T17:17:00.000Z',
-      nightCount: 29,
+      nextWhiroStartsAt: '2026-10-09T16:53:00.000Z',
+      nightCount: 28,
       firstFiveMata: ['Whiro', 'Tirea', 'Ohoata', 'Oue', 'Okoro'],
       lastFiveMata: [
+        'Korekore whakapiri ki nga Tangaroa',
         'Tangaroa-amua',
         'Tangaroa-aroto',
         'Tangaroa-kiokio',
         'Otane',
-        'Orongonui',
       ],
     },
   },
