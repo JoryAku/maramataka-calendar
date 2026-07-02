@@ -77,6 +77,15 @@ export interface MaramatakaYear {
   startsAt: Date;
   endsAt: Date;
   months: MaramatakaYearMonth[];
+  diagnostics: MaramatakaYearDiagnostic[];
+}
+
+export interface MaramatakaYearDiagnostic {
+  type: 'phase-provider' | 'estimated-month' | 'skipped-month';
+  name: string;
+  sequence?: number;
+  anchorDate?: Date;
+  reason: string;
 }
 
 export interface MaramatakaYearMonth {

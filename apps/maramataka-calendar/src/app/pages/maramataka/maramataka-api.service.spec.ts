@@ -309,6 +309,15 @@ describe('MaramatakaApiService', () => {
       timezone: 'Pacific/Auckland',
       startsAt: '2025-12-31T11:00:00.000Z',
       endsAt: '2026-12-31T11:00:00.000Z',
+      diagnostics: [
+        {
+          type: 'estimated-month',
+          name: 'Marama 9',
+          sequence: 9,
+          anchorDate: '2026-09-10T18:03:00.000Z',
+          reason: 'No moonrise data found for Whiro date',
+        },
+      ],
       months: [
         {
           sequence: 9,
@@ -359,6 +368,9 @@ describe('MaramatakaApiService', () => {
       new Date('2026-09-26T16:49:00.000Z'),
     );
     expect(year?.months[0].repeatedMata).toEqual(['Ohua x2']);
+    expect(year?.diagnostics[0].anchorDate).toEqual(
+      new Date('2026-09-10T18:03:00.000Z'),
+    );
   });
 
   it('uses the configured API base URL', () => {

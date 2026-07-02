@@ -186,6 +186,12 @@ export class MaramatakaApiService {
       ...apiYear,
       startsAt: new Date(apiYear.startsAt),
       endsAt: new Date(apiYear.endsAt),
+      diagnostics: (apiYear.diagnostics ?? []).map((diagnostic) => ({
+        ...diagnostic,
+        anchorDate: diagnostic.anchorDate
+          ? new Date(diagnostic.anchorDate)
+          : undefined,
+      })),
       months: apiYear.months.map((month) => ({
         ...month,
         startsAt: new Date(month.startsAt),

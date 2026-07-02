@@ -369,6 +369,7 @@ describe('MaramatakaService', () => {
       durationDays: 29,
       nightsCount: 1,
     });
+    expect(year.diagnostics).toEqual([]);
   });
 
   it('falls back to astronomy anchors when a detailed year marama cannot be generated', async () => {
@@ -439,6 +440,15 @@ describe('MaramatakaService', () => {
     expect(year.months[0].anchors.nextWhiro.occursAt).toEqual(
       new Date('2026-01-30T00:00:00Z'),
     );
+    expect(year.diagnostics).toEqual([
+      {
+        type: 'estimated-month',
+        sequence: 1,
+        name: 'Marama 1',
+        anchorDate: new Date('2026-01-01T00:00:00Z'),
+        reason: 'No moonrise data found for Whiro date',
+      },
+    ]);
   });
 
   it('keeps the year timeline available when full moon anchors cannot be loaded', async () => {
@@ -466,7 +476,9 @@ describe('MaramatakaService', () => {
       astronomyProvider: {
         getNewMoons,
         getMoonPhases: jest.fn(),
-        getFullMoons: jest.fn().mockRejectedValue(new Error('phase unavailable')),
+        getFullMoons: jest
+          .fn()
+          .mockRejectedValue(new Error('phase unavailable')),
         getMoonRise: jest.fn(),
         getMoonRiseSet: jest.fn(),
         getMoonTransit: jest.fn(),
@@ -487,6 +499,30 @@ describe('MaramatakaService', () => {
     expect(year.months[0].anchors.whiro.occursAt).toEqual(
       new Date('2026-01-01T00:00:00Z'),
     );
+    expect(year.diagnostics).toEqual([
+      {
+        type: 'phase-provider',
+        name: '2025 Full Moon anchors',
+        reason: 'phase unavailable',
+      },
+      {
+        type: 'phase-provider',
+        name: '2026 Full Moon anchors',
+        reason: 'phase unavailable',
+      },
+      {
+        type: 'phase-provider',
+        name: '2027 Full Moon anchors',
+        reason: 'phase unavailable',
+      },
+      {
+        type: 'estimated-month',
+        sequence: 1,
+        name: 'Marama 1',
+        anchorDate: new Date('2026-01-01T00:00:00Z'),
+        reason: 'No moonrise data found for Whiro date',
+      },
+    ]);
   });
 
   it('returns an empty year timeline instead of failing when new moon anchors cannot be loaded', async () => {
@@ -509,6 +545,23 @@ describe('MaramatakaService', () => {
 
     expect(year.year).toBe(2026);
     expect(year.months).toEqual([]);
+    expect(year.diagnostics).toEqual([
+      {
+        type: 'phase-provider',
+        name: '2025 New Moon anchors',
+        reason: 'phase unavailable',
+      },
+      {
+        type: 'phase-provider',
+        name: '2026 New Moon anchors',
+        reason: 'phase unavailable',
+      },
+      {
+        type: 'phase-provider',
+        name: '2027 New Moon anchors',
+        reason: 'phase unavailable',
+      },
+    ]);
   });
 
   it('closes the marama at the next Whiro moonrise', async () => {

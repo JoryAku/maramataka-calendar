@@ -312,6 +312,24 @@
       timeline keeps the astronomy anchors and marks that segment as anchors
       only.
     </p>
+    @if (year()!.diagnostics.length) {
+    <div class="year-diagnostics" data-testid="year-diagnostics">
+      <h3>Year timeline notes</h3>
+      <ul>
+        @for (diagnostic of year()!.diagnostics; track diagnostic.name + diagnostic.reason) {
+        <li>
+          <strong>{{ diagnostic.name }}</strong>
+          @if (diagnostic.anchorDate) {
+          <span>
+            {{ diagnostic.anchorDate | date: 'd MMM y, h:mm a' : nzTimeZone }}
+          </span>
+          }
+          <small>{{ diagnostic.reason }}</small>
+        </li>
+        }
+      </ul>
+    </div>
+    }
     <div
       class="year-timeline"
       data-testid="year-rhythm-timeline"

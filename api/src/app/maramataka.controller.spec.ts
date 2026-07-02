@@ -197,6 +197,7 @@ describe('MaramatakaController', () => {
     timezone: 'Pacific/Auckland',
     startsAt: new Date('2025-12-31T11:00:00.000Z'),
     endsAt: new Date('2026-12-31T11:00:00.000Z'),
+    diagnostics: [],
     months: [
       {
         sequence: 1,

@@ -19,6 +19,7 @@ import {
   MaramatakaNight,
   MaramatakaStarMonth,
   MaramatakaYear,
+  MaramatakaYearDiagnostic,
   MaramatakaYearMonth,
 } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
@@ -41,6 +42,12 @@ type MonthGeneratorFn = typeof generateMaramatakaMonth;
 
 interface CurrentMaramatakaNightContext extends CurrentMaramatakaNight {
   month: MaramatakaMonth;
+}
+
+interface PhaseFetchResult<T> {
+  year: number;
+  values: T[];
+  error?: string;
 }
 
 export interface MaramatakaServiceDependencies {
@@ -195,25 +202,40 @@ export class MaramatakaService {
     const localYear = Number(
       this.formatIsoDateForLocation(date, location).slice(0, 4),
     );
-    const [previousYearNewMoons, yearNewMoons, nextYearNewMoons] =
-      await Promise.all(
-        [localYear - 1, localYear, localYear + 1].map((year) =>
-          this.getOptionalNewMoons(year),
-        ),
-      );
-    const newMoons = [
-      ...this.asArray(previousYearNewMoons),
-      ...this.asArray(yearNewMoons),
-      ...this.asArray(nextYearNewMoons),
-    ].sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
-    const fullMoons = (
-      await Promise.all(
-        [localYear - 1, localYear, localYear + 1].map((year) =>
-          this.getOptionalFullMoons(year),
-        ),
-      )
-    )
-      .flat()
+    const diagnostics: MaramatakaYearDiagnostic[] = [];
+    const newMoonResults = await Promise.all(
+      [localYear - 1, localYear, localYear + 1].map((year) =>
+        this.getOptionalNewMoons(year),
+      ),
+    );
+    diagnostics.push(
+      ...newMoonResults
+        .filter((result) => result.error)
+        .map((result) => ({
+          type: 'phase-provider' as const,
+          name: `${result.year} New Moon anchors`,
+          reason: result.error!,
+        })),
+    );
+    const newMoons = newMoonResults
+      .flatMap((result) => result.values)
+      .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
+    const fullMoonResults = await Promise.all(
+      [localYear - 1, localYear, localYear + 1].map((year) =>
+        this.getOptionalFullMoons(year),
+      ),
+    );
+    diagnostics.push(
+      ...fullMoonResults
+        .filter((result) => result.error)
+        .map((result) => ({
+          type: 'phase-provider' as const,
+          name: `${result.year} Full Moon anchors`,
+          reason: result.error!,
+        })),
+    );
+    const fullMoons = fullMoonResults
+      .flatMap((result) => result.values)
       .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
     const yearNewMoonAnchors = newMoons.filter(
       (newMoon) =>
@@ -238,6 +260,25 @@ export class MaramatakaService {
 
       if (month) {
         months.push(month);
+        if (month.isEstimated && month.unavailableReason) {
+          diagnostics.push({
+            type: 'estimated-month',
+            sequence: month.sequence,
+            name: month.name,
+            anchorDate:
+              month.anchors.whiro.astronomicalOccursAt ??
+              month.anchors.whiro.occursAt,
+            reason: month.unavailableReason,
+          });
+        }
+      } else {
+        diagnostics.push({
+          type: 'skipped-month',
+          sequence: index + 1,
+          name: `Marama ${index + 1}`,
+          anchorDate: newMoon.occursAt,
+          reason: 'No following New Moon anchor was available to close this marama.',
+        });
       }
     }
 
@@ -249,6 +290,7 @@ export class MaramatakaService {
       startsAt: this.localYearBoundary(localYear, location, 0),
       endsAt: this.localYearBoundary(localYear + 1, location, 0),
       months,
+      diagnostics,
     };
   }
 
@@ -698,19 +740,37 @@ export class MaramatakaService {
     }
   }
 
-  private async getOptionalFullMoons(year: number): Promise<FullMoon[]> {
+  private async getOptionalFullMoons(
+    year: number,
+  ): Promise<PhaseFetchResult<FullMoon>> {
     try {
-      return this.asArray(await this.astronomyProvider.getFullMoons(year));
-    } catch {
-      return [];
+      return {
+        year,
+        values: this.asArray(await this.astronomyProvider.getFullMoons(year)),
+      };
+    } catch (error) {
+      return {
+        year,
+        values: [],
+        error: this.getErrorMessage(error),
+      };
     }
   }
 
-  private async getOptionalNewMoons(year: number): Promise<NewMoon[]> {
+  private async getOptionalNewMoons(
+    year: number,
+  ): Promise<PhaseFetchResult<NewMoon>> {
     try {
-      return this.asArray(await this.astronomyProvider.getNewMoons(year));
-    } catch {
-      return [];
+      return {
+        year,
+        values: this.asArray(await this.astronomyProvider.getNewMoons(year)),
+      };
+    } catch (error) {
+      return {
+        year,
+        values: [],
+        error: this.getErrorMessage(error),
+      };
     }
   }
 

@@ -66,6 +66,15 @@ export interface MaramatakaYear<TDate = Date> {
   startsAt: TDate;
   endsAt: TDate;
   months: MaramatakaYearMonth<TDate>[];
+  diagnostics: MaramatakaYearDiagnostic<TDate>[];
+}
+
+export interface MaramatakaYearDiagnostic<TDate = Date> {
+  type: 'phase-provider' | 'estimated-month' | 'skipped-month';
+  name: string;
+  sequence?: number;
+  anchorDate?: TDate;
+  reason: string;
 }
 
 export interface MaramatakaYearMonth<TDate = Date> {

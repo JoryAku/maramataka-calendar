@@ -392,6 +392,47 @@ dd {
   line-height: 1.3;
 }
 
+.year-diagnostics {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.65rem 0;
+  padding: 0.75rem;
+  border: 1px solid #5d5133;
+  border-radius: 8px;
+  background: #211f12;
+}
+
+.year-diagnostics h3 {
+  margin: 0;
+  color: #fff4c7;
+  font-size: 0.95rem;
+}
+
+.year-diagnostics ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.year-diagnostics li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.year-diagnostics strong {
+  color: #f5e1a0;
+  font-size: 0.86rem;
+}
+
+.year-diagnostics span,
+.year-diagnostics small {
+  color: #cabb8e;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 .year-legend {
   display: flex;
   flex-wrap: wrap;
