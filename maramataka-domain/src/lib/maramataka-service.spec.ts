@@ -449,6 +449,86 @@ describe('MaramatakaService', () => {
     expect(year.diagnostics).toEqual([]);
   });
 
+  it('does not duplicate the year-start month boundary when generated months are available', async () => {
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          occursAt: new Date('2026-06-15T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+        {
+          occursAt: new Date('2026-07-14T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          occursAt: new Date('2027-06-04T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn().mockResolvedValue([]),
+        getMoonRise: jest.fn(),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
+    });
+    jest.spyOn(service, 'getMonth').mockResolvedValue({
+      version: 'mita-te-tai-best',
+      ruleSet: {
+        id: 'test-rule-set',
+        name: 'Test rule set',
+        version: 'test',
+        source: 'test',
+        tradition: 'test',
+        maramaStart: 'new-moon-observation-window-moonrise',
+        mataBoundary: 'moonrise-to-moonrise',
+        calibration: 'full-moon-observation-window-ohua',
+        balancing: 'duplicate-ohua-drop-final-mata',
+      },
+      whiroStartsAt: new Date('2026-06-15T05:00:00Z'),
+      nights: [
+        {
+          mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
+          startsAt: new Date('2026-06-15T05:00:00Z'),
+          endsAt: new Date('2026-07-14T05:00:00Z'),
+        },
+      ],
+    });
+
+    const year = await service.getYear(
+      location,
+      new Date('2026-07-10T12:00:00Z'),
+    );
+
+    const yearStartMonthEvents = year.events.filter(
+      (event) =>
+        event.type === 'month-start' &&
+        event.monthSequence === 1 &&
+        event.occursAt.getTime() <= new Date('2026-06-15T05:00:00Z').getTime(),
+    );
+    expect(yearStartMonthEvents).toHaveLength(1);
+    expect(yearStartMonthEvents[0]).toMatchObject({
+      occursAt: new Date('2026-06-15T05:00:00Z'),
+    });
+    expect(
+      year.events.some(
+        (event) =>
+          event.type === 'month-start' &&
+          event.occursAt.getTime() ===
+            new Date('2026-06-15T00:00:00Z').getTime(),
+      ),
+    ).toBe(false);
+  });
+
   it('falls back to astronomy anchors when a detailed year marama cannot be generated', async () => {
     const getNewMoons = jest
       .fn()

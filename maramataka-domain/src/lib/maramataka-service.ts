@@ -749,22 +749,29 @@ export class MaramatakaService {
       });
     }
 
+    const yearStartBoundary = months[0]
+      ? {
+          occursAt: months[0].startsAt,
+          source: months[0].anchors.whiro.source,
+        }
+      : yearStartsAt;
+
     if (
-      yearStartsAt &&
+      yearStartBoundary &&
       !events.some(
         (event) =>
           event.type === 'month-start' &&
-          event.occursAt.getTime() === yearStartsAt.occursAt.getTime(),
+          event.occursAt.getTime() === yearStartBoundary.occursAt.getTime(),
       )
     ) {
       events.push({
         type: 'month-start',
         name: 'Te Tahi o Pipiri',
-        occursAt: yearStartsAt.occursAt,
+        occursAt: yearStartBoundary.occursAt,
         monthSequence: 1,
         monthName: 'Te Tahi o Pipiri',
         description: 'The maramataka year begins.',
-        source: yearStartsAt.source,
+        source: yearStartBoundary.source,
       });
     }
 

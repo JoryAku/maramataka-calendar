@@ -20,7 +20,7 @@ import {
 import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
 import { join } from 'node:path';
 
-class StubAstronomyProvider implements AstronomyProvider {
+export class StubAstronomyProvider implements AstronomyProvider {
   async getMoonPhases(year: number): Promise<MoonPhase[]> {
     return Array.from({ length: 12 }, (_, monthIndex) => [
       {
@@ -189,7 +189,7 @@ class StubAstronomyProvider implements AstronomyProvider {
 
   async getStarFirstAppearances(
     startDate: string,
-    _endDate: string,
+    endDate: string,
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
@@ -200,8 +200,16 @@ class StubAstronomyProvider implements AstronomyProvider {
 
     const appearances = await Promise.all(
       markerDefinitions.map(async (marker, index) => {
+        const candidateDate = this.addIsoDateDays(
+          startDate,
+          Math.min(index * 30, 364),
+        );
+        if (candidateDate >= endDate) {
+          return undefined;
+        }
+
         const [starMarker] = await this.getStarMarkers(
-          this.addIsoDateDays(startDate, Math.min(index * 30, 364)),
+          candidateDate,
           location,
           [marker],
         );
