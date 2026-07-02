@@ -529,6 +529,70 @@ describe('MaramatakaService', () => {
     ).toBe(false);
   });
 
+  it('adds the Matariki public holiday on the closest Friday to Tangaroa in Pipiri', async () => {
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          occursAt: new Date('2026-06-15T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+        {
+          occursAt: new Date('2026-07-14T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          occursAt: new Date('2027-06-04T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn().mockResolvedValue([]),
+        getMoonRise: jest.fn(),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
+    });
+    const whiroStartsAt = new Date('2026-06-15T06:00:00Z');
+    const nights = MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.mata
+      .slice(0, 29)
+      .map((mata, index) => ({
+        mata,
+        startsAt: new Date(whiroStartsAt.getTime() + index * 86_400_000),
+        endsAt: new Date(whiroStartsAt.getTime() + (index + 1) * 86_400_000),
+      }));
+    jest.spyOn(service, 'getMonth').mockResolvedValue({
+      version: 'mita-te-tai-best',
+      ruleSet: summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET),
+      whiroStartsAt,
+      nights,
+    });
+
+    const year = await service.getYear(
+      location,
+      new Date('2026-07-10T12:00:00Z'),
+    );
+
+    expect(year.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'public-holiday',
+          name: 'Matariki public holiday',
+          occursAt: new Date('2026-07-09T12:00:00.000Z'),
+          monthSequence: 1,
+        }),
+      ]),
+    );
+  });
+
   it('falls back to astronomy anchors when a detailed year marama cannot be generated', async () => {
     const getNewMoons = jest
       .fn()

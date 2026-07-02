@@ -64,6 +64,11 @@ type SeasonalStarMarker = StarMarker & {
   monthName?: undefined;
 };
 
+interface YearMonthResult {
+  month: MaramatakaYearMonth;
+  events: MaramatakaYearEvent[];
+}
+
 export interface MaramatakaServiceDependencies {
   astronomyProvider: AstronomyProvider;
   calculateWhiroStartFn?: WhiroCalculatorFn;
@@ -278,8 +283,9 @@ export class MaramatakaService {
           )
         : [];
     const months: MaramatakaYearMonth[] = [];
+    const yearSpecificEvents: MaramatakaYearEvent[] = [];
     for (const [index, newMoon] of yearNewMoonAnchors.entries()) {
-      const month = await this.createYearMonthSafe({
+      const monthResult = await this.createYearMonthSafe({
         newMoon,
         nextNewMoon: this.findNextNewMoon(
           newMoons,
@@ -291,8 +297,10 @@ export class MaramatakaService {
         allNewMoons: newMoons,
       });
 
-      if (month) {
+      if (monthResult) {
+        const { month } = monthResult;
         months.push(month);
+        yearSpecificEvents.push(...monthResult.events);
         if (month.isEstimated && month.unavailableReason) {
           diagnostics.push({
             type: 'estimated-month',
@@ -353,6 +361,7 @@ export class MaramatakaService {
         yearStartsAt,
         yearEndsAt,
         starFirstAppearances,
+        yearSpecificEvents,
       ),
       diagnostics,
     };
@@ -594,7 +603,7 @@ export class MaramatakaService {
     location: Location;
     sequence: number;
     allNewMoons: NewMoon[];
-  }): Promise<MaramatakaYearMonth | undefined> {
+  }): Promise<YearMonthResult | undefined> {
     const { newMoon, nextNewMoon, fullMoons, location, sequence, allNewMoons } =
       input;
     let month: MaramatakaMonth;
@@ -637,7 +646,7 @@ export class MaramatakaService {
       month.starMonthSequence,
     );
 
-    return {
+    const yearMonth: MaramatakaYearMonth = {
       sequence,
       name: starMonth?.name ?? `Marama ${sequence}`,
       starMonth,
@@ -685,6 +694,48 @@ export class MaramatakaService {
         }),
       },
     };
+
+    return {
+      month: yearMonth,
+      events: this.createMatarikiPublicHolidayEvents(month, yearMonth, location),
+    };
+  }
+
+  private createMatarikiPublicHolidayEvents(
+    month: MaramatakaMonth,
+    yearMonth: MaramatakaYearMonth,
+    location: Location,
+  ): MaramatakaYearEvent[] {
+    if (yearMonth.sequence !== 1) {
+      return [];
+    }
+
+    const tangaroaNights = month.nights
+      .filter((night) => night.mata.name.startsWith('Tangaroa'))
+      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+    const firstTangaroaNight = tangaroaNights[0];
+    const lastTangaroaNight = tangaroaNights[tangaroaNights.length - 1];
+    if (!firstTangaroaNight || !lastTangaroaNight) {
+      return [];
+    }
+
+    const holidayDate = this.closestFridayToLocalDateRange(
+      this.formatIsoDateForLocation(firstTangaroaNight.startsAt, location),
+      this.formatIsoDateForLocation(lastTangaroaNight.endsAt, location),
+    );
+
+    return [
+      {
+        type: 'public-holiday',
+        name: 'Matariki public holiday',
+        occursAt: this.localDateStart(holidayDate, location),
+        monthSequence: yearMonth.sequence,
+        monthName: yearMonth.name,
+        description:
+          'Closest Friday to the Tangaroa lunar period in Te Tahi o Pipiri.',
+        source: 'Matariki public holiday maramataka rule',
+      },
+    ];
   }
 
   private createYearEvents(
@@ -692,6 +743,7 @@ export class MaramatakaService {
     yearStartsAt?: NewMoon,
     yearEndsAt?: NewMoon,
     starFirstAppearances: (MonthScopedStarMarker | SeasonalStarMarker)[] = [],
+    yearSpecificEvents: MaramatakaYearEvent[] = [],
   ): MaramatakaYearEvent[] {
     const events = months.flatMap((month) => {
       const monthEvents: MaramatakaYearEvent[] = [
@@ -749,6 +801,8 @@ export class MaramatakaService {
       });
     }
 
+    events.push(...yearSpecificEvents);
+
     const yearStartBoundary = months[0]
       ? {
           occursAt: months[0].startsAt,
@@ -795,7 +849,7 @@ export class MaramatakaService {
     location: Location;
     sequence: number;
     allNewMoons: NewMoon[];
-  }): Promise<MaramatakaYearMonth | undefined> {
+  }): Promise<YearMonthResult | undefined> {
     try {
       return await this.createYearMonth(input);
     } catch (error) {
@@ -814,7 +868,7 @@ export class MaramatakaService {
     sequence: number;
     allNewMoons: NewMoon[];
     unavailableReason: string;
-  }): Promise<MaramatakaYearMonth | undefined> {
+  }): Promise<YearMonthResult | undefined> {
     const {
       newMoon,
       nextNewMoon,
@@ -845,52 +899,55 @@ export class MaramatakaService {
     );
 
     return {
-      sequence,
-      name: starMonth?.name ?? `Marama ${sequence}`,
-      starMonth,
-      starMarkers: this.selectRelevantStarMarkers(starMarkers, starMonth),
-      isEstimated: true,
-      unavailableReason,
-      startsAt: newMoon.occursAt,
-      endsAt: nextNewMoon.occursAt,
-      durationDays: this.roundTo(
-        (nextNewMoon.occursAt.getTime() - newMoon.occursAt.getTime()) /
-          (24 * 60 * 60 * 1000),
-        2,
-      ),
-      nightsCount: 0,
-      repeatedMata: [],
-      anchors: {
-        whiro: this.createCycleAnchor({
-          type: 'whiro',
-          label: 'Whiro / Kohititanga',
-          occursAt: newMoon.occursAt,
-          location,
-          source: newMoon.source,
-          mata: this.ruleSet.mata[0],
-          astronomicalOccursAt: newMoon.occursAt,
-        }),
-        ...(fullMoon
-          ? {
-              fullMoon: this.createCycleAnchor({
-                type: 'full-moon',
-                label: 'Rakaunui / Full Moon',
-                occursAt: fullMoon.occursAt,
-                location,
-                source: fullMoon.source,
-                astronomicalOccursAt: fullMoon.occursAt,
-              }),
-            }
-          : {}),
-        nextWhiro: this.createCycleAnchor({
-          type: 'next-whiro',
-          label: 'Next Whiro / Kohititanga',
-          occursAt: nextNewMoon.occursAt,
-          location,
-          source: nextNewMoon.source,
-          mata: this.ruleSet.mata[0],
-        }),
+      month: {
+        sequence,
+        name: starMonth?.name ?? `Marama ${sequence}`,
+        starMonth,
+        starMarkers: this.selectRelevantStarMarkers(starMarkers, starMonth),
+        isEstimated: true,
+        unavailableReason,
+        startsAt: newMoon.occursAt,
+        endsAt: nextNewMoon.occursAt,
+        durationDays: this.roundTo(
+          (nextNewMoon.occursAt.getTime() - newMoon.occursAt.getTime()) /
+            (24 * 60 * 60 * 1000),
+          2,
+        ),
+        nightsCount: 0,
+        repeatedMata: [],
+        anchors: {
+          whiro: this.createCycleAnchor({
+            type: 'whiro',
+            label: 'Whiro / Kohititanga',
+            occursAt: newMoon.occursAt,
+            location,
+            source: newMoon.source,
+            mata: this.ruleSet.mata[0],
+            astronomicalOccursAt: newMoon.occursAt,
+          }),
+          ...(fullMoon
+            ? {
+                fullMoon: this.createCycleAnchor({
+                  type: 'full-moon',
+                  label: 'Rakaunui / Full Moon',
+                  occursAt: fullMoon.occursAt,
+                  location,
+                  source: fullMoon.source,
+                  astronomicalOccursAt: fullMoon.occursAt,
+                }),
+              }
+            : {}),
+          nextWhiro: this.createCycleAnchor({
+            type: 'next-whiro',
+            label: 'Next Whiro / Kohititanga',
+            occursAt: nextNewMoon.occursAt,
+            location,
+            source: nextNewMoon.source,
+            mata: this.ruleSet.mata[0],
+          }),
+        },
       },
+      events: [],
     };
   }
 
@@ -1159,6 +1216,75 @@ export class MaramatakaService {
 
   private formatIsoDateForLocation(date: Date, location: Location): string {
     return formatIsoDateInTimezone(date, location.timezone);
+  }
+
+  private closestFridayToLocalDateRange(
+    startsOn: string,
+    endsOn: string,
+  ): string {
+    const startDay = this.localDateOrdinal(startsOn);
+    const endDay = this.localDateOrdinal(endsOn);
+    const midpoint = (startDay + endDay) / 2;
+    let closestFriday = startDay;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    let closestMidpointDistance = Number.POSITIVE_INFINITY;
+
+    for (let day = startDay - 7; day <= endDay + 7; day += 1) {
+      if (this.weekdayForOrdinal(day) !== 5) {
+        continue;
+      }
+
+      const distanceToRange =
+        day < startDay ? startDay - day : day > endDay ? day - endDay : 0;
+      const distanceToMidpoint = Math.abs(day - midpoint);
+      if (
+        distanceToRange < closestDistance ||
+        (distanceToRange === closestDistance &&
+          distanceToMidpoint < closestMidpointDistance)
+      ) {
+        closestFriday = day;
+        closestDistance = distanceToRange;
+        closestMidpointDistance = distanceToMidpoint;
+      }
+    }
+
+    return this.localDateFromOrdinal(closestFriday);
+  }
+
+  private localDateStart(localDate: string, location: Location): Date {
+    const [year, month, day] = localDate
+      .split('-')
+      .map((part) => Number.parseInt(part, 10));
+
+    return parseLocalDateTimeInTimezone(
+      {
+        year,
+        month,
+        day,
+        hour: 0,
+        minute: 0,
+        second: 0,
+      },
+      location.timezone,
+    );
+  }
+
+  private localDateOrdinal(localDate: string): number {
+    const [year, month, day] = localDate
+      .split('-')
+      .map((part) => Number.parseInt(part, 10));
+
+    return Math.floor(Date.UTC(year, month - 1, day) / (24 * 60 * 60 * 1000));
+  }
+
+  private localDateFromOrdinal(ordinal: number): string {
+    return new Date(ordinal * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+  }
+
+  private weekdayForOrdinal(ordinal: number): number {
+    return new Date(ordinal * 24 * 60 * 60 * 1000).getUTCDay();
   }
 
   private async findFullMoonForCycle(

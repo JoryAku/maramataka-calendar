@@ -520,7 +520,7 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Meridian');
     expect(content).toContain('Year rhythm');
     expect(content).toContain('Year view starts at Te Tahi o Pipiri');
-    expect(content).toContain('first annual horizon');
+    expect(content).toContain('month and seasonal dawn appearances');
     expect(content).toContain('New Moon');
     expect(content).toContain('Full Moon');
     expect(content).toContain('Te Tahi o Pipiri');
@@ -627,6 +627,61 @@ describe('MaramatakaPage', () => {
       fixture.nativeElement.querySelector('[data-testid="balance-note"]')
         ?.textContent,
     ).toContain('Repeated mata: Ohua x2');
+  });
+
+  it('selects dates from mata rows and year month cards', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(
+      flushMaramatakaRequests(),
+      monthFixture([
+        {
+          mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+          startsAt: '2026-01-10T06:45:00.000Z',
+          endsAt: '2026-01-11T06:45:00.000Z',
+        },
+        {
+          mata: { index: 2, name: 'Tirea', version: 'mita-te-tai-best' },
+          startsAt: '2026-01-11T06:45:00.000Z',
+          endsAt: '2026-01-12T06:45:00.000Z',
+        },
+      ]),
+    );
+    fixture.detectChanges();
+
+    const mataButtons = fixture.nativeElement.querySelectorAll(
+      '.cycle-list-button',
+    ) as NodeListOf<HTMLButtonElement>;
+    mataButtons[1].click();
+
+    const mataRequests = flushMaramatakaRequests();
+    expect(mataRequests.monthRequest.request.params.get('date')).toBe(
+      '2026-01-11',
+    );
+    expect(mataRequests.todayRequest.request.params.get('dateTime')).toContain(
+      '2026-01-11',
+    );
+    flushSuccessfulMaramatakaRequests(mataRequests);
+    fixture.detectChanges();
+
+    const yearMonthCard = fixture.nativeElement.querySelector(
+      '.year-marama-list article',
+    ) as HTMLElement;
+    yearMonthCard.click();
+
+    const yearMonthRequests = flushMaramatakaRequests();
+    expect(yearMonthRequests.monthRequest.request.params.get('date')).toBe(
+      '2026-01-10',
+    );
+    expect(
+      yearMonthRequests.todayRequest.request.params.get('dateTime'),
+    ).toContain('2026-01-10');
+    flushSuccessfulMaramatakaRequests(yearMonthRequests);
   });
 
   it('handles unavailable moon detail fields without empty UI', () => {
@@ -833,7 +888,7 @@ describe('MaramatakaPage', () => {
       fixture.nativeElement.querySelector(
         '[data-testid="star-markers-error-state"]',
       ),
-    ).not.toBeNull();
+    ).toBeNull();
   });
 
   it('shows location, month, and today errors when locations fail to load', () => {
