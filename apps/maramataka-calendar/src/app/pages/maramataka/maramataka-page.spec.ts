@@ -343,6 +343,44 @@ describe('MaramatakaPage', () => {
           },
         },
       ],
+      events: [
+        {
+          type: 'month-start',
+          name: 'Te Tahi o Pipiri',
+          occursAt: '2026-01-10T06:45:00.000Z',
+          monthSequence: 1,
+          monthName: 'Te Tahi o Pipiri',
+          description: 'Maramataka month begins at Whiro.',
+          source: 'astronomy-engine moonrise',
+        },
+        {
+          type: 'star-marker',
+          name: 'Matariki',
+          occursAt: '2026-01-10T17:00:00.000Z',
+          monthSequence: 1,
+          monthName: 'Te Tahi o Pipiri',
+          description: 'Year-start ariki for Te Tahi o Pipiri',
+          source: 'Elsdon Best, The Maori Division of Time',
+        },
+        {
+          type: 'new-moon',
+          name: 'New Moon',
+          occursAt: '2026-01-10T06:45:00.000Z',
+          monthSequence: 1,
+          monthName: 'Te Tahi o Pipiri',
+          description: 'Astronomical New Moon anchor for Whiro.',
+          source: 'astronomy-engine',
+        },
+        {
+          type: 'full-moon',
+          name: 'Full Moon',
+          occursAt: '2026-01-25T06:45:00.000Z',
+          monthSequence: 1,
+          monthName: 'Te Tahi o Pipiri',
+          description: 'Astronomical Full Moon anchor for Rakaunui / Ohua.',
+          source: 'astronomy-engine',
+        },
+      ],
     };
   }
 
@@ -481,8 +519,9 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('17%');
     expect(content).toContain('Meridian');
     expect(content).toContain('Year rhythm');
-    expect(content).toContain('Year view prioritises the annual rhythm');
-    expect(content).toContain('anchors only');
+    expect(content).toContain('Year view starts at Te Tahi o Pipiri');
+    expect(content).toContain('New Moon');
+    expect(content).toContain('Full Moon');
     expect(content).toContain('Te Tahi o Pipiri');
     expect(content).toContain('Dawn sky markers');
     expect(content).toContain('Matariki');

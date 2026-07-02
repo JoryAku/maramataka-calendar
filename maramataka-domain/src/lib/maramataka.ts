@@ -77,7 +77,18 @@ export interface MaramatakaYear {
   startsAt: Date;
   endsAt: Date;
   months: MaramatakaYearMonth[];
+  events: MaramatakaYearEvent[];
   diagnostics: MaramatakaYearDiagnostic[];
+}
+
+export interface MaramatakaYearEvent {
+  type: 'month-start' | 'star-marker' | 'new-moon' | 'full-moon';
+  name: string;
+  occursAt: Date;
+  monthSequence?: number;
+  monthName?: string;
+  description?: string;
+  source?: string;
 }
 
 export interface MaramatakaYearDiagnostic {

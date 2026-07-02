@@ -305,12 +305,9 @@
     </p>
     } @else {
     <p class="state compact year-rule-note">
-      Year view prioritises the annual rhythm: Whiro, Rakaunui, next Whiro,
-      and star-month markers. New Moon and Full Moon anchors are placed on the
-      moonrise interval associated with each astronomical observation window.
-      When detailed mata intervals cannot be resolved for a marama, the
-      timeline keeps the astronomy anchors and marks that segment as anchors
-      only.
+      Year view starts at Te Tahi o Pipiri and uses actual dates across the
+      maramataka year. It marks month starts, sampled star-marker observations,
+      astronomical New Moons, and astronomical Full Moons.
     </p>
     @if (year()!.diagnostics.length) {
     <div class="year-diagnostics" data-testid="year-diagnostics">
@@ -336,77 +333,63 @@
       role="list"
       aria-label="Maramataka year rhythm timeline"
     >
+      <div class="year-axis" aria-hidden="true">
+        <span>{{ year()!.startsAt | date: 'd MMM y' : nzTimeZone }}</span>
+        <span>{{ year()!.endsAt | date: 'd MMM y' : nzTimeZone }}</span>
+      </div>
+      <div class="year-event-track">
+        @for (event of year()!.events; track event.type + event.name + event.occursAt.toISOString()) {
+        <article
+          role="listitem"
+          tabindex="0"
+          [class]="yearEventClass(event)"
+          [style.left.%]="yearEventOffsetPercent(event)"
+          [attr.aria-label]="yearEventAriaLabel(event)"
+        >
+          <span class="event-dot" aria-hidden="true"></span>
+          <strong>{{ event.name }}</strong>
+          @if (event.monthName && event.type !== 'month-start') {
+          <small>{{ event.monthName }}</small>
+          }
+          <small>{{ event.occursAt | date: 'd MMM' : nzTimeZone }}</small>
+        </article>
+        }
+      </div>
+    </div>
+
+    <div class="year-marama-list" aria-label="Maramataka months in this year">
       @for (month of year()!.months; track month.startsAt.toISOString()) {
-      <article
-        class="year-marama"
-        role="listitem"
-        tabindex="0"
-        [style.flex-grow]="monthFlex(month)"
-        [attr.aria-label]="yearMaramaAriaLabel(month)"
-      >
-        <div class="marama-track">
-          <span
-            class="year-anchor whiro"
-            [style.left.%]="0"
-            aria-hidden="true"
-          ></span>
-          @if (month.anchors.fullMoon) {
-          <span
-            class="year-anchor full"
-            [style.left.%]="
-              anchorOffsetPercent(month, month.anchors.fullMoon!.occursAt)
-            "
-            aria-hidden="true"
-          ></span>
-          }
-          <span
-            class="year-anchor next-whiro"
-            [style.left.%]="100"
-            aria-hidden="true"
-          ></span>
-        </div>
-        <div class="year-marama-label">
-          <strong>{{ month.name }}</strong>
-          @if (month.starMarkers?.length) {
-          <span>
-            {{ month.starMarkers![0].name }}
-            @if (month.starMarkers![0].englishName) {
-            ({{ month.starMarkers![0].englishName }})
-            }
-          </span>
-          }
-          <span>
-            {{ month.anchors.whiro.occursAt | date: 'd MMM' : nzTimeZone }}
-            -
-            {{ month.anchors.nextWhiro.occursAt | date: 'd MMM' : nzTimeZone }}
-          </span>
-          @if (month.isEstimated) {
-          <small>Astronomy anchors only</small>
-          } @else {
-          <small>
-            {{ month.nightsCount }} mata · {{ month.durationDays }} days
-          </small>
-          }
-          @if (month.repeatedMata.length) {
-          <small>Repeated: {{ month.repeatedMata.join(', ') }}</small>
-          }
-        </div>
+      <article tabindex="0" [attr.aria-label]="yearMaramaAriaLabel(month)">
+        <strong>{{ month.name }}</strong>
+        <span>
+          {{ month.anchors.whiro.occursAt | date: 'd MMM' : nzTimeZone }}
+          -
+          {{ month.anchors.nextWhiro.occursAt | date: 'd MMM' : nzTimeZone }}
+        </span>
+        @if (month.starMarkers?.length) {
+        <small>{{ month.starMarkers![0].name }}</small>
+        }
+        @if (month.isEstimated) {
+        <small>Astronomy anchors only</small>
+        } @else {
+        <small>{{ month.nightsCount }} mata</small>
+        }
       </article>
       }
     </div>
 
     <dl class="year-legend" aria-label="Year timeline legend">
       <div>
-        <dt>Whiro</dt>
-        <dd>New Moon anchor</dd>
+        <dt>Month start</dt>
+        <dd>Whiro interval</dd>
       </div>
       <div>
-        <dt>Rakaunui</dt>
-        <dd>Full Moon observation moonrise</dd>
+        <dt>Star marker</dt>
+        <dd>Dawn sample</dd>
       </div>
       <div>
-        <dt>Next Whiro</dt>
-        <dd>Marama close</dd>
+        <dt>New / Full Moon</dt>
+        <dd>Astronomical events</dd>
       </div>
     </dl>
     }

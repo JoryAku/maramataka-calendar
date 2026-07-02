@@ -274,22 +274,22 @@ describe('MaramatakaService', () => {
   it('generates a proportional year timeline from Whiro cycles', async () => {
     const getNewMoons = jest
       .fn()
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2025-12-01T00:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2026-06-15T00:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2026-07-14T00:00:00Z'), source: 'astronomy-engine' },
       ])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2026-01-01T00:00:00Z'), source: 'astronomy-engine' },
-        { occursAt: new Date('2026-01-30T00:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2027-06-04T00:00:00Z'), source: 'astronomy-engine' },
       ])
-      .mockResolvedValueOnce([
-        { occursAt: new Date('2027-01-01T00:00:00Z'), source: 'astronomy-engine' },
-      ]);
+      .mockResolvedValueOnce([]);
     const getFullMoons = jest
       .fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { occursAt: new Date('2026-01-15T05:00:00Z'), source: 'astronomy-engine' },
+        { occursAt: new Date('2026-06-30T05:00:00Z'), source: 'astronomy-engine' },
       ])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     const service = new MaramatakaService({
       astronomyProvider: {
@@ -315,28 +315,28 @@ describe('MaramatakaService', () => {
         calibration: 'full-moon-observation-window-ohua',
         balancing: 'duplicate-ohua-drop-final-mata',
       },
-      whiroStartsAt: new Date('2026-01-01T05:00:00Z'),
+      whiroStartsAt: new Date('2026-06-15T05:00:00Z'),
       nights: [
         {
           mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
-          startsAt: new Date('2026-01-01T05:00:00Z'),
-          endsAt: new Date('2026-01-15T05:00:00Z'),
+          startsAt: new Date('2026-06-15T05:00:00Z'),
+          endsAt: new Date('2026-06-30T05:00:00Z'),
         },
         {
           mata: { index: 15, name: 'Ohua', version: 'mita-te-tai-best' as const },
-          startsAt: new Date('2026-01-15T05:00:00Z'),
-          endsAt: new Date('2026-01-30T05:00:00Z'),
+          startsAt: new Date('2026-06-30T05:00:00Z'),
+          endsAt: new Date('2026-07-14T05:00:00Z'),
         },
       ],
     };
     const secondMonth = {
       ...firstMonth,
-      whiroStartsAt: new Date('2026-01-30T05:00:00Z'),
+      whiroStartsAt: new Date('2026-07-14T05:00:00Z'),
       nights: [
         {
           mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
-          startsAt: new Date('2026-01-30T05:00:00Z'),
-          endsAt: new Date('2026-02-28T05:00:00Z'),
+          startsAt: new Date('2026-07-14T05:00:00Z'),
+          endsAt: new Date('2026-08-12T05:00:00Z'),
         },
       ],
     };
@@ -347,11 +347,12 @@ describe('MaramatakaService', () => {
 
     const year = await service.getYear(
       location,
-      new Date('2026-01-10T12:00:00Z'),
+      new Date('2026-07-10T12:00:00Z'),
     );
 
     expect(year.year).toBe(2026);
-    expect(year.startsAt).toEqual(new Date('2025-12-31T11:00:00.000Z'));
+    expect(year.startsAt).toEqual(new Date('2026-06-15T05:00:00.000Z'));
+    expect(year.endsAt).toEqual(new Date('2027-06-04T00:00:00.000Z'));
     expect(year.months).toHaveLength(2);
     expect(year.months[0]).toMatchObject({
       sequence: 1,
@@ -361,7 +362,7 @@ describe('MaramatakaService', () => {
       repeatedMata: [],
     });
     expect(year.months[0].anchors.fullMoon?.occursAt).toEqual(
-      new Date('2026-01-15T05:00:00Z'),
+      new Date('2026-06-30T05:00:00Z'),
     );
     expect(year.months[1]).toMatchObject({
       sequence: 2,
@@ -369,39 +370,44 @@ describe('MaramatakaService', () => {
       durationDays: 29,
       nightsCount: 1,
     });
+    expect(year.events.map((event) => event.type)).toEqual([
+      'new-moon',
+      'month-start',
+      'full-moon',
+      'new-moon',
+      'month-start',
+      'month-start',
+    ]);
     expect(year.diagnostics).toEqual([]);
   });
 
   it('falls back to astronomy anchors when a detailed year marama cannot be generated', async () => {
     const getNewMoons = jest
       .fn()
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
         {
-          occursAt: new Date('2025-12-01T00:00:00Z'),
+          occursAt: new Date('2026-06-15T00:00:00Z'),
           source: 'astronomy-engine',
         },
       ])
       .mockResolvedValueOnce([
         {
-          occursAt: new Date('2026-01-01T00:00:00Z'),
+          occursAt: new Date('2027-06-04T00:00:00Z'),
           source: 'astronomy-engine',
         },
       ])
-      .mockResolvedValueOnce([
-        {
-          occursAt: new Date('2026-01-30T00:00:00Z'),
-          source: 'astronomy-engine',
-        },
-      ]);
+      .mockResolvedValueOnce([]);
     const getFullMoons = jest
       .fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
         {
-          occursAt: new Date('2026-01-15T05:00:00Z'),
+          occursAt: new Date('2026-06-30T05:00:00Z'),
           source: 'astronomy-engine',
         },
       ])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     const service = new MaramatakaService({
       astronomyProvider: {
@@ -420,7 +426,7 @@ describe('MaramatakaService', () => {
 
     const year = await service.getYear(
       location,
-      new Date('2026-01-10T12:00:00Z'),
+      new Date('2026-07-10T12:00:00Z'),
     );
 
     expect(year.months).toHaveLength(1);
@@ -432,20 +438,20 @@ describe('MaramatakaService', () => {
       unavailableReason: 'No moonrise data found for Whiro date',
     });
     expect(year.months[0].anchors.whiro.occursAt).toEqual(
-      new Date('2026-01-01T00:00:00Z'),
+      new Date('2026-06-15T00:00:00Z'),
     );
     expect(year.months[0].anchors.fullMoon?.occursAt).toEqual(
-      new Date('2026-01-15T05:00:00Z'),
+      new Date('2026-06-30T05:00:00Z'),
     );
     expect(year.months[0].anchors.nextWhiro.occursAt).toEqual(
-      new Date('2026-01-30T00:00:00Z'),
+      new Date('2027-06-04T00:00:00Z'),
     );
     expect(year.diagnostics).toEqual([
       {
         type: 'estimated-month',
         sequence: 1,
         name: 'Marama 1',
-        anchorDate: new Date('2026-01-01T00:00:00Z'),
+        anchorDate: new Date('2026-06-15T00:00:00Z'),
         reason: 'No moonrise data found for Whiro date',
       },
     ]);
@@ -454,24 +460,20 @@ describe('MaramatakaService', () => {
   it('keeps the year timeline available when full moon anchors cannot be loaded', async () => {
     const getNewMoons = jest
       .fn()
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
         {
-          occursAt: new Date('2025-12-01T00:00:00Z'),
+          occursAt: new Date('2026-06-15T00:00:00Z'),
           source: 'astronomy-engine',
         },
       ])
       .mockResolvedValueOnce([
         {
-          occursAt: new Date('2026-01-01T00:00:00Z'),
+          occursAt: new Date('2027-06-04T00:00:00Z'),
           source: 'astronomy-engine',
         },
       ])
-      .mockResolvedValueOnce([
-        {
-          occursAt: new Date('2026-01-30T00:00:00Z'),
-          source: 'astronomy-engine',
-        },
-      ]);
+      .mockResolvedValueOnce([]);
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
@@ -491,13 +493,13 @@ describe('MaramatakaService', () => {
 
     const year = await service.getYear(
       location,
-      new Date('2026-01-10T12:00:00Z'),
+      new Date('2026-07-10T12:00:00Z'),
     );
 
     expect(year.months).toHaveLength(1);
     expect(year.months[0].anchors.fullMoon).toBeUndefined();
     expect(year.months[0].anchors.whiro.occursAt).toEqual(
-      new Date('2026-01-01T00:00:00Z'),
+      new Date('2026-06-15T00:00:00Z'),
     );
     expect(year.diagnostics).toEqual([
       {
@@ -516,10 +518,15 @@ describe('MaramatakaService', () => {
         reason: 'phase unavailable',
       },
       {
+        type: 'phase-provider',
+        name: '2028 Full Moon anchors',
+        reason: 'phase unavailable',
+      },
+      {
         type: 'estimated-month',
         sequence: 1,
         name: 'Marama 1',
-        anchorDate: new Date('2026-01-01T00:00:00Z'),
+        anchorDate: new Date('2026-06-15T00:00:00Z'),
         reason: 'No moonrise data found for Whiro date',
       },
     ]);
@@ -540,7 +547,7 @@ describe('MaramatakaService', () => {
 
     const year = await service.getYear(
       location,
-      new Date('2026-01-10T12:00:00Z'),
+      new Date('2026-07-10T12:00:00Z'),
     );
 
     expect(year.year).toBe(2026);
@@ -559,6 +566,11 @@ describe('MaramatakaService', () => {
       {
         type: 'phase-provider',
         name: '2027 New Moon anchors',
+        reason: 'phase unavailable',
+      },
+      {
+        type: 'phase-provider',
+        name: '2028 New Moon anchors',
         reason: 'phase unavailable',
       },
     ]);

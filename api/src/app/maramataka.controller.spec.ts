@@ -198,6 +198,7 @@ describe('MaramatakaController', () => {
     startsAt: new Date('2025-12-31T11:00:00.000Z'),
     endsAt: new Date('2026-12-31T11:00:00.000Z'),
     diagnostics: [],
+    events: [],
     months: [
       {
         sequence: 1,

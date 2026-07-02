@@ -318,6 +318,17 @@ describe('MaramatakaApiService', () => {
           reason: 'No moonrise data found for Whiro date',
         },
       ],
+      events: [
+        {
+          type: 'month-start',
+          name: 'Marama 9',
+          occursAt: '2026-09-10T18:03:00.000Z',
+          monthSequence: 9,
+          monthName: 'Marama 9',
+          description: 'Maramataka month begins at Whiro.',
+          source: 'astronomy-engine moonrise',
+        },
+      ],
       months: [
         {
           sequence: 9,
@@ -369,6 +380,9 @@ describe('MaramatakaApiService', () => {
     );
     expect(year?.months[0].repeatedMata).toEqual(['Ohua x2']);
     expect(year?.diagnostics[0].anchorDate).toEqual(
+      new Date('2026-09-10T18:03:00.000Z'),
+    );
+    expect(year?.events[0].occursAt).toEqual(
       new Date('2026-09-10T18:03:00.000Z'),
     );
   });

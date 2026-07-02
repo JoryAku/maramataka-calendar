@@ -17,6 +17,7 @@ import {
   MaramatakaMonth,
   MaramatakaToday,
   MaramatakaYear,
+  MaramatakaYearEvent,
   MaramatakaYearMonth,
   MoonDetails,
   StarMarker,
@@ -424,23 +425,37 @@ export class MaramatakaPage implements OnInit {
     return new Date(`${localDate}T12:00:00+12:00`);
   }
 
-  protected monthFlex(month: MaramatakaYearMonth): number {
-    return Math.max(month.durationDays, 1);
-  }
+  protected yearEventOffsetPercent(event: MaramatakaYearEvent): number {
+    const year = this.year();
+    if (!year) {
+      return 0;
+    }
 
-  protected anchorOffsetPercent(
-    month: MaramatakaYearMonth,
-    anchorDate: Date,
-  ): number {
-    const duration = month.endsAt.getTime() - month.startsAt.getTime();
+    const duration = year.endsAt.getTime() - year.startsAt.getTime();
     if (duration <= 0) {
       return 0;
     }
 
     const offset =
-      ((anchorDate.getTime() - month.startsAt.getTime()) / duration) * 100;
+      ((event.occursAt.getTime() - year.startsAt.getTime()) / duration) *
+      100;
 
     return Math.min(100, Math.max(0, offset));
+  }
+
+  protected yearEventClass(event: MaramatakaYearEvent): string {
+    return `year-event ${event.type}`;
+  }
+
+  protected yearEventAriaLabel(event: MaramatakaYearEvent): string {
+    const parts = [
+      event.name,
+      this.formatShortDate(event.occursAt),
+      event.monthName,
+      event.description,
+    ].filter(Boolean);
+
+    return parts.join(', ');
   }
 
   protected yearMaramaAriaLabel(month: MaramatakaYearMonth): string {

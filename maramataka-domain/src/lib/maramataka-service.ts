@@ -20,6 +20,7 @@ import {
   MaramatakaStarMonth,
   MaramatakaYear,
   MaramatakaYearDiagnostic,
+  MaramatakaYearEvent,
   MaramatakaYearMonth,
 } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
@@ -199,12 +200,13 @@ export class MaramatakaService {
   }
 
   async getYear(location: Location, date: Date): Promise<MaramatakaYear> {
-    const localYear = Number(
-      this.formatIsoDateForLocation(date, location).slice(0, 4),
-    );
+    const requestedLocalDate = this.formatIsoDateForLocation(date, location);
+    const localYear = Number(requestedLocalDate.slice(0, 4));
+    const localMonth = Number(requestedLocalDate.slice(5, 7));
+    const starYear = localMonth >= 6 ? localYear : localYear - 1;
     const diagnostics: MaramatakaYearDiagnostic[] = [];
     const newMoonResults = await Promise.all(
-      [localYear - 1, localYear, localYear + 1].map((year) =>
+      [starYear - 1, starYear, starYear + 1, starYear + 2].map((year) =>
         this.getOptionalNewMoons(year),
       ),
     );
@@ -221,7 +223,7 @@ export class MaramatakaService {
       .flatMap((result) => result.values)
       .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
     const fullMoonResults = await Promise.all(
-      [localYear - 1, localYear, localYear + 1].map((year) =>
+      [starYear - 1, starYear, starYear + 1, starYear + 2].map((year) =>
         this.getOptionalFullMoons(year),
       ),
     );
@@ -237,13 +239,31 @@ export class MaramatakaService {
     const fullMoons = fullMoonResults
       .flatMap((result) => result.values)
       .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
-    const yearNewMoonAnchors = newMoons.filter(
-      (newMoon) =>
-        this.formatIsoDateForLocation(newMoon.occursAt, location).slice(
-          0,
-          4,
-        ) === String(localYear),
-    );
+    const yearStartsAt =
+      this.findStarYearStartNewMoon(newMoons, starYear, location) ??
+      newMoons.find(
+        (newMoon) =>
+          this.formatIsoDateForLocation(newMoon.occursAt, location) >=
+          `${starYear}-06-01`,
+      );
+    const yearEndsAt =
+      this.findStarYearStartNewMoon(newMoons, starYear + 1, location) ??
+      (yearStartsAt
+        ? newMoons.find(
+            (newMoon) =>
+              newMoon.occursAt.getTime() > yearStartsAt.occursAt.getTime() &&
+              this.formatIsoDateForLocation(newMoon.occursAt, location) >=
+                `${starYear + 1}-06-01`,
+          )
+        : undefined);
+    const yearNewMoonAnchors =
+      yearStartsAt && yearEndsAt
+        ? newMoons.filter(
+            (newMoon) =>
+              newMoon.occursAt.getTime() >= yearStartsAt.occursAt.getTime() &&
+              newMoon.occursAt.getTime() < yearEndsAt.occursAt.getTime(),
+          )
+        : [];
     const months: MaramatakaYearMonth[] = [];
     for (const [index, newMoon] of yearNewMoonAnchors.entries()) {
       const month = await this.createYearMonthSafe({
@@ -285,11 +305,18 @@ export class MaramatakaService {
     return {
       version: this.version,
       ruleSet: summarizeRuleSet(this.ruleSet),
-      year: localYear,
+      year: starYear,
       timezone: location.timezone,
-      startsAt: this.localYearBoundary(localYear, location, 0),
-      endsAt: this.localYearBoundary(localYear + 1, location, 0),
+      startsAt:
+        months[0]?.startsAt ??
+        yearStartsAt?.occursAt ??
+        this.localYearBoundary(starYear, location, 5),
+      endsAt:
+        yearEndsAt?.occursAt ??
+        months[months.length - 1]?.anchors.nextWhiro.occursAt ??
+        this.localYearBoundary(starYear + 1, location, 5),
       months,
+      events: this.createYearEvents(months, yearStartsAt, yearEndsAt),
       diagnostics,
     };
   }
@@ -621,6 +648,98 @@ export class MaramatakaService {
         }),
       },
     };
+  }
+
+  private createYearEvents(
+    months: MaramatakaYearMonth[],
+    yearStartsAt?: NewMoon,
+    yearEndsAt?: NewMoon,
+  ): MaramatakaYearEvent[] {
+    const events = months.flatMap((month) => {
+      const monthEvents: MaramatakaYearEvent[] = [
+        {
+          type: 'month-start',
+          name: month.name,
+          occursAt: month.startsAt,
+          monthSequence: month.sequence,
+          monthName: month.name,
+          description: 'Maramataka month begins at Whiro.',
+          source: month.anchors.whiro.source,
+        },
+      ];
+
+      const newMoonAt =
+        month.anchors.whiro.astronomicalOccursAt ??
+        month.anchors.whiro.occursAt;
+      monthEvents.push({
+        type: 'new-moon',
+        name: 'New Moon',
+        occursAt: newMoonAt,
+        monthSequence: month.sequence,
+        monthName: month.name,
+        description: 'Astronomical New Moon anchor for Whiro.',
+        source: month.anchors.whiro.source,
+      });
+
+      if (month.anchors.fullMoon) {
+        monthEvents.push({
+          type: 'full-moon',
+          name: 'Full Moon',
+          occursAt:
+            month.anchors.fullMoon.astronomicalOccursAt ??
+            month.anchors.fullMoon.occursAt,
+          monthSequence: month.sequence,
+          monthName: month.name,
+          description: 'Astronomical Full Moon anchor for Rakaunui / Ohua.',
+          source: month.anchors.fullMoon.source,
+        });
+      }
+
+      for (const marker of month.starMarkers ?? []) {
+        monthEvents.push({
+          type: 'star-marker',
+          name: marker.name,
+          occursAt: marker.observedAt,
+          monthSequence: month.sequence,
+          monthName: month.name,
+          description: marker.seasonalAssociation,
+          source: marker.source,
+        });
+      }
+
+      return monthEvents;
+    });
+
+    if (
+      yearStartsAt &&
+      !events.some(
+        (event) =>
+          event.type === 'month-start' &&
+          event.occursAt.getTime() === yearStartsAt.occursAt.getTime(),
+      )
+    ) {
+      events.push({
+        type: 'month-start',
+        name: 'Te Tahi o Pipiri',
+        occursAt: yearStartsAt.occursAt,
+        monthSequence: 1,
+        monthName: 'Te Tahi o Pipiri',
+        description: 'The maramataka year begins.',
+        source: yearStartsAt.source,
+      });
+    }
+
+    if (yearEndsAt) {
+      events.push({
+        type: 'month-start',
+        name: 'Next Te Tahi o Pipiri',
+        occursAt: yearEndsAt.occursAt,
+        description: 'The next maramataka year begins.',
+        source: yearEndsAt.source,
+      });
+    }
+
+    return events.sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
   }
 
   private async createYearMonthSafe(input: {

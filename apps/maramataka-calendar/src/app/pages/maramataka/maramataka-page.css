@@ -322,71 +322,132 @@ dd {
 }
 
 .year-timeline {
-  display: flex;
-  gap: 0.5rem;
-  min-width: 54rem;
+  display: grid;
+  gap: 0.8rem;
+  min-width: 64rem;
   overflow-x: auto;
-  padding: 0.25rem 0 0.75rem;
+  padding: 0.25rem 0 1rem;
 }
 
 .year-section {
   overflow-x: auto;
 }
 
-.year-marama {
+.year-axis {
+  display: flex;
+  justify-content: space-between;
+  color: #9fb5ac;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.year-event-track {
+  position: relative;
+  height: 17rem;
+  border-block: 1px solid #27493f;
+  background:
+    linear-gradient(90deg, #31534a 0 1px, transparent 1px) 0 0 / 8.333% 100%,
+    linear-gradient(180deg, transparent 0 49%, #31534a 49% 51%, transparent 51%);
+}
+
+.year-event {
+  position: absolute;
+  left: 0;
   display: grid;
-  flex-basis: 4.5rem;
-  min-width: 4.5rem;
-  gap: 0.6rem;
-  padding: 0.75rem 0.65rem;
+  width: 7rem;
+  gap: 0.1rem;
+  padding-top: 1.1rem;
+  color: #e7f6ef;
+  transform: translateX(-0.5rem);
+}
+
+.year-event:focus-visible {
+  outline: 2px solid #7ce0c9;
+  outline-offset: 4px;
+}
+
+.year-event .event-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0.8rem;
+  aspect-ratio: 1;
+  border: 2px solid #071613;
+  border-radius: 50%;
+}
+
+.year-event.month-start {
+  top: 1rem;
+}
+
+.year-event.star-marker {
+  top: 5.4rem;
+}
+
+.year-event.new-moon {
+  top: 9.8rem;
+}
+
+.year-event.full-moon {
+  top: 13.2rem;
+}
+
+.year-event.month-start .event-dot {
+  background: #e7f6ef;
+}
+
+.year-event.star-marker .event-dot {
+  background: #69d8c5;
+}
+
+.year-event.new-moon .event-dot {
+  background: #6b7bd8;
+}
+
+.year-event.full-moon .event-dot {
+  background: #f0c66b;
+}
+
+.year-event strong {
+  color: #fff9df;
+  font-size: 0.76rem;
+  line-height: 1.15;
+}
+
+.year-event small {
+  color: #9fb5ac;
+  font-size: 0.68rem;
+  line-height: 1.15;
+}
+
+.year-marama-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.year-marama-list article {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.65rem;
   border: 1px solid #27493f;
   border-radius: 8px;
   background: #0a1d18;
 }
 
-.year-marama:focus-visible {
+.year-marama-list article:focus-visible {
   outline: 2px solid #7ce0c9;
   outline-offset: 3px;
 }
 
-.marama-track {
-  position: relative;
-  height: 1.5rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #15362f, #27493f);
-}
-
-.year-anchor {
-  position: absolute;
-  top: 50%;
-  width: 0.8rem;
-  aspect-ratio: 1;
-  border: 2px solid #061411;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.year-anchor.whiro,
-.year-anchor.next-whiro {
-  background: #e7f6ef;
-}
-
-.year-anchor.full {
-  background: #f0c66b;
-}
-
-.year-marama-label {
-  display: grid;
-  gap: 0.18rem;
-}
-
-.year-marama-label strong {
+.year-marama-list strong {
   color: #fff9df;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
-.year-marama-label span,
-.year-marama-label small {
+.year-marama-list span,
+.year-marama-list small {
   color: #9fb5ac;
   font-size: 0.78rem;
   line-height: 1.3;

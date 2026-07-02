@@ -255,6 +255,44 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
             endsAt: '2026-06-25T05:30:00.000Z',
           },
         ],
+        events: [
+          {
+            type: 'month-start',
+            name: 'Te Tahi o Pipiri',
+            occursAt: '2026-06-25T04:30:00.000Z',
+            monthSequence: 1,
+            monthName: 'Te Tahi o Pipiri',
+            description: 'Maramataka month begins at Whiro.',
+            source: 'stub moonrise',
+          },
+          {
+            type: 'star-marker',
+            name: 'Matariki',
+            occursAt: '2026-06-25T18:00:00.000Z',
+            monthSequence: 1,
+            monthName: 'Te Tahi o Pipiri',
+            description: 'Year-start ariki for Te Tahi o Pipiri',
+            source: 'Elsdon Best, The Maori Division of Time',
+          },
+          {
+            type: 'new-moon',
+            name: 'New Moon',
+            occursAt: '2026-06-25T03:30:00.000Z',
+            monthSequence: 1,
+            monthName: 'Te Tahi o Pipiri',
+            description: 'Astronomical New Moon anchor for Whiro.',
+            source: 'stub',
+          },
+          {
+            type: 'full-moon',
+            name: 'Full Moon',
+            occursAt: '2026-07-09T04:30:00.000Z',
+            monthSequence: 1,
+            monthName: 'Te Tahi o Pipiri',
+            description: 'Astronomical Full Moon anchor for Rakaunui / Ohua.',
+            source: 'stub',
+          },
+        ],
       }),
     });
   });
@@ -467,7 +505,10 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByLabel('Moon timings')).toContainText('Meridian');
   await expect(page.locator('.cycle-wheel')).toBeVisible();
   await expect(page.getByTestId('year-rhythm-timeline')).toContainText(
-    'Marama 1',
+    'Matariki',
+  );
+  await expect(page.getByTestId('year-rhythm-timeline')).toContainText(
+    'New Moon',
   );
   await expect(page.locator('.wheel-segment')).toHaveCount(2);
   await expect(page.locator('.wheel-segment.current')).toHaveCount(1);
