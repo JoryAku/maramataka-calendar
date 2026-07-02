@@ -276,6 +276,7 @@
       [month]="month()!"
       [cycle]="cycle()"
       [now]="now()"
+      (nightSelected)="selectDate($event.startsAt)"
     ></app-maramataka-month-view>
     }
   </section>
@@ -359,11 +360,9 @@
           [attr.aria-label]="yearEventAriaLabel(event)"
         >
           <div class="event-label">
-            @if (event.type === 'star-marker') {
             <small>{{ yearEventTypeLabel(event) }}</small>
-            }
             <strong>{{ event.name }}</strong>
-            <span>{{ event.occursAt | date: 'd MMM, h:mm a' : nzTimeZone }}</span>
+            <span>{{ yearEventDateLabel(event) }}</span>
           </div>
           <span class="event-stem" aria-hidden="true"></span>
           <span class="event-symbol" aria-hidden="true">
@@ -377,7 +376,14 @@
 
     <div class="year-marama-list" aria-label="Maramataka months in this year">
       @for (month of year()!.months; track month.startsAt.toISOString()) {
-      <article tabindex="0" [attr.aria-label]="yearMaramaAriaLabel(month)">
+      <article
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="yearMaramaAriaLabel(month)"
+        (click)="selectYearMonth(month)"
+        (keydown.enter)="selectYearMonth(month)"
+        (keydown.space)="$event.preventDefault(); selectYearMonth(month)"
+      >
         <strong>{{ month.name }}</strong>
         <span>
           {{ month.anchors.whiro.occursAt | date: 'd MMM' : nzTimeZone }}

@@ -114,6 +114,9 @@
         [class.overlap]="item.hasOverlap"
         tabindex="0"
         [attr.aria-current]="item.isCurrent ? 'true' : null"
+        (click)="selectNight(item.night)"
+        (keydown.enter)="selectNight(item.night)"
+        (keydown.space)="$event.preventDefault(); selectNight(item.night)"
         [attr.aria-label]="
           item.night.mata +
           ', moonrise ' +
@@ -148,17 +151,24 @@
     <ol class="cycle-list" aria-label="Generated marama intervals">
       @for (night of month().nights; track night.startsAt.toISOString(); let i = $index) {
       <li [class.current]="isCurrentNight(night)">
-        <span class="night-number">{{ i + 1 }}</span>
-        <span>
-          <strong>{{ night.mata }}</strong>
-          @if (anchorLabel(night)) {
-          <em>{{ anchorLabel(night) }}</em>
-          }
-          @if (night.overlappingMata?.length) {
-          <em>Also {{ night.overlappingMata![0].mata }}</em>
-          }
-        </span>
-        <time>{{ night.startsAt | date: 'd MMM, h:mm a' : nzTimeZone }}</time>
+        <button
+          type="button"
+          class="cycle-list-button"
+          [attr.aria-current]="isCurrentNight(night) ? 'true' : null"
+          (click)="selectNight(night)"
+        >
+          <span class="night-number">{{ i + 1 }}</span>
+          <span>
+            <strong>{{ night.mata }}</strong>
+            @if (anchorLabel(night)) {
+            <em>{{ anchorLabel(night) }}</em>
+            }
+            @if (night.overlappingMata?.length) {
+            <em>Also {{ night.overlappingMata![0].mata }}</em>
+            }
+          </span>
+          <time>{{ night.startsAt | date: 'd MMM, h:mm a' : nzTimeZone }}</time>
+        </button>
       </li>
       }
     </ol>

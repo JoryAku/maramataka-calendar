@@ -71,7 +71,12 @@ export interface MaramatakaYear<TDate = Date> {
 }
 
 export interface MaramatakaYearEvent<TDate = Date> {
-  type: 'month-start' | 'star-marker' | 'new-moon' | 'full-moon';
+  type:
+    | 'month-start'
+    | 'star-marker'
+    | 'new-moon'
+    | 'full-moon'
+    | 'public-holiday';
   name: string;
   occursAt: TDate;
   monthSequence?: number;

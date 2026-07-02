@@ -238,20 +238,34 @@
 }
 
 .cycle-list li {
+  display: block;
+}
+
+.cycle-list-button {
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr) auto;
   gap: 0.65rem;
   align-items: center;
+  width: 100%;
   padding: 0.6rem 0.7rem;
   border: 1px solid #263f37;
   border-radius: 8px;
   background: #0c1d18;
   color: #e4f3ed;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.cycle-list li.current {
+.cycle-list-button:hover,
+.cycle-list li.current .cycle-list-button {
   border-color: #7ce0c9;
   background: #10352e;
+}
+
+.cycle-list-button:focus-visible {
+  outline: 2px solid #f0c66b;
+  outline-offset: 2px;
 }
 
 .night-number {
@@ -265,7 +279,7 @@
   font-weight: 800;
 }
 
-.cycle-list span:nth-child(2) {
+.cycle-list-button > span:nth-child(2) {
   display: grid;
   gap: 0.1rem;
   min-width: 0;
@@ -304,7 +318,7 @@
     font-size: 3.4px;
   }
 
-  .cycle-list li {
+  .cycle-list-button {
     grid-template-columns: 2rem minmax(0, 1fr);
   }
 

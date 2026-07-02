@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
@@ -23,6 +23,7 @@ export class MaramatakaMonthView {
   month = input.required<MaramatakaMonth>();
   now = input.required<Date>();
   cycle = input<MaramatakaCycleDetails | null>(null);
+  nightSelected = output<MaramatakaNight>();
 
   protected readonly cycleStarMarkers = computed(() => {
     const cycleMarkers = this.cycle()?.starMarkers ?? [];
@@ -80,6 +81,10 @@ export class MaramatakaMonthView {
       currentTime >= night.startsAt.getTime() &&
       currentTime < night.endsAt.getTime()
     );
+  }
+
+  protected selectNight(night: MaramatakaNight): void {
+    this.nightSelected.emit(night);
   }
 
   anchorLabel(night: MaramatakaNight): string | null {

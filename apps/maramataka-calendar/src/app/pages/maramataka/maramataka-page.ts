@@ -155,6 +155,23 @@ export class MaramatakaPage implements OnInit {
     this.reloadData();
   }
 
+  protected selectDate(date: Date): void {
+    const selectedDate = this.api.formatDate(date);
+    const shouldReload =
+      selectedDate !== this.selectedDate() || this.useLiveDate();
+
+    this.useLiveDate.set(false);
+    this.selectedDate.set(selectedDate);
+
+    if (shouldReload) {
+      this.reloadData();
+    }
+  }
+
+  protected selectYearMonth(month: MaramatakaYearMonth): void {
+    this.selectDate(month.startsAt);
+  }
+
   protected resetDateToToday(): void {
     const today = this.api.formatDate(new Date());
     if (this.useLiveDate() && today === this.selectedDate()) {
@@ -451,13 +468,15 @@ export class MaramatakaPage implements OnInit {
   protected yearEventTopRem(event: MaramatakaYearEvent): number {
     switch (event.type) {
       case 'star-marker':
-        return 0.8 + this.yearEventLane(event) * 3.25;
+        return 0.8 + this.yearEventLane(event) * 3;
+      case 'public-holiday':
+        return 13.1;
       case 'new-moon':
-        return 14.6;
+        return 17.2;
       case 'full-moon':
-        return 18.8;
+        return 21.3;
       case 'month-start':
-        return 23;
+        return 26.1;
     }
   }
 
@@ -469,6 +488,8 @@ export class MaramatakaPage implements OnInit {
         return '◐';
       case 'full-moon':
         return '●';
+      case 'public-holiday':
+        return '✦';
       case 'month-start':
         return '◇';
     }
@@ -484,9 +505,22 @@ export class MaramatakaPage implements OnInit {
         return 'New Moon';
       case 'full-moon':
         return 'Full Moon';
+      case 'public-holiday':
+        return 'Holiday';
       case 'month-start':
         return 'Month start';
     }
+  }
+
+  protected yearEventDateLabel(event: MaramatakaYearEvent): string {
+    return new Intl.DateTimeFormat('en-NZ', {
+      timeZone: this.nzTimeZone,
+      day: 'numeric',
+      month: 'short',
+      ...(event.type === 'public-holiday'
+        ? { year: 'numeric' }
+        : { hour: 'numeric', minute: '2-digit' }),
+    }).format(event.occursAt);
   }
 
   protected yearMonthOffsetPercent(month: MaramatakaYearMonth): number {

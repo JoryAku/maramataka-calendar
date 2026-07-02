@@ -82,7 +82,12 @@ export interface MaramatakaYear {
 }
 
 export interface MaramatakaYearEvent {
-  type: 'month-start' | 'star-marker' | 'new-moon' | 'full-moon';
+  type:
+    | 'month-start'
+    | 'star-marker'
+    | 'new-moon'
+    | 'full-moon'
+    | 'public-holiday';
   name: string;
   occursAt: Date;
   monthSequence?: number;
