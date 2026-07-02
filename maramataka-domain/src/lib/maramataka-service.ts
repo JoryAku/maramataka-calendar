@@ -196,11 +196,11 @@ export class MaramatakaService {
       this.formatIsoDateForLocation(date, location).slice(0, 4),
     );
     const [previousYearNewMoons, yearNewMoons, nextYearNewMoons] =
-      await Promise.all([
-        this.astronomyProvider.getNewMoons(localYear - 1),
-        this.astronomyProvider.getNewMoons(localYear),
-        this.astronomyProvider.getNewMoons(localYear + 1),
-      ]);
+      await Promise.all(
+        [localYear - 1, localYear, localYear + 1].map((year) =>
+          this.getOptionalNewMoons(year),
+        ),
+      );
     const newMoons = [
       ...this.asArray(previousYearNewMoons),
       ...this.asArray(yearNewMoons),
@@ -701,6 +701,14 @@ export class MaramatakaService {
   private async getOptionalFullMoons(year: number): Promise<FullMoon[]> {
     try {
       return this.asArray(await this.astronomyProvider.getFullMoons(year));
+    } catch {
+      return [];
+    }
+  }
+
+  private async getOptionalNewMoons(year: number): Promise<NewMoon[]> {
+    try {
+      return this.asArray(await this.astronomyProvider.getNewMoons(year));
     } catch {
       return [];
     }

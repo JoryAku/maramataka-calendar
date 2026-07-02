@@ -355,14 +355,16 @@ export class MaramatakaPage implements OnInit {
           this.year.set(year);
           this.yearLoading.set(false);
         },
-        error: () => {
+        error: (error: unknown) => {
           if (generation !== this.requestGeneration) {
             return;
           }
 
           this.year.set(null);
           this.yearLoading.set(false);
-          this.yearError.set('Unable to load maramataka year timeline.');
+          this.yearError.set(
+            `Unable to load maramataka year timeline.${this.formatRequestError(error)}`,
+          );
         },
       });
 
@@ -483,5 +485,27 @@ export class MaramatakaPage implements OnInit {
     }
 
     return visibleMarkers;
+  }
+
+  private formatRequestError(error: unknown): string {
+    if (!error || typeof error !== 'object') {
+      return '';
+    }
+
+    const maybeError = error as {
+      status?: number;
+      statusText?: string;
+      message?: string;
+      error?: { message?: string } | string;
+    };
+    const detail =
+      typeof maybeError.error === 'string'
+        ? maybeError.error
+        : maybeError.error?.message ||
+          maybeError.statusText ||
+          maybeError.message;
+    const status = maybeError.status ? String(maybeError.status) : '';
+
+    return detail ? ` (${status}${status ? ': ' : ''}${detail})` : '';
   }
 }

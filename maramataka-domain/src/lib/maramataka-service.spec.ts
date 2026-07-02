@@ -489,6 +489,28 @@ describe('MaramatakaService', () => {
     );
   });
 
+  it('returns an empty year timeline instead of failing when new moon anchors cannot be loaded', async () => {
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons: jest.fn().mockRejectedValue(new Error('phase unavailable')),
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn(),
+        getMoonRise: jest.fn(),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
+    });
+
+    const year = await service.getYear(
+      location,
+      new Date('2026-01-10T12:00:00Z'),
+    );
+
+    expect(year.year).toBe(2026);
+    expect(year.months).toEqual([]);
+  });
+
   it('closes the marama at the next Whiro moonrise', async () => {
     const mata = [
       { index: 1, name: 'Whiro', version: 'mita-te-tai-best' as const },
