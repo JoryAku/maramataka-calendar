@@ -185,9 +185,10 @@
             @if (night.overlappingMata?.length) {
             <em>Also {{ night.overlappingMata![0].mata }}</em>
             }
-            @if (eventsForNight(night).length) {
+            @let nightEvents = eventsForNight(night);
+            @if (nightEvents.length) {
             <span class="night-events" aria-label="Events in this mata">
-              @for (event of eventsForNight(night); track event.type + event.name + event.occursAt.toISOString()) {
+              @for (event of nightEvents; track event.type + event.name + event.occursAt.toISOString()) {
               <span
                 class="night-event"
                 [class.star-marker]="event.type === 'star-marker'"
@@ -195,6 +196,7 @@
                 [class.new-moon]="event.type === 'new-moon'"
                 [class.full-moon]="event.type === 'full-moon'"
                 [class.public-holiday]="event.type === 'public-holiday'"
+                [class.solar-season]="event.type === 'solar-season'"
               >
                 <span aria-hidden="true">{{ eventSymbol(event) }}</span>
                 <span>{{ eventTypeLabel(event) }}</span>
