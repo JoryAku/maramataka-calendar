@@ -159,7 +159,7 @@ export class MaramatakaMonthView {
       fullMoon.occursAt.getTime() >= night.startsAt.getTime() &&
       fullMoon.occursAt.getTime() < night.endsAt.getTime()
     ) {
-      return 'Rakaunui / Full Moon';
+      return 'Rākaunui / Full Moon';
     }
 
     return null;
