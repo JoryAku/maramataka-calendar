@@ -24,6 +24,13 @@ import {
 } from './maramataka.models';
 import { NZ_TIMEZONE } from './maramataka.constants';
 
+type YearEventLayoutGroup =
+  | 'star-marker'
+  | 'seasonal-marker'
+  | 'star-invisibility'
+  | 'public-holiday'
+  | 'lunar-phase';
+
 @Component({
   selector: 'app-maramataka-page',
   imports: [CommonModule, MaramatakaMonthView],
@@ -115,6 +122,9 @@ export class MaramatakaPage implements OnInit {
       this.today()?.ruleSet.starMonthNaming,
   );
   protected readonly starMonth = computed(() => this.cycle()?.starMonth);
+  private readonly yearEventLayout = computed(
+    () => this.computeYearEventLayout(),
+  );
 
   ngOnInit(): void {
     this.loadLocations();
@@ -449,22 +459,7 @@ export class MaramatakaPage implements OnInit {
   }
 
   protected yearEventOffsetPercent(event: MaramatakaYearEvent): number {
-    const year = this.year();
-    if (!year) {
-      return 0;
-    }
-
-    const duration = year.endsAt.getTime() - year.startsAt.getTime();
-    if (duration <= 0) {
-      return 0;
-    }
-
-    const rawOffset =
-      ((event.occursAt.getTime() - year.startsAt.getTime()) / duration) *
-      100;
-    const offset = this.yearTimelineOffsetPercent(rawOffset);
-
-    return Math.min(100, Math.max(0, offset));
+    return this.yearEventLayout().get(this.yearEventLayoutKey(event))?.offset ?? 0;
   }
 
   protected yearEventClass(event: MaramatakaYearEvent): string {
@@ -472,17 +467,22 @@ export class MaramatakaPage implements OnInit {
   }
 
   protected yearEventTopRem(event: MaramatakaYearEvent): number {
+    const lane = this.yearEventLane(event);
+
     switch (event.type) {
       case 'star-marker':
-        return 0.8 + this.yearEventLane(event) * 3;
+        return event.starMarkerScope === 'seasonal'
+          ? 6 + lane * 2.8
+          : 0.8 + lane * 2.8;
+      case 'star-invisibility':
+        return 13 + lane * 1.8;
       case 'public-holiday':
-        return 13.1;
+        return 17;
       case 'new-moon':
-        return 17.2;
       case 'full-moon':
-        return 21.3;
+        return 22.4 + lane * 1.25;
       case 'month-start':
-        return 26.1;
+        return 29.2;
     }
   }
 
@@ -490,6 +490,8 @@ export class MaramatakaPage implements OnInit {
     switch (event.type) {
       case 'star-marker':
         return '★';
+      case 'star-invisibility':
+        return '◌';
       case 'new-moon':
         return '◐';
       case 'full-moon':
@@ -507,6 +509,8 @@ export class MaramatakaPage implements OnInit {
         return event.starMarkerScope === 'seasonal'
           ? 'Seasonal'
           : 'Star';
+      case 'star-invisibility':
+        return 'Disappears';
       case 'new-moon':
         return 'New Moon';
       case 'full-moon':
@@ -524,6 +528,8 @@ export class MaramatakaPage implements OnInit {
       day: 'numeric',
       month: 'short',
       ...(event.type === 'public-holiday'
+        ? { year: 'numeric' }
+        : event.type === 'star-invisibility'
         ? { year: 'numeric' }
         : { hour: 'numeric', minute: '2-digit' }),
     }).format(event.occursAt);
@@ -549,29 +555,147 @@ export class MaramatakaPage implements OnInit {
   }
 
   private yearEventLane(event: MaramatakaYearEvent): number {
-    if (event.type !== 'star-marker') {
-      return 0;
+    return this.yearEventLayout().get(this.yearEventLayoutKey(event))?.lane ?? 0;
+  }
+
+  private computeYearEventLayout(): Map<string, { offset: number; lane: number }> {
+    const layout = new Map<string, { offset: number; lane: number }>();
+    const year = this.year();
+
+    if (!year) {
+      return layout;
     }
 
-    const starMarkers =
-      this.year()?.events.filter(
-        (candidate) => candidate.type === 'star-marker',
-      ) ?? [];
-    const eventIndex = starMarkers.indexOf(event);
-    const nearbyEarlierMarkers = starMarkers.filter(
-      (candidate) =>
-        starMarkers.indexOf(candidate) < eventIndex &&
-        Math.abs(
-          this.yearEventOffsetPercent(candidate) -
-            this.yearEventOffsetPercent(event),
-        ) < 9,
-    ).length;
+    const duration = year.endsAt.getTime() - year.startsAt.getTime();
+    if (duration <= 0) {
+      return layout;
+    }
 
-    return nearbyEarlierMarkers ? nearbyEarlierMarkers % 4 : 0;
+    const layoutGroups: Array<
+      {
+        key: YearEventLayoutGroup;
+        types: MaramatakaYearEvent['type'][];
+      }
+    > = [
+      {
+        key: 'star-marker',
+        types: ['star-marker'],
+      },
+      {
+        key: 'seasonal-marker',
+        types: ['star-marker'],
+      },
+      {
+        key: 'star-invisibility',
+        types: ['star-invisibility'],
+      },
+      {
+        key: 'public-holiday',
+        types: ['public-holiday'],
+      },
+      {
+        key: 'lunar-phase',
+        types: ['new-moon', 'full-moon'],
+      },
+    ];
+
+    for (const group of layoutGroups) {
+      const events = year.events
+        .filter(
+          (event) =>
+            group.types.includes(event.type) &&
+            this.yearEventLayoutGroupForEvent(event) === group.key,
+        )
+        .slice()
+        .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
+
+      const laneCount = this.yearEventLaneCount(group.key);
+      const minGapPercent = this.yearEventMinLaneGapPercent(group.key);
+      const laneLastOffsets = Array.from({ length: laneCount }, () => -Infinity);
+
+      for (const event of events) {
+        const rawOffset =
+          ((event.occursAt.getTime() - year.startsAt.getTime()) / duration) *
+          100;
+        const offset = Math.min(
+          100,
+          Math.max(0, this.yearTimelineOffsetPercent(rawOffset)),
+        );
+
+        let lane = 0;
+        if (laneCount > 1) {
+          const openLane = laneLastOffsets.findIndex(
+            (lastOffset) => offset - lastOffset >= minGapPercent,
+          );
+          if (openLane >= 0) {
+            lane = openLane;
+          } else {
+            lane = laneLastOffsets.indexOf(Math.min(...laneLastOffsets));
+          }
+        }
+
+        laneLastOffsets[lane] = offset;
+        layout.set(this.yearEventLayoutKey(event), { offset, lane });
+      }
+    }
+
+    return layout;
+  }
+
+  private yearEventLayoutKey(event: MaramatakaYearEvent): string {
+    return `${event.type}|${event.name}|${event.occursAt.toISOString()}`;
+  }
+
+  private yearEventLayoutGroupForEvent(
+    event: MaramatakaYearEvent,
+  ): YearEventLayoutGroup | null {
+    switch (event.type) {
+      case 'star-marker':
+        return event.starMarkerScope === 'seasonal'
+          ? 'seasonal-marker'
+          : 'star-marker';
+      case 'star-invisibility':
+        return 'star-invisibility';
+      case 'public-holiday':
+        return 'public-holiday';
+      case 'new-moon':
+      case 'full-moon':
+        return 'lunar-phase';
+      case 'month-start':
+        return null;
+    }
+  }
+
+  private yearEventLaneCount(group: YearEventLayoutGroup): number {
+    switch (group) {
+      case 'star-marker':
+      case 'seasonal-marker':
+        return 2;
+      case 'star-invisibility':
+        return 2;
+      case 'public-holiday':
+        return 1;
+      case 'lunar-phase':
+        return 3;
+    }
+  }
+
+  private yearEventMinLaneGapPercent(group: YearEventLayoutGroup): number {
+    switch (group) {
+      case 'star-marker':
+      case 'seasonal-marker':
+        return 4;
+      case 'star-invisibility':
+        return 4;
+      case 'public-holiday':
+        return 0;
+      case 'lunar-phase':
+        return 2.8;
+    }
   }
 
   private yearTimelineOffsetPercent(rawOffset: number): number {
-    const startInsetPercent = 3.8;
+    const startInsetPercent = 6.5;
 
     return startInsetPercent + rawOffset * (1 - startInsetPercent / 100);
   }

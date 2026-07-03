@@ -1,5 +1,5 @@
 import { StarMarkerDefinition } from '@maramataka-calendar/astronomy';
-import { Mata, MataContentLayer, MataMoonWeek } from './mata';
+import { Mata, MataContentLayer, MataPhaseGroup } from './mata';
 import { MaramatakaRuleSet } from './maramataka-rule-set';
 
 export const MITA_TE_TAI_BEST_BALANCING_QUOTE =
@@ -8,21 +8,41 @@ export const MITA_TE_TAI_BEST_BALANCING_QUOTE =
 export const MITA_TE_TAI_BEST_STAR_MONTH_QUOTE =
   '"The following names are those of the twelve months as known to the latter tribe, supplied by Himiona Tikitu: 1. Te Tahi o Pipiri, The First of Pipiri. 2. Te Rua o Takurua, The Second of Takurua. 3. Te Toru o Hereturi-koka, The Third of Hereturi-koka. 4. Te Wha o Mahuru, The Fourth of Mahuru. 5. Te Rima o Kopu, The Fifth of Kopu. 6. Whitianaunau. 7. Hakihea. 8. Kai-tatea. 9. Ruhi-te-rangi. 10. Poutu-te-rangi. 11. Paenga-whawha. 12. Haki-haratua." "Without exception, stars were the ariki (controllers, heads) of these months. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn."';
 
-type MoonWeekKey = 'whiro' | 'tamatea' | 'rakaunui' | 'korekoreTangaroa';
+type PhaseGroupKey =
+  | 'teMaramaIteRa'
+  | 'teHua'
+  | 'tamatea'
+  | 'teRakau'
+  | 'teAtarau'
+  | 'korekore'
+  | 'tangaroa';
 
-const MOON_WEEKS: Record<MoonWeekKey, MataMoonWeek> = {
-  whiro: { id: 'whiro', name: 'Whiro nights', sequence: 1 },
-  tamatea: { id: 'tamatea', name: 'Tamatea nights', sequence: 2 },
-  rakaunui: { id: 'rakaunui', name: 'Rakaunui nights', sequence: 3 },
-  korekoreTangaroa: {
-    id: 'korekore-tangaroa',
-    name: 'Korekore and Tangaroa nights',
-    sequence: 4,
+const PHASE_GROUPS: Record<PhaseGroupKey, MataPhaseGroup> = {
+  teMaramaIteRa: {
+    name: 'Te Marama i te rā',
+  },
+  teHua: {
+    name: 'Te Hua',
+  },
+  tamatea: {
+    name: 'Tāmatea',
+  },
+  teRakau: {
+    name: 'Te Rākau',
+  },
+  teAtarau: {
+    name: 'Te Atarau',
+  },
+  korekore: {
+    name: 'Korekore',
+  },
+  tangaroa: {
+    name: 'Tangaroa',
   },
 };
 
 const MITA_TE_TAI_BEST_SOURCE =
-  'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference';
+  'Living by the Stars (mata phase-group reference); Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference';
 const MITA_TE_TAI_BEST_SOURCE_URL =
   'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
 const MITA_TE_TAI_BEST_STAR_MONTH_SOURCE =
@@ -140,6 +160,15 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
 ] satisfies StarMarkerDefinition[];
 
 const MITA_TE_TAI_BEST_STAR_MONTH_NOTES = [
+  {
+    sequence: 0,
+    name: 'Ruhanui',
+    markerIds: [],
+    description:
+      'Working name for an intercalary regulating marama before Te Tahi o Pipiri in 13-marama star years.',
+    sourceText:
+      'Working project rule from the thirteenth-month / regulating marama interpretation.',
+  },
   {
     sequence: 1,
     name: 'Te Tahi o Pipiri',
@@ -309,12 +338,16 @@ const FISHING_GUIDANCE_BY_MATA_INDEX: Record<number, string[]> = {
   30: ['Mo te hi', 'Mo te ngaro kai, &c.', 'Mo te rama'],
 };
 
-function createMata(index: number, name: string, moonWeek: MataMoonWeek): Mata {
+function createMata(
+  index: number,
+  name: string,
+  phaseGroup: MataPhaseGroup,
+): Mata {
   return {
     index,
     name,
     version: 'mita-te-tai-best',
-    moonWeek,
+    phaseGroup,
     contentLayers: [createFishingGuidanceLayer(index)],
   };
 }
@@ -336,40 +369,40 @@ function createFishingGuidanceLayer(index: number): MataContentLayer {
 }
 
 export const MITA_TE_TAI_BEST_MATA: Mata[] = [
-  createMata(1, 'Whiro', MOON_WEEKS.whiro),
-  createMata(2, 'Tirea', MOON_WEEKS.whiro),
-  createMata(3, 'Ohoata', MOON_WEEKS.whiro),
-  createMata(4, 'Oue', MOON_WEEKS.whiro),
-  createMata(5, 'Okoro', MOON_WEEKS.whiro),
-  createMata(6, 'Tamatea', MOON_WEEKS.tamatea),
-  createMata(7, 'Tamatea-ngana', MOON_WEEKS.tamatea),
-  createMata(8, 'Tamatea-aio', MOON_WEEKS.tamatea),
-  createMata(9, 'Tamatea-whakapau', MOON_WEEKS.tamatea),
-  createMata(10, 'Huna', MOON_WEEKS.tamatea),
-  createMata(11, 'Ari', MOON_WEEKS.tamatea),
-  createMata(12, 'Hotu', MOON_WEEKS.tamatea),
-  createMata(13, 'Mawharu', MOON_WEEKS.rakaunui),
-  createMata(14, 'Atua', MOON_WEEKS.rakaunui),
-  createMata(15, 'Ohua', MOON_WEEKS.rakaunui),
-  createMata(16, 'Turu', MOON_WEEKS.rakaunui),
-  createMata(17, 'Rakau-nui', MOON_WEEKS.rakaunui),
-  createMata(18, 'Rakau-matohi', MOON_WEEKS.rakaunui),
-  createMata(19, 'Takirau', MOON_WEEKS.rakaunui),
-  createMata(20, 'Oike', MOON_WEEKS.rakaunui),
-  createMata(21, 'Korekore', MOON_WEEKS.korekoreTangaroa),
-  createMata(22, 'Korekore-turua', MOON_WEEKS.korekoreTangaroa),
+  createMata(1, 'Whiro', PHASE_GROUPS.teMaramaIteRa),
+  createMata(2, 'Tirea', PHASE_GROUPS.teHua),
+  createMata(3, 'Hoata', PHASE_GROUPS.teHua),
+  createMata(4, 'Ōuenuku', PHASE_GROUPS.teHua),
+  createMata(5, 'Okoro', PHASE_GROUPS.teHua),
+  createMata(6, 'Tāmatea-ā-ngana', PHASE_GROUPS.tamatea),
+  createMata(7, 'Tāmatea-ā-hotu', PHASE_GROUPS.tamatea),
+  createMata(8, 'Tāmatea-āio', PHASE_GROUPS.tamatea),
+  createMata(9, 'Tāmatea-kai-ariki', PHASE_GROUPS.tamatea),
+  createMata(10, 'Huna', PHASE_GROUPS.teHua),
+  createMata(11, 'Ariroa', PHASE_GROUPS.teHua),
+  createMata(12, 'Mauri', PHASE_GROUPS.teHua),
+  createMata(13, 'Māwharu', PHASE_GROUPS.teHua),
+  createMata(14, 'Ōhua', PHASE_GROUPS.teHua),
+  createMata(15, 'Atua', PHASE_GROUPS.teRakau),
+  createMata(16, 'Ōturu', PHASE_GROUPS.teRakau),
+  createMata(17, 'Rākaunui', PHASE_GROUPS.teRakau),
+  createMata(18, 'Rākaumatohi', PHASE_GROUPS.teRakau),
+  createMata(19, 'Takirau', PHASE_GROUPS.teAtarau),
+  createMata(20, 'Oike', PHASE_GROUPS.teAtarau),
+  createMata(21, 'Korekore-te-whiwhia', PHASE_GROUPS.korekore),
+  createMata(22, 'Korekore-te-rawea', PHASE_GROUPS.korekore),
   createMata(
     23,
-    'Korekore whakapiri ki nga Tangaroa',
-    MOON_WEEKS.korekoreTangaroa,
+    'Korekore-piri-ki-ngā-Tangaroa',
+    PHASE_GROUPS.korekore,
   ),
-  createMata(24, 'Tangaroa-amua', MOON_WEEKS.korekoreTangaroa),
-  createMata(25, 'Tangaroa-aroto', MOON_WEEKS.korekoreTangaroa),
-  createMata(26, 'Tangaroa-kiokio', MOON_WEEKS.korekoreTangaroa),
-  createMata(27, 'Otane', MOON_WEEKS.korekoreTangaroa),
-  createMata(28, 'Orongonui', MOON_WEEKS.korekoreTangaroa),
-  createMata(29, 'Maurea', MOON_WEEKS.korekoreTangaroa),
-  createMata(30, 'Mutu', MOON_WEEKS.korekoreTangaroa),
+  createMata(24, 'Tangaroa-ā-mua', PHASE_GROUPS.tangaroa),
+  createMata(25, 'Tangaroa-ā-roto', PHASE_GROUPS.tangaroa),
+  createMata(26, 'Tangaroa-kiokio', PHASE_GROUPS.tangaroa),
+  createMata(27, 'Ōtāne', PHASE_GROUPS.tangaroa),
+  createMata(28, 'Ōrongonui', PHASE_GROUPS.tangaroa),
+  createMata(29, 'Ōmutu', PHASE_GROUPS.teMaramaIteRa),
+  createMata(30, 'Mutuwhenua', PHASE_GROUPS.teMaramaIteRa),
 ];
 
 export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
@@ -381,8 +414,8 @@ export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   tradition: 'Mita Te Tai / Best',
   maramaStart: 'new-moon-observation-window-moonrise',
   mataBoundary: 'moonrise-to-moonrise',
-  calibration: 'full-moon-observation-window-ohua',
-  balancing: 'duplicate-ohua-drop-final-mata',
+  calibration: 'full-moon-observation-window',
+  balancing: 'fixed-sequence-drop-final-mata',
   starMonthNaming: {
     strategy:
       'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',

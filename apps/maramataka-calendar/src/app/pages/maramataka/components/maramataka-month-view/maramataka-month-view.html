@@ -97,56 +97,75 @@
   }
 
   <div class="wheel-layout">
-    <svg
-      class="cycle-wheel"
-      role="list"
-      aria-label="Generated marama wheel"
-      viewBox="0 0 100 100"
-    >
-      <circle class="wheel-guide outer" cx="50" cy="50" r="49"></circle>
-      <circle class="wheel-guide inner" cx="50" cy="50" r="25"></circle>
-      @for (item of wheelSegments(); track item.night.startsAt.toISOString()) {
-      <g
-        role="listitem"
-        class="wheel-segment"
-        [class.current]="item.isCurrent"
-        [class.full-moon]="item.isFullMoonAnchor"
-        [class.overlap]="item.hasOverlap"
-        tabindex="0"
-        [attr.aria-current]="item.isCurrent ? 'true' : null"
-        (click)="selectNight(item.night)"
-        (keydown.enter)="selectNight(item.night)"
-        (keydown.space)="$event.preventDefault(); selectNight(item.night)"
-        [attr.aria-label]="
-          item.night.mata +
-          ', moonrise ' +
-          (item.night.startsAt | date: 'd MMM, h:mm a' : nzTimeZone) +
-          (anchorLabel(item.night) ? ', ' + anchorLabel(item.night) : '')
-        "
+    <div class="wheel-panel">
+      <svg
+        class="cycle-wheel"
+        role="list"
+        aria-label="Generated marama wheel"
+        viewBox="0 0 100 100"
       >
-        <path class="segment-path" [attr.d]="item.path"></path>
-        <text
-          class="segment-label"
-          [attr.x]="item.labelX"
-          [attr.y]="item.labelY"
-          text-anchor="middle"
-          dominant-baseline="central"
+        <circle class="wheel-guide outer" cx="50" cy="50" r="49"></circle>
+        <circle class="wheel-guide inner" cx="50" cy="50" r="25"></circle>
+        @for (item of wheelSegments(); track item.night.startsAt.toISOString()) {
+        <g
+          role="listitem"
+          class="wheel-segment"
+          [class.current]="item.isCurrent"
+          [class.full-moon]="item.isFullMoonAnchor"
+          [class.overlap]="item.hasOverlap"
+          [attr.data-phase-group]="phaseGroupToken(item.night)"
+          tabindex="0"
+          [attr.aria-current]="item.isCurrent ? 'true' : null"
+          (click)="selectNight(item.night)"
+          (keydown.enter)="selectNight(item.night)"
+          (keydown.space)="$event.preventDefault(); selectNight(item.night)"
+          [attr.aria-label]="segmentA11yLabel(item.night)"
         >
-          {{ item.index + 1 }}
-        </text>
-        @if (anchorLabel(item.night)) {
-        <title>{{ anchorLabel(item.night) }}</title>
+          <path class="segment-path" [attr.d]="item.path"></path>
+          <text
+            class="segment-label"
+            [attr.x]="item.labelX"
+            [attr.y]="item.labelY"
+            text-anchor="middle"
+            dominant-baseline="central"
+          >
+            {{ item.index + 1 }}
+          </text>
+          <title>{{ segmentHoverLabel(item.night) }}</title>
+        </g>
         }
-      </g>
-      }
-      <circle class="wheel-core" cx="50" cy="50" r="16"></circle>
-      <text class="wheel-core-count" x="50" y="48" text-anchor="middle">
-        {{ month().nights.length }}
-      </text>
-      <text class="wheel-core-label" x="50" y="56" text-anchor="middle">
-        mata
-      </text>
-    </svg>
+        <circle class="wheel-core" cx="50" cy="50" r="16"></circle>
+        <text class="wheel-core-count" x="50" y="48" text-anchor="middle">
+          {{ month().nights.length }}
+        </text>
+        <text class="wheel-core-label" x="50" y="56" text-anchor="middle">
+          mata
+        </text>
+      </svg>
+
+      <ul class="phase-legend" aria-label="Phase group colours">
+        @for (entry of phaseLegend; track entry.token) {
+        <li>
+          <span
+            class="phase-legend-swatch"
+            [attr.data-phase-group]="entry.token"
+            aria-hidden="true"
+          ></span>
+          <span>{{ entry.name }}</span>
+        </li>
+        }
+        @if (hasUnknownPhaseGroup()) {
+        <li>
+          <span
+            class="phase-legend-swatch"
+            data-phase-group="unknown"
+            aria-hidden="true"
+          ></span>
+          <span>Unknown</span>
+        </li>
+        }
+      </ul>
+    </div>
 
     <ol class="cycle-list" aria-label="Generated marama intervals">
       @for (night of month().nights; track night.startsAt.toISOString(); let i = $index) {
@@ -165,6 +184,27 @@
             }
             @if (night.overlappingMata?.length) {
             <em>Also {{ night.overlappingMata![0].mata }}</em>
+            }
+            @if (eventsForNight(night).length) {
+            <span class="night-events" aria-label="Events in this mata">
+              @for (event of eventsForNight(night); track event.type + event.name + event.occursAt.toISOString()) {
+              <span
+                class="night-event"
+                [class.star-marker]="event.type === 'star-marker'"
+                [class.star-invisibility]="event.type === 'star-invisibility'"
+                [class.new-moon]="event.type === 'new-moon'"
+                [class.full-moon]="event.type === 'full-moon'"
+                [class.public-holiday]="event.type === 'public-holiday'"
+              >
+                <span aria-hidden="true">{{ eventSymbol(event) }}</span>
+                <span>{{ eventTypeLabel(event) }}</span>
+                <strong>{{ event.name }}</strong>
+                <time>
+                  {{ event.occursAt | date: 'd MMM, h:mm a' : nzTimeZone }}
+                </time>
+              </span>
+              }
+            </span>
             }
           </span>
           <time>{{ night.startsAt | date: 'd MMM, h:mm a' : nzTimeZone }}</time>

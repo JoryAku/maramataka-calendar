@@ -45,8 +45,9 @@ the existing MVP behaviour while making the source and assumptions explicit:
 
 - Whiro/Kohititanga is anchored to the New Moon date's moonrise.
 - Mata boundaries are moonrise-to-next-moonrise.
-- Ohua/Huanga is the full-moon calibration point.
-- Late full moon balancing may duplicate Ohua and drop final mata names.
+- Full Moon is retained as an observed astronomical anchor.
+- Mata names follow the fixed 1-30 sequence; if the next Whiro arrives before
+  all 30 intervals are used, trailing mata names are dropped.
 - Named marama can carry source-linked dawn markers. Te Tahi o Pipiri is
   anchored to Matariki; Puanga is not included in the active marker set because
   it duplicates the same year-start function in this implementation.
@@ -55,13 +56,14 @@ The exact source passage used for this balancing rule is:
 
 > "In the original, No. 1 (the Whiro night) is marked "kohititanga" a word employed to denote the appearance of the new moon. Nos. 15, 16, and 17 are marked "huanga," denoting full moon. Apparently the commencement of the lunar month was not always precisely fixed, for Metara's notebook contained a statement to the effect that sometimes the full moon (Ohua) appeared on the 16th night, or even on the 17th, in which latter case the 15th, 16th, and 17th nights would all be called Ohua, and several of the final night names of the list would be dropped for that month. This would be for the purpose of balancing the lunar month."
 
-The implementation now calibrates Ohua against the observed Full Moon:
+The implementation now treats this as source context rather than the active
+balancing rule:
 
-- If the Full Moon falls in the 15th interval, the normal sequence is used.
-- If the Full Moon falls in the 16th interval, the 15th and 16th intervals are
-  both named Ohua and the final mata name is dropped.
-- If the Full Moon falls in the 17th interval, the 15th, 16th, and 17th
-  intervals are all named Ohua and the final two mata names are dropped.
+- Full Moon remains visible as a separate astronomical anchor.
+- The mata name sequence is not rewritten to duplicate the full-moon anchor
+  name.
+- If the next Whiro moonrise arrives early, the marama closes and the unused
+  trailing mata names are dropped.
 - The next Whiro moonrise closes the current marama and begins the next.
 
 ## Current MVP Scope
@@ -95,6 +97,54 @@ Year-view star events are split into two scopes:
 - Month-scoped markers are searched within the relevant named marama.
 - Seasonal markers are searched across the maramataka year after month-scoped
   markers have been placed.
+- Matariki disappearance is marked separately from first appearance. It is the
+  first local date in the longest period where Matariki is never above the
+  horizon during astronomical night (`Sun <= -18°`) within the displayed
+  maramataka year.
+
+## Star Year And Thirteenth Month Rule
+
+The current star-year model treats Matariki as the year-start tohu rather than
+the literal first day of the year. The year begins at the first New Moon / Whiro
+after the configured year-start marker first reappears in the eastern dawn sky.
+
+This makes thirteenth months emerge from the astronomical interval between one
+star-year start and the next: if there are thirteen New Moon anchors between
+successive marker-anchored year starts, the generated year contains thirteen
+marama. This is a working implementation of the source idea that an extra month
+could be used to regulate the year and recover seasonal drift.
+
+Ruhanui is treated as the regulating marama at the usual New Year Whiro when
+the star-year contains a thirteenth lunar cycle and Matariki has not yet returned
+strongly enough to the night sky. In implementation terms, the candidate must
+open an interval with more than twelve Whiro anchors before the next
+marker-anchored Pipiri, Matariki must pass through a full-night invisibility
+period in the current working 71-73 day band, and the candidate Whiro must sit
+in the search window around that disappearance / reappearance arc. Astronomical
+night is measured with the Sun at or below -18° altitude. The dawn position is
+then used as a second astronomy-only discriminator: a 73-day invisibility period
+requires Matariki at or below -8° altitude at candidate dawn, while a shorter
+71-72 day period requires Matariki at or below -13° altitude. When those
+conditions are met, the candidate marama is labelled `Ruhanui`, and `Te Tahi o
+Pipiri` begins at the following Whiro. This keeps the regulating month distinct
+from Pipiri so Matariki public holiday calculations use the Pipiri Tangaroa
+phase group rather than the intercalary marama. In 13-marama years, the extra
+month is labelled `Ruhanui` rather than repeating `Te Tahi o Pipiri`.
+
+The Matariki public holiday event is calculated from the closest Friday to the
+Korekore/Tangaroa transition window in Te Tahi o Pipiri. For this rule set, the
+window is treated as eight nights: `Korekore-te-whiwhia`,
+`Korekore-te-rawea`, `Korekore-piri-ki-ngā-Tangaroa`, `Tangaroa-ā-mua`,
+`Tangaroa-ā-roto`, `Tangaroa-kiokio`, `Ōtāne`, and `Ōrongonui`.
+
+Against the official 2022-2052 public holiday schedule this astronomy-only
+model currently matches 29 of 31 dates. The official schedule is used only as a
+comparison target, not as an input to the calculation.
+
+Current calibration notes:
+
+- 2033 and 2044 estimate one Friday early; both have two Fridays close to the
+  generated Korekore/Tangaroa transition window.
 
 ## Astronomy Provider Resilience
 
@@ -125,22 +175,28 @@ Maramataka domain service.
 
 ## Source Reference
 
-The current mata sequence uses the Mita Te Tai / Elsdon Best reference already
-represented in the domain model. The working source is:
+The current mata phase-group structure is sourced from _Living by the Stars_.
+The current sequence and balancing context also use the Mita Te Tai / Elsdon
+Best reference already represented in the domain model. The working source set
+is:
+
+- _Living by the Stars_ (mata phase-group reference used by this implementation).
 
 - Elsdon Best, _Fishing Methods and Devices of the Maori_, NZETC, archived by
   the National Library of New Zealand:
   https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html
 
 The source is useful because it records a 30-night lunar sequence, Whiro as the
-first night, the kohititanga/new-moon marker, the huanga/full-moon marker, and
-the balancing behaviour where late Ohua can duplicate and final names can be
-dropped. The MVP moonrise-to-moonrise boundary is an application rule layered
-onto that reference.
+first night, the kohititanga/new-moon marker, and the huanga/full-moon marker.
+The current implementation keeps the full moon as a separate astronomical
+anchor and uses a fixed mata sequence, dropping trailing names only when the
+next Whiro closes the marama early. The MVP moonrise-to-moonrise boundary is an
+application rule layered onto that reference.
 
-## Open Implementation Decisions
+## Implementation Decisions To Keep Reviewing
 
-These cases need explicit behaviour before the rule is implemented in code:
+These behaviours are implemented in code but should remain visible during
+review:
 
 - If there is no moonrise on the local New Moon date, Whiro uses the first
   moonrise after the exact New Moon instant.

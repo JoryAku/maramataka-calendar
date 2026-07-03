@@ -10,9 +10,11 @@ import {
   NewMoon,
   StarMarker,
   StarMarkerDefinition,
+  StarMarkerNightInvisibilityPeriod,
 } from './astronomy-provider';
 
 const STAR_DAWN_SAMPLING_CACHE_VERSION = 'dawn-window-first-appearance-v1';
+const STAR_NIGHT_INVISIBILITY_CACHE_VERSION = 'night-invisibility-v1';
 
 export class CachedAstronomyProvider implements AstronomyProvider {
   private moonPhaseCache = new Map<number, Promise<MoonPhase[]>>();
@@ -24,6 +26,10 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   private moonDetailsCache = new Map<string, Promise<MoonDetails>>();
   private starMarkerCache = new Map<string, Promise<StarMarker[]>>();
   private starFirstAppearanceCache = new Map<string, Promise<StarMarker[]>>();
+  private starNightInvisibilityCache = new Map<
+    string,
+    Promise<StarMarkerNightInvisibilityPeriod[]>
+  >();
 
   constructor(private readonly provider: AstronomyProvider) {}
 
@@ -205,6 +211,43 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     });
 
     this.starFirstAppearanceCache.set(key, request);
+    return request;
+  }
+
+  async getStarNightInvisibilityPeriods(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+    sunAltitudeThresholdDegrees?: number,
+  ): Promise<StarMarkerNightInvisibilityPeriod[]> {
+    const key = [
+      STAR_NIGHT_INVISIBILITY_CACHE_VERSION,
+      this.locationCacheKey(startDate, location),
+      endDate,
+      this.starMarkerCacheKey(markers),
+      sunAltitudeThresholdDegrees ?? 'default',
+    ].join(':');
+
+    const cachedRequest = this.starNightInvisibilityCache.get(key);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = (
+      this.provider.getStarNightInvisibilityPeriods?.(
+        startDate,
+        endDate,
+        location,
+        markers,
+        sunAltitudeThresholdDegrees,
+      ) ?? Promise.resolve([])
+    ).catch((error) => {
+      this.starNightInvisibilityCache.delete(key);
+      throw error;
+    });
+
+    this.starNightInvisibilityCache.set(key, request);
     return request;
   }
 

@@ -18,38 +18,38 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
     });
   });
 
-  it('groups mata into moon weeks', () => {
-    expect(MITA_TE_TAI_BEST_MATA.map((mata) => mata.moonWeek?.id)).toEqual([
-      'whiro',
-      'whiro',
-      'whiro',
-      'whiro',
-      'whiro',
-      'tamatea',
-      'tamatea',
-      'tamatea',
-      'tamatea',
-      'tamatea',
-      'tamatea',
-      'tamatea',
-      'rakaunui',
-      'rakaunui',
-      'rakaunui',
-      'rakaunui',
-      'rakaunui',
-      'rakaunui',
-      'rakaunui',
-      'rakaunui',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
-      'korekore-tangaroa',
+  it('groups mata into lunar phase groups', () => {
+    expect(MITA_TE_TAI_BEST_MATA.map((mata) => mata.phaseGroup?.name)).toEqual([
+      'Te Marama i te rā',
+      'Te Hua',
+      'Te Hua',
+      'Te Hua',
+      'Te Hua',
+      'Tāmatea',
+      'Tāmatea',
+      'Tāmatea',
+      'Tāmatea',
+      'Te Hua',
+      'Te Hua',
+      'Te Hua',
+      'Te Hua',
+      'Te Hua',
+      'Te Rākau',
+      'Te Rākau',
+      'Te Rākau',
+      'Te Rākau',
+      'Te Atarau',
+      'Te Atarau',
+      'Korekore',
+      'Korekore',
+      'Korekore',
+      'Tangaroa',
+      'Tangaroa',
+      'Tangaroa',
+      'Tangaroa',
+      'Tangaroa',
+      'Te Marama i te rā',
+      'Te Marama i te rā',
     ]);
   });
 
@@ -59,7 +59,7 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
         id: 'fishing-guidance',
         name: 'Fishing guidance',
         source:
-          'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+          'Living by the Stars (mata phase-group reference); Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
         sourceUrl:
           'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
         version: '1',
@@ -113,11 +113,19 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
     ]);
     expect(
       MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.months,
-    ).toHaveLength(12);
+    ).toHaveLength(13);
     expect(
       MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.months[0],
     ).toMatchObject({
+      name: 'Ruhanui',
+      sequence: 0,
+      markerIds: [],
+    });
+    expect(
+      MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.months[1],
+    ).toMatchObject({
       name: 'Te Tahi o Pipiri',
+      sequence: 1,
       markerIds: ['matariki'],
       sourceText: expect.stringContaining('Matariki'),
     });

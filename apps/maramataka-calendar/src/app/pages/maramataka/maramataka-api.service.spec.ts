@@ -102,6 +102,9 @@ describe('MaramatakaApiService', () => {
           index: 15,
           name: 'Ohua',
           version: 'mita-te-tai-best',
+          phaseGroup: {
+            name: 'Tangaroa',
+          },
         },
         startsAt: '2026-09-26T05:39:00.000Z',
         endsAt: '2026-09-27T06:46:00.000Z',
@@ -208,6 +211,9 @@ describe('MaramatakaApiService', () => {
             index: 15,
             name: 'Ohua',
             version: 'mita-te-tai-best',
+            phaseGroup: {
+              name: 'Tangaroa',
+            },
           },
           startsAt: '2026-09-26T05:39:00.000Z',
           endsAt: '2026-09-27T06:46:00.000Z',
@@ -227,6 +233,7 @@ describe('MaramatakaApiService', () => {
       new Date('2026-10-10T17:17:00.000Z'),
     );
     expect(cycle?.nights[0].mata).toBe('Ohua');
+    expect(cycle?.nights[0].phaseGroup?.name).toBe('Tangaroa');
     expect(cycle?.starMarkers?.[0].name).toBe('Matariki');
     expect(cycle?.starMarkers?.[0].observedAt).toEqual(
       new Date('2026-09-14T18:00:00.000Z'),

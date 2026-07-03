@@ -545,6 +545,14 @@ describe('MaramatakaPage', () => {
       fixture.nativeElement.querySelector('.wheel-segment.current')
         ?.textContent,
     ).toContain('Whiro');
+    const nightEventContent = Array.from(
+      fixture.nativeElement.querySelectorAll('.cycle-list .night-event'),
+    )
+      .map((element) => (element as HTMLElement).textContent)
+      .join(' ');
+    expect(nightEventContent).toContain('New Moon');
+    expect(nightEventContent).toContain('Matariki');
+    expect(nightEventContent).not.toContain('Full Moon');
   });
 
   it('updates the next mata countdown while the page is open', () => {

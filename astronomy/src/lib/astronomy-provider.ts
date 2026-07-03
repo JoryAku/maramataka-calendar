@@ -92,6 +92,16 @@ export interface StarMarker {
   calculation: string;
 }
 
+export interface StarMarkerNightInvisibilityPeriod {
+  markerId: string;
+  markerName: string;
+  startsOn: string;
+  endsOn: string;
+  days: number;
+  sunAltitudeThresholdDegrees: number;
+  calculation: string;
+}
+
 export interface FixedEquatorialStarMarkerRepresentative {
   kind: 'fixed-equatorial';
   rightAscensionHours: number;
@@ -137,4 +147,11 @@ export interface AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]>;
+  getStarNightInvisibilityPeriods?(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+    sunAltitudeThresholdDegrees?: number,
+  ): Promise<StarMarkerNightInvisibilityPeriod[]>;
 }

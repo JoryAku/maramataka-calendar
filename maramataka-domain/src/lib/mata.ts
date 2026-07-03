@@ -1,15 +1,16 @@
 export type MaramatakaVersion = 'mita-te-tai-best';
 
-export type MataMoonWeekId =
-  | 'whiro'
-  | 'tamatea'
-  | 'rakaunui'
-  | 'korekore-tangaroa';
+export type MataPhaseGroupName =
+  | 'Te Marama i te rā'
+  | 'Te Hua'
+  | 'Tāmatea'
+  | 'Te Rākau'
+  | 'Te Atarau'
+  | 'Korekore'
+  | 'Tangaroa';
 
-export interface MataMoonWeek {
-  id: MataMoonWeekId;
-  name: string;
-  sequence: number;
+export interface MataPhaseGroup {
+  name: MataPhaseGroupName;
 }
 
 export type MataContentLayerStatus = 'available' | 'unavailable';
@@ -30,6 +31,6 @@ export interface Mata {
   index: number;
   name: string;
   version: MaramatakaVersion;
-  moonWeek?: MataMoonWeek;
+  phaseGroup?: MataPhaseGroup;
   contentLayers?: MataContentLayer[];
 }

@@ -11,6 +11,7 @@ import {
   NewMoon,
   StarMarker,
   StarMarkerDefinition,
+  StarMarkerNightInvisibilityPeriod,
   StarMarkerVisibility,
 } from './astronomy-provider';
 import { AstronomyProviderError } from './astronomy-provider-error';
@@ -25,6 +26,8 @@ const ASTRONOMY_ENGINE_LUNAR_AGE_SOURCE = 'astronomy-engine moon phases';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MS_PER_MINUTE = 60 * 1000;
 const DAWN_FIRST_APPEARANCE_SAMPLE_MINUTES = 5;
+const NIGHT_VISIBILITY_SAMPLE_MINUTES = 10;
+const ASTRONOMICAL_NIGHT_SUN_ALTITUDE_DEGREES = -18;
 
 type AstronomyEngineModule = typeof import('astronomy-engine');
 
@@ -391,6 +394,67 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     });
   }
 
+  async getStarNightInvisibilityPeriods(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers = DEFAULT_STAR_MARKERS,
+    sunAltitudeThresholdDegrees = ASTRONOMICAL_NIGHT_SUN_ALTITUDE_DEGREES,
+  ): Promise<StarMarkerNightInvisibilityPeriod[]> {
+    return this.calculate('star night invisibility periods', async (engine) => {
+      const observer = this.observer(engine, location);
+      const periods: StarMarkerNightInvisibilityPeriod[] = [];
+
+      for (const marker of markers) {
+        let currentStart: string | undefined;
+        let currentEnd: string | undefined;
+        let date = startDate;
+
+        while (date < endDate) {
+          const visibleAtNight = this.isMarkerVisibleAtNight(
+            marker,
+            date,
+            location,
+            engine,
+            observer,
+            sunAltitudeThresholdDegrees,
+          );
+
+          if (!visibleAtNight) {
+            currentStart ??= date;
+            currentEnd = date;
+          } else if (currentStart && currentEnd) {
+            periods.push(
+              this.createStarNightInvisibilityPeriod(
+                marker,
+                currentStart,
+                currentEnd,
+                sunAltitudeThresholdDegrees,
+              ),
+            );
+            currentStart = undefined;
+            currentEnd = undefined;
+          }
+
+          date = this.addIsoDateDays(date, 1);
+        }
+
+        if (currentStart && currentEnd) {
+          periods.push(
+            this.createStarNightInvisibilityPeriod(
+              marker,
+              currentStart,
+              currentEnd,
+              sunAltitudeThresholdDegrees,
+            ),
+          );
+        }
+      }
+
+      return periods;
+    });
+  }
+
   private dawnObservationTime(
     date: string,
     location: Location,
@@ -593,6 +657,89 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     };
   }
 
+  private createStarNightInvisibilityPeriod(
+    marker: StarMarkerDefinition,
+    startsOn: string,
+    endsOn: string,
+    sunAltitudeThresholdDegrees: number,
+  ): StarMarkerNightInvisibilityPeriod {
+    return {
+      markerId: marker.id,
+      markerName: marker.name,
+      startsOn,
+      endsOn,
+      days: this.daysBetweenInclusive(startsOn, endsOn),
+      sunAltitudeThresholdDegrees,
+      calculation:
+        'Consecutive local dates where the marker is never above the horizon while the Sun is below the configured night threshold.',
+    };
+  }
+
+  private isMarkerVisibleAtNight(
+    marker: StarMarkerDefinition,
+    date: string,
+    location: Location,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    sunAltitudeThresholdDegrees: number,
+  ): boolean {
+    const range = this.localDateRange(date, location);
+    const endsAt = new Date(
+      range.startsAt.getTime() + range.limitDays * MS_PER_DAY,
+    );
+    let observedAt = range.startsAt;
+
+    while (observedAt.getTime() < endsAt.getTime()) {
+      const sunAltitude = this.sunAltitude(
+        observedAt,
+        engine,
+        observer,
+      );
+      if (sunAltitude <= sunAltitudeThresholdDegrees) {
+        const markerPosition = this.calculateStarMarker(
+          marker,
+          engine,
+          observer,
+          observedAt,
+          'Night visibility sample.',
+        );
+        if (markerPosition.altitudeDegrees >= 0) {
+          return true;
+        }
+      }
+
+      observedAt = new Date(
+        observedAt.getTime() +
+          NIGHT_VISIBILITY_SAMPLE_MINUTES * MS_PER_MINUTE,
+      );
+    }
+
+    return false;
+  }
+
+  private sunAltitude(
+    observedAt: Date,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+  ): number {
+    const coordinates = engine.Equator(
+      engine.Body.Sun,
+      observedAt,
+      observer,
+      true,
+      true,
+    );
+    const horizon = engine.Horizon(
+      observedAt,
+      observer,
+      coordinates.ra,
+      coordinates.dec,
+      'normal',
+    );
+
+    return horizon.altitude;
+  }
+
   private isEasternHorizonAppearance(marker: StarMarker): boolean {
     return (
       marker.altitudeDegrees >= 0 &&
@@ -665,6 +812,19 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     );
 
     return result.toISOString().slice(0, 10);
+  }
+
+  private daysBetweenInclusive(startsOn: string, endsOn: string): number {
+    const [startYear, startMonth, startDay] = startsOn
+      .split('-')
+      .map((part) => Number.parseInt(part, 10));
+    const [endYear, endMonth, endDay] = endsOn
+      .split('-')
+      .map((part) => Number.parseInt(part, 10));
+    const startsAt = Date.UTC(startYear, startMonth - 1, startDay);
+    const endsAt = Date.UTC(endYear, endMonth - 1, endDay);
+
+    return Math.floor((endsAt - startsAt) / MS_PER_DAY) + 1;
   }
 
   private quarterName(quarter: number): MoonPhaseName {

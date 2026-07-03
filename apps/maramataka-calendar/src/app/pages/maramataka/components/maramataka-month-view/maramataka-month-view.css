@@ -7,7 +7,12 @@
   display: flex;
   align-items: start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
+}
+
+.cycle-summary > * {
+  min-width: 0;
 }
 
 .cycle-summary h3 {
@@ -23,9 +28,10 @@
 
 .cycle-summary dl {
   display: grid;
-  grid-template-columns: repeat(3, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 0.75rem;
   margin: 0;
+  width: min(100%, 34rem);
 }
 
 .cycle-summary dt,
@@ -84,12 +90,14 @@
 
 .cycle-star-layer li {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 0.45rem;
   align-items: center;
   padding: 0.35rem 0.55rem;
   border: 1px solid #31534a;
   border-radius: 999px;
   background: #102821;
+  min-width: 0;
 }
 
 .cycle-star-layer strong {
@@ -106,7 +114,16 @@
   display: grid;
   grid-template-columns: minmax(280px, 520px) minmax(220px, 1fr);
   gap: 1.5rem;
-  align-items: center;
+  align-items: start;
+}
+
+.wheel-layout > * {
+  min-width: 0;
+}
+
+.wheel-panel {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .cycle-wheel {
@@ -144,7 +161,7 @@
 }
 
 .segment-path {
-  fill: #0e6f79;
+  fill: #3e4f6d;
   stroke: #071613;
   stroke-width: 0.45;
   transition:
@@ -153,32 +170,87 @@
     stroke 160ms ease;
 }
 
-.wheel-segment:nth-of-type(7n + 1) .segment-path {
-  fill: #0d6f79;
+.wheel-segment[data-phase-group='te-marama-i-te-ra'] .segment-path {
+  fill: #f0bf57;
 }
 
-.wheel-segment:nth-of-type(7n + 2) .segment-path {
-  fill: #355fa0;
+.wheel-segment[data-phase-group='te-hua'] .segment-path {
+  fill: #df8f3f;
 }
 
-.wheel-segment:nth-of-type(7n + 3) .segment-path {
-  fill: #783a91;
+.wheel-segment[data-phase-group='tamatea'] .segment-path {
+  fill: #cc5b59;
 }
 
-.wheel-segment:nth-of-type(7n + 4) .segment-path {
-  fill: #b43e68;
+.wheel-segment[data-phase-group='te-rakau'] .segment-path {
+  fill: #9f5aa6;
 }
 
-.wheel-segment:nth-of-type(7n + 5) .segment-path {
-  fill: #c85039;
+.wheel-segment[data-phase-group='te-atarau'] .segment-path {
+  fill: #6d66ad;
 }
 
-.wheel-segment:nth-of-type(7n + 6) .segment-path {
-  fill: #b57a18;
+.wheel-segment[data-phase-group='korekore'] .segment-path {
+  fill: #3d79a8;
 }
 
-.wheel-segment:nth-of-type(7n) .segment-path {
-  fill: #5c8c37;
+.wheel-segment[data-phase-group='tangaroa'] .segment-path {
+  fill: #2f927f;
+}
+
+.phase-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phase-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #c9ddd5;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.phase-legend-swatch {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 1px solid #071613;
+  border-radius: 3px;
+  background: #3e4f6d;
+  box-shadow: inset 0 0 0 1px #ffffff26;
+}
+
+.phase-legend-swatch[data-phase-group='te-marama-i-te-ra'] {
+  background: #f0bf57;
+}
+
+.phase-legend-swatch[data-phase-group='te-hua'] {
+  background: #df8f3f;
+}
+
+.phase-legend-swatch[data-phase-group='tamatea'] {
+  background: #cc5b59;
+}
+
+.phase-legend-swatch[data-phase-group='te-rakau'] {
+  background: #9f5aa6;
+}
+
+.phase-legend-swatch[data-phase-group='te-atarau'] {
+  background: #6d66ad;
+}
+
+.phase-legend-swatch[data-phase-group='korekore'] {
+  background: #3d79a8;
+}
+
+.phase-legend-swatch[data-phase-group='tangaroa'] {
+  background: #2f927f;
 }
 
 .segment-label {
@@ -189,10 +261,9 @@
 }
 
 .wheel-segment.current .segment-path {
-  fill: #0d4037;
   stroke: #7ce0c9;
   stroke-width: 0.9;
-  filter: drop-shadow(0 0 1.8px #7ce0c9);
+  filter: brightness(1.15) drop-shadow(0 0 1.8px #7ce0c9);
 }
 
 .wheel-segment.full-moon .segment-path {
@@ -295,6 +366,62 @@
   font-style: normal;
 }
 
+.night-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.night-event {
+  display: inline-grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  gap: 0.3rem;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  background: #102821;
+  color: #c9ddd5;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.night-event strong {
+  color: #f4fbf8;
+  font-size: inherit;
+  overflow-wrap: anywhere;
+}
+
+.night-event time {
+  color: #8ca49a;
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.night-event.star-marker {
+  border-color: #6a5423;
+  color: #f0c66b;
+}
+
+.night-event.star-invisibility {
+  color: #9fb5ac;
+}
+
+.night-event.new-moon {
+  color: #aebcff;
+}
+
+.night-event.full-moon {
+  color: #fff4d0;
+}
+
+.night-event.public-holiday {
+  border-color: #3a6f62;
+  color: #7ce0c9;
+}
+
 @media (max-width: 820px) {
   .cycle-summary,
   .wheel-layout {
@@ -324,5 +451,13 @@
 
   .cycle-list time {
     grid-column: 2;
+  }
+
+  .night-event {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .night-event time {
+    grid-column: 2 / -1;
   }
 }
