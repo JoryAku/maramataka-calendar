@@ -132,7 +132,7 @@
   aspect-ratio: 1;
   border-radius: 50%;
   background: radial-gradient(circle at center, #0b201b 0 54%, #061410 55% 100%);
-  box-shadow: inset 0 0 0 1px #24483f, 0 20px 60px #00000040;
+  box-shadow: inset 0 0 0 1px #24483f, 0 10px 26px #00000026;
 }
 
 .wheel-guide {
@@ -152,8 +152,8 @@
 }
 
 .wheel-core {
-  fill: #aeb6af;
-  filter: drop-shadow(0 0 5px #d5e8df66);
+  fill: #b7bcb7;
+  filter: none;
 }
 
 .wheel-segment {
@@ -161,96 +161,12 @@
 }
 
 .segment-path {
-  fill: #3e4f6d;
   stroke: #071613;
   stroke-width: 0.45;
   transition:
     fill 160ms ease,
     filter 160ms ease,
     stroke 160ms ease;
-}
-
-.wheel-segment[data-phase-group='te-marama-i-te-ra'] .segment-path {
-  fill: #f0bf57;
-}
-
-.wheel-segment[data-phase-group='te-hua'] .segment-path {
-  fill: #df8f3f;
-}
-
-.wheel-segment[data-phase-group='tamatea'] .segment-path {
-  fill: #cc5b59;
-}
-
-.wheel-segment[data-phase-group='te-rakau'] .segment-path {
-  fill: #9f5aa6;
-}
-
-.wheel-segment[data-phase-group='te-atarau'] .segment-path {
-  fill: #6d66ad;
-}
-
-.wheel-segment[data-phase-group='korekore'] .segment-path {
-  fill: #3d79a8;
-}
-
-.wheel-segment[data-phase-group='tangaroa'] .segment-path {
-  fill: #2f927f;
-}
-
-.phase-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 0.7rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.phase-legend li {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #c9ddd5;
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-
-.phase-legend-swatch {
-  width: 0.9rem;
-  height: 0.9rem;
-  border: 1px solid #071613;
-  border-radius: 3px;
-  background: #3e4f6d;
-  box-shadow: inset 0 0 0 1px #ffffff26;
-}
-
-.phase-legend-swatch[data-phase-group='te-marama-i-te-ra'] {
-  background: #f0bf57;
-}
-
-.phase-legend-swatch[data-phase-group='te-hua'] {
-  background: #df8f3f;
-}
-
-.phase-legend-swatch[data-phase-group='tamatea'] {
-  background: #cc5b59;
-}
-
-.phase-legend-swatch[data-phase-group='te-rakau'] {
-  background: #9f5aa6;
-}
-
-.phase-legend-swatch[data-phase-group='te-atarau'] {
-  background: #6d66ad;
-}
-
-.phase-legend-swatch[data-phase-group='korekore'] {
-  background: #3d79a8;
-}
-
-.phase-legend-swatch[data-phase-group='tangaroa'] {
-  background: #2f927f;
 }
 
 .segment-label {
@@ -263,7 +179,7 @@
 .wheel-segment.current .segment-path {
   stroke: #7ce0c9;
   stroke-width: 0.9;
-  filter: brightness(1.15) drop-shadow(0 0 1.8px #7ce0c9);
+  filter: brightness(1.06);
 }
 
 .wheel-segment.full-moon .segment-path {

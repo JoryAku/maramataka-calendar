@@ -868,7 +868,7 @@ describe('MaramatakaService', () => {
     });
   });
 
-  it('adds the Matariki public holiday on the closest Friday to the Korekore/Tangaroa window in Pipiri', async () => {
+  it('adds the Matariki public holiday on the closest Friday within Pipiri', async () => {
     const getNewMoons = jest
       .fn()
       .mockResolvedValueOnce([])
@@ -1109,7 +1109,7 @@ describe('MaramatakaService', () => {
     ]);
   });
 
-  it('derives the holiday window from phase groups even when names are changed', async () => {
+  it('derives the holiday window from target mata names even when phase groups are changed', async () => {
     const getNewMoons = jest
       .fn()
       .mockResolvedValueOnce([])
@@ -1145,14 +1145,14 @@ describe('MaramatakaService', () => {
     const nights = MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.mata
       .slice(0, 29)
       .map((mata, index) => {
-        const renamedMata =
+        const mataWithChangedPhaseGroup =
           mata.phaseGroup?.name === 'Korekore' ||
           mata.phaseGroup?.name === 'Tangaroa'
-            ? { ...mata, name: `Custom-${mata.index}` }
+            ? { ...mata, phaseGroup: { name: 'Te Hua' as const } }
             : mata;
 
         return {
-          mata: renamedMata,
+          mata: mataWithChangedPhaseGroup,
           startsAt: new Date(whiroStartsAt.getTime() + index * 86_400_000),
           endsAt: new Date(
             whiroStartsAt.getTime() + (index + 1) * 86_400_000,

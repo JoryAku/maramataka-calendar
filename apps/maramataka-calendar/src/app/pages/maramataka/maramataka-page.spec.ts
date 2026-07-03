@@ -411,7 +411,7 @@ describe('MaramatakaPage', () => {
           monthSequence: 1,
           monthName: 'Te Tahi o Pipiri',
           description:
-            'Estimated as the closest Friday to the Korekore/Tangaroa transition window in Te Tahi o Pipiri.',
+            'Estimated as the Friday within Te Tahi o Pipiri closest to the four-night Tangaroa boundary window from Korekore-te-rawea through Tangaroa-kiokio.',
           source: 'Matariki public holiday maramataka rule',
         },
         {
@@ -669,6 +669,10 @@ describe('MaramatakaPage', () => {
       fixture.nativeElement.querySelector('.wheel-segment.current')
         ?.textContent,
     ).toContain('Whiro');
+    const firstWheelSegment = fixture.nativeElement.querySelector(
+      '.wheel-segment .segment-path',
+    ) as HTMLElement | null;
+    expect(firstWheelSegment?.getAttribute('fill')).toMatch(/^rgb\(/);
     const nightEventContent = Array.from(
       fixture.nativeElement.querySelectorAll('.cycle-list .night-event'),
     )
@@ -683,15 +687,8 @@ describe('MaramatakaPage', () => {
     expect(nightEventContent).toContain('Solar');
     expect(nightEventContent).toContain('June solstice');
     expect(nightEventContent).not.toContain('Full Moon');
-    const wheelSegments = fixture.nativeElement.querySelectorAll(
-      '.wheel-segment',
-    );
-    expect(wheelSegments[0].getAttribute('data-phase-group')).toBe(
-      'te-marama-i-te-ra',
-    );
-    expect(wheelSegments[1].getAttribute('data-phase-group')).toBe('te-hua');
-    expect(content).toContain('Te Marama i te rā');
-    expect(content).toContain('Te Hua');
+    expect(content).not.toContain('Te Marama i te rā');
+    expect(content).not.toContain('Te Hua');
     expect(
       fixture.nativeElement.querySelector('.cycle-list')?.textContent,
     ).not.toContain('Next Whiro');
@@ -928,6 +925,31 @@ describe('MaramatakaPage', () => {
     expect(moonDetailsPanel.textContent).toContain('Waxing Crescent');
     expect(moonDetailsPanel.textContent).not.toContain('Distance');
     expect(moonDetailsPanel.textContent).not.toContain('Age');
+  });
+
+  it('renders a moon phase visual from the moon details', () => {
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(
+      flushMaramatakaRequests(),
+      monthFixture(),
+      todayFixture(),
+      cycleFixture(),
+      moonDetailsFixture(),
+    );
+    fixture.detectChanges();
+
+    const moonPhaseArt = fixture.nativeElement.querySelector(
+      '.moon-phase-art',
+    ) as SVGElement | null;
+
+    expect(moonPhaseArt).not.toBeNull();
+    expect(moonPhaseArt?.getAttribute('aria-label')).toContain(
+      'Waxing Crescent',
+    );
+    expect(moonPhaseArt?.getAttribute('aria-label')).toContain('17%');
   });
 
   it('uses the selected location for API requests', () => {

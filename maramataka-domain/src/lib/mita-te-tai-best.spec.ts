@@ -112,6 +112,17 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
       'Uruao',
     ]);
     expect(
+      MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers.every(
+        (marker) =>
+          marker.dawnRising?.startSunAltitudeDegrees === -18 &&
+          marker.dawnRising.endSunAltitudeDegrees === 0 &&
+          marker.dawnRising.minimumMarkerAltitudeDegrees === 0 &&
+          marker.dawnRising.minimumAzimuthDegrees === 45 &&
+          marker.dawnRising.maximumAzimuthDegrees === 135 &&
+          marker.dawnRising.sampleMinutes === 5,
+      ),
+    ).toBe(true);
+    expect(
       MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming?.months,
     ).toHaveLength(13);
     expect(

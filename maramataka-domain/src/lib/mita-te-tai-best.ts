@@ -47,6 +47,14 @@ const MITA_TE_TAI_BEST_SOURCE_URL =
   'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
 const MITA_TE_TAI_BEST_STAR_MONTH_SOURCE =
   'Elsdon Best, The Maori Division of Time';
+const MITA_TE_TAI_BEST_DAWN_RISING_CONFIG = {
+  startSunAltitudeDegrees: -18,
+  endSunAltitudeDegrees: 0,
+  minimumMarkerAltitudeDegrees: 0,
+  minimumAzimuthDegrees: 45,
+  maximumAzimuthDegrees: 135,
+  sampleMinutes: 5,
+};
 
 const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
   {
@@ -59,6 +67,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
     source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
+    dawnRising: MITA_TE_TAI_BEST_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 3.7914,
@@ -74,6 +83,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     seasonalAssociation: 'Second seasonal month marker',
     source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
+    dawnRising: MITA_TE_TAI_BEST_DAWN_RISING_CONFIG,
     representative: {
       kind: 'body',
       body: 'Venus',
@@ -88,6 +98,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     seasonalAssociation: 'Second named month marker',
     source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
+    dawnRising: MITA_TE_TAI_BEST_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 6.7525,
@@ -104,6 +115,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     seasonalAssociation: 'Second seasonal month marker',
     source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
+    dawnRising: MITA_TE_TAI_BEST_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 5.6036,
@@ -120,6 +132,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     seasonalAssociation: 'Late winter / early spring marker',
     source: 'Te Aka / project star-marker notes',
     confidence: 'working',
+    dawnRising: MITA_TE_TAI_BEST_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 7.5767,
@@ -135,6 +148,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     seasonalAssociation: 'Summer marker',
     source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     confidence: 'confirmed',
+    dawnRising: MITA_TE_TAI_BEST_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 16.4901,
@@ -151,6 +165,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_MARKERS = [
     seasonalAssociation: 'Provisional sky-figure marker',
     source: 'Project working interpretation',
     confidence: 'working',
+    dawnRising: MITA_TE_TAI_BEST_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 17.5601,

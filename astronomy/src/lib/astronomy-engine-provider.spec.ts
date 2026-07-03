@@ -295,6 +295,61 @@ describe('AstronomyEngineProvider', () => {
     ]);
   });
 
+  it('uses marker dawn-rising settings for first appearances', async () => {
+    const provider = new AstronomyEngineProvider(
+      createEngine({
+        Horizon: jest.fn((date: Date) => ({
+          altitude:
+            date.getTime() >= Date.parse('2026-06-24T18:10:00.000Z')
+              ? 5.4
+              : 4.2,
+          azimuth: 90,
+        })),
+      }),
+    );
+
+    const appearances = await provider.getStarFirstAppearances(
+      '2026-06-25',
+      '2026-06-26',
+      wellington,
+      [
+        {
+          id: 'configured-marker',
+          name: 'Configured Marker',
+          type: 'star',
+          englishName: 'Test star',
+          description: 'A marker with a stricter dawn-rising threshold.',
+          seasonalAssociation: 'Test seasonal marker',
+          source: 'test',
+          confidence: 'working',
+          dawnRising: {
+            startSunAltitudeDegrees: -12,
+            endSunAltitudeDegrees: 0,
+            minimumMarkerAltitudeDegrees: 5,
+            minimumAzimuthDegrees: 45,
+            maximumAzimuthDegrees: 135,
+            sampleMinutes: 10,
+          },
+          representative: {
+            kind: 'fixed-equatorial',
+            rightAscensionHours: 6,
+            declinationDegrees: 12,
+          },
+        },
+      ],
+    );
+
+    expect(appearances).toEqual([
+      expect.objectContaining({
+        id: 'configured-marker',
+        observedAt: new Date('2026-06-24T18:10:00.000Z'),
+        altitudeDegrees: 5.4,
+        calculation:
+          'First dawn-rising sample where the Sun is between -12° and 0° altitude, the marker is at least 5° altitude, and azimuth is between 45° and 135°.',
+      }),
+    ]);
+  });
+
   it('throws a typed provider error when moonrise is unavailable', async () => {
     const provider = new AstronomyEngineProvider(
       createEngine({

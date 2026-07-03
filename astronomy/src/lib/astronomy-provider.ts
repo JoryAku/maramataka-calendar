@@ -125,6 +125,23 @@ export interface BodyStarMarkerRepresentative {
   body: 'Venus';
 }
 
+export interface StarMarkerDawnRisingConfig {
+  /**
+   * The earliest Sun altitude in degrees to start testing from. The current
+   * observational rule uses astronomical dawn at -18 degrees.
+   */
+  startSunAltitudeDegrees: number;
+  /**
+   * The latest Sun altitude in degrees to test through. The current
+   * observational rule uses sunrise at 0 degrees.
+   */
+  endSunAltitudeDegrees: number;
+  minimumMarkerAltitudeDegrees: number;
+  minimumAzimuthDegrees: number;
+  maximumAzimuthDegrees: number;
+  sampleMinutes: number;
+}
+
 export interface StarMarkerDefinition {
   id: string;
   name: string;
@@ -138,6 +155,7 @@ export interface StarMarkerDefinition {
   representative:
     | FixedEquatorialStarMarkerRepresentative
     | BodyStarMarkerRepresentative;
+  dawnRising?: StarMarkerDawnRisingConfig;
 }
 
 export interface AstronomyProvider {

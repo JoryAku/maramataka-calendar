@@ -113,7 +113,6 @@
           [class.current]="item.isCurrent"
           [class.full-moon]="item.isFullMoonAnchor"
           [class.overlap]="item.hasOverlap"
-          [attr.data-phase-group]="phaseGroupToken(item.night)"
           tabindex="0"
           [attr.aria-current]="item.isCurrent ? 'true' : null"
           (click)="selectNight(item.night)"
@@ -121,7 +120,7 @@
           (keydown.space)="$event.preventDefault(); selectNight(item.night)"
           [attr.aria-label]="segmentA11yLabel(item.night)"
         >
-          <path class="segment-path" [attr.d]="item.path"></path>
+          <path class="segment-path" [attr.d]="item.path" [attr.fill]="item.fill"></path>
           <text
             class="segment-label"
             [attr.x]="item.labelX"
@@ -143,28 +142,6 @@
         </text>
       </svg>
 
-      <ul class="phase-legend" aria-label="Phase group colours">
-        @for (entry of phaseLegend; track entry.token) {
-        <li>
-          <span
-            class="phase-legend-swatch"
-            [attr.data-phase-group]="entry.token"
-            aria-hidden="true"
-          ></span>
-          <span>{{ entry.name }}</span>
-        </li>
-        }
-        @if (hasUnknownPhaseGroup()) {
-        <li>
-          <span
-            class="phase-legend-swatch"
-            data-phase-group="unknown"
-            aria-hidden="true"
-          ></span>
-          <span>Unknown</span>
-        </li>
-        }
-      </ul>
     </div>
 
     <ol class="cycle-list" aria-label="Generated marama intervals">

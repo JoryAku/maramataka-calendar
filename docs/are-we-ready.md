@@ -83,20 +83,24 @@ https://www.legislation.govt.nz/act/public/2022/0014/latest/whole.html
 ### Matariki Public Holiday Rule
 
 The current implementation creates a `public-holiday` year event from the
-astronomy-derived maramataka model by finding the closest Friday to the
-Korekore/Tangaroa transition window in Te Tahi o Pipiri. Against the official
-2022-2052 schedule, the current event marker matches 29/31 years.
+astronomy-derived maramataka model by finding the Friday within Te Tahi o
+Pipiri that is closest to a provisional four-night Tangaroa boundary window
+from `Korekore-te-rawea` through `Tangaroa-kiokio`.
+Against the official 2022-2052 schedule, the current event marker matches
+28/31 years.
 
 Known limitations:
 
 - It uses the generated first named marama, so it inherits any year-start or
   intercalation drift.
-- The implementation currently treats the holiday window as the broader
-  Korekore/Tangaroa transition: `Korekore-te-whiwhia`,
-  `Korekore-te-rawea`, `Korekore-piri-ki-ngā-Tangaroa`,
-  `Tangaroa-ā-mua`, `Tangaroa-ā-roto`, `Tangaroa-kiokio`, `Ōtāne`, and
-  `Ōrongonui`.
-- The estimate is still imperfect: 2033 and 2044 estimate one Friday early.
+- The implementation currently treats the holiday target as:
+  `Korekore-te-rawea`, `Korekore-piri-ki-ngā-Tangaroa`, `Tangaroa-ā-mua`,
+  `Tangaroa-ā-roto`, and `Tangaroa-kiokio`. This is intentionally provisional
+  while we look for a stronger source for the mata names that make up the
+  official Tangaroa period.
+- The estimate is still imperfect and should keep being calibrated against the
+  official schedule. The remaining differences are 2027 and 2030 estimating
+  one Friday late, and 2044 estimating one Friday early.
 - The public holiday schedule should remain a calibration target for refining
   the astronomy-only rule; it should not be used as an input to the event
   calculation.
@@ -170,11 +174,13 @@ Production readiness requires:
    report.
 2. For each official date, identify which generated marama and mata contain the
    official Tangaroa period.
-3. Use the remaining 2033 and 2044 differences to review the Tangaroa-period
-   boundary rule.
-4. Decide whether the provisional Ruhanui/intercalation rule is sufficient or
+3. Use the remaining 2027, 2030, and 2044 differences to review the
+   Tangaroa-period boundary rule.
+4. Review Matariki heliacal rising as a calibration clue for the Pipiri and
+   Ruhanui boundary rules.
+5. Decide whether the provisional Ruhanui/intercalation rule is sufficient or
    whether a curated named-year table is still needed.
-5. Add UI wording that distinguishes astronomical events, observed maramataka
+6. Add UI wording that distinguishes astronomical events, observed maramataka
    model outputs, and legally scheduled holidays.
 
 ## Current Decision
