@@ -422,6 +422,11 @@
   color: #7ce0c9;
 }
 
+.night-event.solar-season {
+  border-color: #6b5b32;
+  color: #e8d494;
+}
+
 @media (max-width: 820px) {
   .cycle-summary,
   .wheel-layout {
