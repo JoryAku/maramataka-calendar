@@ -4,6 +4,7 @@ import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaNight,
+  MaramatakaYearEvent,
 } from '../../maramataka.models';
 import { NZ_TIMEZONE } from '../../maramataka.constants';
 
@@ -15,6 +16,24 @@ import { NZ_TIMEZONE } from '../../maramataka.constants';
 })
 export class MaramatakaMonthView {
   protected readonly nzTimeZone = NZ_TIMEZONE;
+  private readonly phaseGroupTokens: Readonly<Record<string, string>> = {
+    'Te Marama i te rā': 'te-marama-i-te-ra',
+    'Te Hua': 'te-hua',
+    'Tāmatea': 'tamatea',
+    'Te Rākau': 'te-rakau',
+    'Te Atarau': 'te-atarau',
+    Korekore: 'korekore',
+    Tangaroa: 'tangaroa',
+  };
+  protected readonly phaseLegend = [
+    { name: 'Te Marama i te rā', token: 'te-marama-i-te-ra' },
+    { name: 'Te Hua', token: 'te-hua' },
+    { name: 'Tāmatea', token: 'tamatea' },
+    { name: 'Te Rākau', token: 'te-rakau' },
+    { name: 'Te Atarau', token: 'te-atarau' },
+    { name: 'Korekore', token: 'korekore' },
+    { name: 'Tangaroa', token: 'tangaroa' },
+  ] as const;
   private readonly wheelCenter = 50;
   private readonly outerRadius = 47;
   private readonly innerRadius = 31;
@@ -23,6 +42,7 @@ export class MaramatakaMonthView {
   month = input.required<MaramatakaMonth>();
   now = input.required<Date>();
   cycle = input<MaramatakaCycleDetails | null>(null);
+  yearEvents = input<MaramatakaYearEvent[]>([]);
   nightSelected = output<MaramatakaNight>();
 
   protected readonly cycleStarMarkers = computed(() => {
@@ -73,6 +93,9 @@ export class MaramatakaMonthView {
   protected readonly hasBalancedLength = computed(
     () => this.month().nights.length !== 30 || this.repeatedMata().length > 0,
   );
+  protected readonly hasUnknownPhaseGroup = computed(() =>
+    this.month().nights.some((night) => this.phaseGroupToken(night) === 'unknown'),
+  );
 
   isCurrentNight(night: MaramatakaNight): boolean {
     const currentTime = this.now().getTime();
@@ -85,6 +108,42 @@ export class MaramatakaMonthView {
 
   protected selectNight(night: MaramatakaNight): void {
     this.nightSelected.emit(night);
+  }
+
+  protected phaseGroupToken(night: MaramatakaNight): string {
+    const phaseGroupName = night.phaseGroup?.name;
+
+    if (!phaseGroupName) {
+      return 'unknown';
+    }
+
+    return this.phaseGroupTokens[phaseGroupName] ?? 'unknown';
+  }
+
+  protected phaseGroupName(night: MaramatakaNight): string {
+    return night.phaseGroup?.name ?? 'Unknown phase group';
+  }
+
+  protected segmentA11yLabel(night: MaramatakaNight): string {
+    const anchor = this.anchorLabel(night);
+
+    return [
+      `${night.mata} (${this.phaseGroupName(night)})`,
+      `moonrise ${this.formatNightStart(night)}`,
+      anchor,
+    ]
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  protected segmentHoverLabel(night: MaramatakaNight): string {
+    const anchor = this.anchorLabel(night);
+
+    if (anchor) {
+      return `${night.mata} (${this.phaseGroupName(night)}) - ${anchor}`;
+    }
+
+    return `${night.mata} (${this.phaseGroupName(night)})`;
   }
 
   anchorLabel(night: MaramatakaNight): string | null {
@@ -100,14 +159,64 @@ export class MaramatakaMonthView {
       fullMoon.occursAt.getTime() >= night.startsAt.getTime() &&
       fullMoon.occursAt.getTime() < night.endsAt.getTime()
     ) {
-      return 'Rakaunui / Full Moon';
-    }
-
-    if (cycle?.anchors.nextWhiro.occursAt.getTime() === night.endsAt.getTime()) {
-      return 'Next Whiro';
+      return 'Rākaunui / Full Moon';
     }
 
     return null;
+  }
+
+  eventsForNight(night: MaramatakaNight): MaramatakaYearEvent[] {
+    const startsAt = night.startsAt.getTime();
+    const endsAt = night.endsAt.getTime();
+
+    return this.yearEvents()
+      .filter(
+        (event) =>
+          event.type !== 'month-start' &&
+          event.occursAt.getTime() >= startsAt &&
+          event.occursAt.getTime() < endsAt,
+      )
+      .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
+  }
+
+  eventSymbol(event: MaramatakaYearEvent): string {
+    switch (event.type) {
+      case 'star-marker':
+        return '★';
+      case 'star-invisibility':
+        return '◌';
+      case 'new-moon':
+        return '◐';
+      case 'full-moon':
+        return '●';
+      case 'public-holiday':
+        return '✦';
+      case 'solar-season':
+        return '☼';
+      case 'month-start':
+        return '◇';
+    }
+  }
+
+  eventTypeLabel(event: MaramatakaYearEvent): string {
+    switch (event.type) {
+      case 'star-marker':
+        return event.starMarkerScope === 'seasonal'
+          ? 'Seasonal'
+          : 'Star';
+      case 'star-invisibility':
+        return 'Disappears';
+      case 'new-moon':
+        return 'New Moon';
+      case 'full-moon':
+        return 'Full Moon';
+      case 'public-holiday':
+        return 'Holiday';
+      case 'solar-season':
+        return 'Solar';
+      case 'month-start':
+        return 'Month start';
+    }
   }
 
   private isFullMoonAnchor(night: MaramatakaNight): boolean {
@@ -118,6 +227,17 @@ export class MaramatakaMonthView {
         fullMoon.occursAt.getTime() >= night.startsAt.getTime() &&
         fullMoon.occursAt.getTime() < night.endsAt.getTime(),
     );
+  }
+
+  private formatNightStart(night: MaramatakaNight): string {
+    return new Intl.DateTimeFormat('en-NZ', {
+      timeZone: this.nzTimeZone,
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(night.startsAt);
   }
 
   private describeSegment(startAngle: number, endAngle: number): string {

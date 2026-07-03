@@ -51,7 +51,7 @@ h2 {
 
 .controls {
   display: grid;
-  grid-template-columns: minmax(16rem, 1fr) minmax(22rem, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   align-items: end;
   width: min(100%, 68rem);
@@ -84,9 +84,29 @@ h2 {
 }
 
 .date-control {
-  display: grid;
-  grid-template-columns: minmax(13rem, 1fr) minmax(7rem, auto);
-  gap: 2rem;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.date-control .control-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
+.date-control .secondary-button {
+  flex: 0 0 9.25rem;
+}
+
+input[type='date'].control-input {
+  padding-right: 2.7rem;
+}
+
+input[type='date'].control-input::-webkit-calendar-picker-indicator {
+  opacity: 0.92;
+  cursor: pointer;
 }
 
 .secondary-button {
@@ -121,25 +141,33 @@ h2 {
 
 .section-header {
   display: flex;
-  align-items: baseline;
+  align-items: start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.section-header > div,
+.section-header > p {
+  min-width: 0;
 }
 
 .section-header p:last-child {
   margin-bottom: 0;
   color: #9fb5ac;
+  overflow-wrap: anywhere;
 }
 
 .moon-tracker {
   display: grid;
-  grid-template-columns: minmax(180px, 0.85fr) minmax(240px, 1fr) minmax(
-      260px,
-      0.9fr
-    );
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 0.9fr);
   gap: 1rem;
   align-items: stretch;
+}
+
+.moon-tracker > * {
+  min-width: 0;
 }
 
 .moon-visual,
@@ -186,8 +214,11 @@ h2 {
 .mata-panel h3 {
   margin-bottom: 0.3rem;
   color: #fff9df;
-  font-size: clamp(2.2rem, 7vw, 4.5rem);
-  line-height: 1;
+  font-size: clamp(1.75rem, 5.6vw, 3.8rem);
+  line-height: 1.06;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .overlap-label {
@@ -244,6 +275,7 @@ h2 {
   color: #f4fbf8;
   font-size: 0.86rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .star-layer li {
@@ -266,6 +298,7 @@ h2 {
   color: #91aaa0;
   font-size: 0.78rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .guidance-source a {
@@ -341,24 +374,73 @@ dd {
   font-weight: 700;
 }
 
+.year-band-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.band-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid #27493f;
+  border-radius: 999px;
+  background: #071613;
+  color: #a0beb3;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.band-chip.star {
+  color: #e6c978;
+}
+
+.band-chip.seasonal {
+  color: #d0b067;
+}
+
+.band-chip.holiday {
+  color: #7ce0c9;
+}
+
+.band-chip.solar {
+  color: #e8d494;
+}
+
+.band-chip.lunar {
+  color: #b9c4ff;
+}
+
 .year-event-track {
   position: relative;
-  height: 33rem;
+  height: 36.5rem;
   border-block: 1px solid #27493f;
   background:
-    linear-gradient(180deg, transparent 0 12.2rem, #27493f66 12.2rem 12.25rem, transparent 12.25rem),
-    linear-gradient(180deg, transparent 0 16.25rem, #27493f66 16.25rem 16.3rem, transparent 16.3rem),
-    linear-gradient(180deg, transparent 0 20.35rem, #27493f66 20.35rem 20.4rem, transparent 20.4rem),
-    linear-gradient(180deg, transparent 0 24.45rem, #27493f66 24.45rem 24.5rem, transparent 24.5rem),
-    linear-gradient(90deg, #25493f 0 1px, transparent 1px) 0 0 / 8.333% 100%,
+    linear-gradient(180deg, transparent 0 15.6rem, #27493f66 15.6rem 15.65rem, transparent 15.65rem),
+    linear-gradient(180deg, transparent 0 19.45rem, #27493f66 19.45rem 19.5rem, transparent 19.5rem),
+    linear-gradient(180deg, transparent 0 24.55rem, #27493f66 24.55rem 24.6rem, transparent 24.6rem),
+    linear-gradient(180deg, transparent 0 28.6rem, #27493f66 28.6rem 28.65rem, transparent 28.65rem),
     linear-gradient(180deg, #071613 0%, #0a1d18 100%);
+}
+
+.year-month-grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid #25493f;
+  transform: translateX(-1px);
+  pointer-events: none;
 }
 
 .year-rail {
   position: absolute;
   left: 0;
   right: 0;
-  top: 26.35rem;
+  top: 29.5rem;
   height: 0.28rem;
   border-radius: 999px;
   background: #416b5f;
@@ -367,7 +449,7 @@ dd {
 
 .year-month-tick {
   position: absolute;
-  top: 25.95rem;
+  top: 29.1rem;
   height: 2.9rem;
   border-left: 1px solid #416b5f;
   color: #9fb5ac;
@@ -388,6 +470,7 @@ dd {
   line-height: 1.15;
   text-overflow: ellipsis;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
 }
 
@@ -442,13 +525,59 @@ dd {
   width: 5.4rem;
 }
 
+.year-event.star-marker.compact-label {
+  grid-template-rows: 2.8rem 2.4rem 1.8rem;
+}
+
+.year-event.star-marker.seasonal-marker.compact-label {
+  grid-template-rows: 2.8rem 1rem 1.8rem;
+}
+
+.year-event.star-marker.seasonal-marker.lane-1 {
+  grid-template-rows: 2.8rem 3.4rem 1.8rem;
+}
+
 .year-event.public-holiday {
-  grid-template-rows: 2.6rem 2.7rem 1.8rem;
+  grid-template-rows: 2.6rem 1.1rem 1.8rem;
   width: 6rem;
+}
+
+.year-event.solar-season {
+  grid-template-rows: 2.4rem 0.75rem 1.8rem;
+  width: 5.8rem;
+}
+
+.year-event.star-invisibility {
+  grid-template-rows: 2.6rem 2.5rem 1.8rem;
+  width: 6.2rem;
+}
+
+.year-event.star-invisibility.compact-label {
+  grid-template-rows: 2.6rem 1.65rem 1.8rem;
 }
 
 .year-event.star-marker .event-stem {
   min-height: 3.9rem;
+}
+
+.year-event.star-marker.compact-label .event-stem {
+  min-height: 2rem;
+}
+
+.year-event.star-marker.seasonal-marker.compact-label .event-stem {
+  min-height: 0.8rem;
+}
+
+.year-event.star-marker.seasonal-marker.lane-1 .event-stem {
+  min-height: 3.1rem;
+}
+
+.year-event.star-marker.seasonal-marker.lane-0 .event-label {
+  transform: translateX(-0.75rem);
+}
+
+.year-event.star-marker.seasonal-marker.lane-1 .event-label {
+  transform: translateX(0.75rem);
 }
 
 .year-event.new-moon .event-label,
@@ -488,6 +617,16 @@ dd {
   color: #f0c66b;
 }
 
+.year-event.star-invisibility .event-symbol,
+.year-event.star-invisibility .event-label strong {
+  color: #9fb5ac;
+}
+
+.year-event.star-invisibility .event-symbol {
+  border-color: #31534a;
+  background: #0a1f1a;
+}
+
 .year-event.new-moon .event-symbol,
 .year-event.new-moon .event-label strong {
   color: #aebcff;
@@ -503,9 +642,19 @@ dd {
   color: #7ce0c9;
 }
 
+.year-event.solar-season .event-symbol,
+.year-event.solar-season .event-label strong {
+  color: #e8d494;
+}
+
 .year-event.public-holiday .event-symbol {
   border-color: #3a6f62;
   background: #0d2c25;
+}
+
+.year-event.solar-season .event-symbol {
+  border-color: #6b5b32;
+  background: #1f1a0a;
 }
 
 .event-label strong {
@@ -530,9 +679,12 @@ dd {
 .year-event.star-marker .event-label small,
 .year-event.star-marker .event-label strong,
 .year-event.star-marker .event-label span,
+.year-event.star-invisibility .event-label strong,
+.year-event.star-invisibility .event-label span,
 .year-event.public-holiday .event-label strong,
 .year-event.public-holiday .event-label span {
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .year-marama-list {
@@ -667,8 +819,26 @@ dd {
     grid-template-columns: 1fr;
   }
 
+  .date-control {
+    flex-wrap: wrap;
+  }
+
+  .date-control .secondary-button {
+    flex: 1 1 100%;
+  }
+
   .moon-visual {
     min-height: 13rem;
+  }
+}
+
+@media (max-width: 1120px) {
+  .moon-tracker {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .timing-panel {
+    grid-column: 1 / -1;
   }
 }
 

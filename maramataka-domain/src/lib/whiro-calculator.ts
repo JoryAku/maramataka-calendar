@@ -10,10 +10,10 @@ export interface WhiroInput {
 }
 
 export function calculateWhiroStart(input: WhiroInput): Date {
-  const anchor = findMoonriseForObservationWindow({
-    phaseAt: input.newMoonAt,
+  const anchor = findWhiroMoonrise({
+    newMoonAt: input.newMoonAt,
+    newMoonLocalDate: input.newMoonLocalDate,
     moonRises: input.moonRises,
-    observationWindowHours: input.observationWindowHours,
   });
 
   if (!anchor) {
@@ -23,6 +23,29 @@ export function calculateWhiroStart(input: WhiroInput): Date {
   }
 
   return anchor.risesAt;
+}
+
+export interface WhiroMoonriseInput {
+  newMoonAt: Date;
+  newMoonLocalDate: string;
+  moonRises: MoonRise[];
+}
+
+export function findWhiroMoonrise(
+  input: WhiroMoonriseInput,
+): MoonRise | undefined {
+  const sortedMoonRises = [...input.moonRises].sort(
+    (a, b) => a.risesAt.getTime() - b.risesAt.getTime(),
+  );
+
+  return (
+    sortedMoonRises.find(
+      (moonRise) => moonRise.date === input.newMoonLocalDate,
+    ) ??
+    sortedMoonRises.find(
+      (moonRise) => moonRise.risesAt.getTime() > input.newMoonAt.getTime(),
+    )
+  );
 }
 
 export interface ObservationWindowInput {

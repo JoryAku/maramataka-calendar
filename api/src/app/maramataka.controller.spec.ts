@@ -126,7 +126,7 @@ describe('MaramatakaController', () => {
       {
         mata: {
           index: 3,
-          name: 'Ohoata',
+          name: 'Hoata',
           version: 'mita-te-tai-best',
         },
         startsAt: new Date('2026-01-03T07:45:00.000Z'),
@@ -161,7 +161,7 @@ describe('MaramatakaController', () => {
         },
         fullMoon: {
           type: 'full-moon',
-          label: 'Rakaunui / Full Moon',
+          label: 'Rākaunui / Full Moon',
           occursAt: new Date('2026-01-02T08:00:00.000Z'),
           localDate: '2026-01-02',
           localTime: '21:00:00',
@@ -426,7 +426,7 @@ describe('MaramatakaController', () => {
           },
           fullMoon: {
             type: 'full-moon',
-            label: 'Rakaunui / Full Moon',
+            label: 'Rākaunui / Full Moon',
             occursAt: '2026-01-02T08:00:00.000Z',
             localDate: '2026-01-02',
             localTime: '21:00:00',
@@ -630,7 +630,7 @@ describe('MaramatakaController', () => {
       expect(response.status).toBe(200);
       expect(response.data.mata).toEqual({
         index: 3,
-        name: 'Ohoata',
+        name: 'Hoata',
       });
     });
 

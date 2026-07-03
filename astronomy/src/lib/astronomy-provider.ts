@@ -14,6 +14,18 @@ export interface FullMoon {
   source: string;
 }
 
+export type SolarSeasonName =
+  | 'March equinox'
+  | 'June solstice'
+  | 'September equinox'
+  | 'December solstice';
+
+export interface SolarSeasonEvent {
+  name: SolarSeasonName;
+  occursAt: Date;
+  source: string;
+}
+
 export interface MoonRiseSet {
   date: string;
   risesAt: Date;
@@ -92,6 +104,16 @@ export interface StarMarker {
   calculation: string;
 }
 
+export interface StarMarkerNightInvisibilityPeriod {
+  markerId: string;
+  markerName: string;
+  startsOn: string;
+  endsOn: string;
+  days: number;
+  sunAltitudeThresholdDegrees: number;
+  calculation: string;
+}
+
 export interface FixedEquatorialStarMarkerRepresentative {
   kind: 'fixed-equatorial';
   rightAscensionHours: number;
@@ -122,6 +144,7 @@ export interface AstronomyProvider {
   getMoonPhases(year: number): Promise<MoonPhase[]>;
   getNewMoons(year: number): Promise<NewMoon[]>;
   getFullMoons(year: number): Promise<FullMoon[]>;
+  getSolarSeasons?(year: number): Promise<SolarSeasonEvent[]>;
   getMoonRise(date: string, location: Location): Promise<MoonRise>;
   getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet>;
   getMoonTransit(date: string, location: Location): Promise<MoonTransit>;
@@ -137,4 +160,11 @@ export interface AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]>;
+  getStarNightInvisibilityPeriods?(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+    sunAltitudeThresholdDegrees?: number,
+  ): Promise<StarMarkerNightInvisibilityPeriod[]>;
 }

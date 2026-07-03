@@ -1,5 +1,6 @@
 export interface MaramatakaNight {
   mata: string;
+  phaseGroup?: MataPhaseGroup;
   overlappingMata?: MaramatakaNightOverlap[];
   startsAt: Date;
   endsAt: Date;
@@ -74,6 +75,8 @@ export interface MaramatakaYearEvent<TDate = Date> {
   type:
     | 'month-start'
     | 'star-marker'
+    | 'star-invisibility'
+    | 'solar-season'
     | 'new-moon'
     | 'full-moon'
     | 'public-holiday';
@@ -246,14 +249,12 @@ export interface ApiMata {
   index: number;
   name: string;
   version: string;
-  moonWeek?: MataMoonWeek;
+  phaseGroup?: MataPhaseGroup;
   contentLayers?: MataContentLayer[];
 }
 
-export interface MataMoonWeek {
-  id: string;
+export interface MataPhaseGroup {
   name: string;
-  sequence: number;
 }
 
 export interface MataContentLayer {

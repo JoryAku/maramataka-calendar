@@ -241,6 +241,7 @@ export class MaramatakaApiService {
   ): MaramatakaNight {
     return {
       mata: this.mataName(night.mata),
+      phaseGroup: this.mataPhaseGroup(night.mata),
       overlappingMata: night.overlappingMata?.map((overlap) => ({
         mata: this.mataName(overlap.mata),
         cycleStartsAt: new Date(overlap.cycleStartsAt),
@@ -301,6 +302,10 @@ export class MaramatakaApiService {
 
   private mataName(mata: string | ApiMata): string {
     return typeof mata === 'string' ? mata : mata.name;
+  }
+
+  private mataPhaseGroup(mata: string | ApiMata): MaramatakaNight['phaseGroup'] {
+    return typeof mata === 'string' ? undefined : mata.phaseGroup;
   }
 
   private toYyyyMmDd(date: Date): string {

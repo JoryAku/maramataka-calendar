@@ -94,7 +94,7 @@ describe('MaramatakaService golden date fixtures', () => {
     );
     const mataNames = month.nights.map((night) => night.mata.name);
     const ohuaIntervalNumbers = month.nights
-      .map((night, index) => (night.mata.name === 'Ohua' ? index + 1 : null))
+      .map((night, index) => (night.mata.name === 'Ōhua' ? index + 1 : null))
       .filter((index): index is number => index !== null);
 
     expect(month.whiroStartsAt.toISOString()).toBe(
@@ -112,7 +112,7 @@ describe('MaramatakaService golden date fixtures', () => {
     expect(mataNames.slice(-5)).toEqual(fixture.expected.lastFiveMata);
   });
 
-  it('resolves current night to duplicated Ohua in a balanced marama', async () => {
+  it('resolves current night to the fixed-sequence mata at Full Moon', async () => {
     const fixture = getGoldenFixture('gisborne-dst-start-late-full-moon');
     const service = new MaramatakaService({
       astronomyProvider: createGoldenFixtureProvider(fixture),
@@ -123,7 +123,7 @@ describe('MaramatakaService golden date fixtures', () => {
       new Date(fixture.fullMoons[0]),
     );
 
-    expect(currentNight?.night.mata.name).toBe('Ohua');
+    expect(currentNight?.night.mata.name).toBe('Ōturu');
     expect(currentNight?.night.startsAt.toISOString()).toBe(
       '2026-09-26T05:39:00.000Z',
     );
@@ -163,7 +163,7 @@ describe('MaramatakaService golden date fixtures', () => {
       timezone: 'Pacific/Auckland',
       currentMataIndex: 16,
       currentNight: {
-        mata: { name: 'Ohua' },
+        mata: { name: 'Ōturu' },
       },
       anchors: {
         whiro: {
@@ -178,21 +178,21 @@ describe('MaramatakaService golden date fixtures', () => {
         },
         fullMoon: {
           type: 'full-moon',
-          label: 'Rakaunui / Full Moon',
+          label: 'Rākaunui / Full Moon',
           occursAt: new Date('2026-09-26T05:39:00.000Z'),
           astronomicalOccursAt: new Date(fixture.fullMoons[0]),
           localDate: '2026-09-26',
           localTime: '17:39:00',
           timezone: 'Pacific/Auckland',
           source: 'astronomy-engine observation moonrise',
-          mata: { name: 'Ohua' },
+          mata: { name: 'Ōturu' },
         },
         nextWhiro: {
           type: 'next-whiro',
           label: 'Next Whiro / Kohititanga',
           occursAt: new Date(fixture.expected.nextWhiroStartsAt),
-          localDate: '2026-10-10',
-          localTime: '05:53:00',
+          localDate: '2026-10-11',
+          localTime: '06:17:00',
           timezone: 'Pacific/Auckland',
           source: 'astronomy-engine moonrise',
           mata: { name: 'Whiro' },

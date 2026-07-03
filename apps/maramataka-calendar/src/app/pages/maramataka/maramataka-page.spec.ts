@@ -363,6 +363,22 @@ describe('MaramatakaPage', () => {
           source: 'Elsdon Best, The Maori Division of Time',
         },
         {
+          type: 'star-marker',
+          name: 'Whakaahu',
+          occursAt: '2026-01-11T17:00:00.000Z',
+          starMarkerScope: 'seasonal',
+          description: 'Seasonal dawn marker.',
+          source: 'test seasonal marker',
+        },
+        {
+          type: 'star-marker',
+          name: 'Rehua',
+          occursAt: '2026-01-12T17:00:00.000Z',
+          starMarkerScope: 'seasonal',
+          description: 'Seasonal dawn marker.',
+          source: 'test seasonal marker',
+        },
+        {
           type: 'new-moon',
           name: 'New Moon',
           occursAt: '2026-01-10T06:45:00.000Z',
@@ -380,7 +396,104 @@ describe('MaramatakaPage', () => {
           description: 'Astronomical Full Moon anchor for Rakaunui / Ohua.',
           source: 'astronomy-engine',
         },
+        {
+          type: 'star-invisibility',
+          name: 'Matariki disappears',
+          occursAt: '2026-01-11T09:00:00.000Z',
+          description:
+            'Matariki is not visible during astronomical night until 2026-03-20.',
+          source: 'test night invisibility period',
+        },
+        {
+          type: 'public-holiday',
+          name: 'Matariki public holiday',
+          occursAt: '2026-01-11T12:00:00.000Z',
+          monthSequence: 1,
+          monthName: 'Te Tahi o Pipiri',
+          description:
+            'Estimated as the closest Friday to the Korekore/Tangaroa transition window in Te Tahi o Pipiri.',
+          source: 'Matariki public holiday maramataka rule',
+        },
+        {
+          type: 'solar-season',
+          name: 'June solstice',
+          occursAt: '2026-01-11T13:30:00.000Z',
+          description:
+            'Astronomical equinox or solstice anchor from the solar year.',
+          source: 'astronomy-engine',
+        },
       ],
+    };
+  }
+
+  function ruhanuiYearFixture(): Record<string, unknown> {
+    const baseYear = yearFixture();
+    const baseMonth = (baseYear['months'] as Record<string, unknown>[])[0];
+    const createMonth = (
+      sequence: number,
+      name: string,
+      startsAt: string,
+      endsAt: string,
+    ) => ({
+      ...baseMonth,
+      sequence,
+      name,
+      starMonth: {
+        ...(baseMonth['starMonth'] as Record<string, unknown>),
+        name,
+        note: {
+          sequence,
+          name,
+          markerIds: [],
+          description: `${name} test note.`,
+          sourceText: `${name} test source.`,
+        },
+      },
+      starMarkers: [],
+      startsAt,
+      endsAt,
+      anchors: {
+        ...(baseMonth['anchors'] as Record<string, unknown>),
+        whiro: {
+          ...((baseMonth['anchors'] as Record<string, unknown>)[
+            'whiro'
+          ] as Record<string, unknown>),
+          occursAt: startsAt,
+        },
+        nextWhiro: {
+          ...((baseMonth['anchors'] as Record<string, unknown>)[
+            'nextWhiro'
+          ] as Record<string, unknown>),
+          occursAt: endsAt,
+        },
+      },
+    });
+
+    return {
+      ...baseYear,
+      startsAt: '2027-06-25T00:00:00.000Z',
+      endsAt: '2028-06-23T00:00:00.000Z',
+      months: [
+        createMonth(
+          1,
+          'Te Tahi o Pipiri',
+          '2027-06-25T00:00:00.000Z',
+          '2027-07-24T00:00:00.000Z',
+        ),
+        createMonth(
+          12,
+          'Haki-haratua',
+          '2028-04-15T00:00:00.000Z',
+          '2028-05-24T00:00:00.000Z',
+        ),
+        createMonth(
+          13,
+          'Ruhanui',
+          '2028-05-24T00:00:00.000Z',
+          '2028-06-23T00:00:00.000Z',
+        ),
+      ],
+      events: [],
     };
   }
 
@@ -495,12 +608,22 @@ describe('MaramatakaPage', () => {
       requests,
       monthFixture([
         {
-          mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+          mata: {
+            index: 1,
+            name: 'Whiro',
+            version: 'mita-te-tai-best',
+            phaseGroup: { name: 'Te Marama i te rā' },
+          },
           startsAt: '2026-01-10T06:45:00.000Z',
           endsAt: '2026-01-11T06:45:00.000Z',
         },
         {
-          mata: { index: 2, name: 'Tirea', version: 'mita-te-tai-best' },
+          mata: {
+            index: 2,
+            name: 'Tirea',
+            version: 'mita-te-tai-best',
+            phaseGroup: { name: 'Te Hua' },
+          },
           startsAt: '2026-01-11T06:45:00.000Z',
           endsAt: '2026-01-12T06:45:00.000Z',
         },
@@ -523,6 +646,7 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('month and seasonal dawn appearances');
     expect(content).toContain('New Moon');
     expect(content).toContain('Full Moon');
+    expect(content).toContain('June solstice');
     expect(content).toContain('Te Tahi o Pipiri');
     expect(content).toContain('Dawn sky markers');
     expect(content).toContain('Matariki');
@@ -545,6 +669,69 @@ describe('MaramatakaPage', () => {
       fixture.nativeElement.querySelector('.wheel-segment.current')
         ?.textContent,
     ).toContain('Whiro');
+    const nightEventContent = Array.from(
+      fixture.nativeElement.querySelectorAll('.cycle-list .night-event'),
+    )
+      .map((element) => (element as HTMLElement).textContent)
+      .join(' ');
+    expect(nightEventContent).toContain('New Moon');
+    expect(nightEventContent).toContain('Matariki');
+    expect(nightEventContent).toContain('Disappears');
+    expect(nightEventContent).toContain('Matariki disappears');
+    expect(nightEventContent).toContain('Holiday');
+    expect(nightEventContent).toContain('Matariki public holiday');
+    expect(nightEventContent).toContain('Solar');
+    expect(nightEventContent).toContain('June solstice');
+    expect(nightEventContent).not.toContain('Full Moon');
+    const wheelSegments = fixture.nativeElement.querySelectorAll(
+      '.wheel-segment',
+    );
+    expect(wheelSegments[0].getAttribute('data-phase-group')).toBe(
+      'te-marama-i-te-ra',
+    );
+    expect(wheelSegments[1].getAttribute('data-phase-group')).toBe('te-hua');
+    expect(content).toContain('Te Marama i te rā');
+    expect(content).toContain('Te Hua');
+    expect(
+      fixture.nativeElement.querySelector('.cycle-list')?.textContent,
+    ).not.toContain('Next Whiro');
+    const seasonalTimelineEvents = Array.from(
+      fixture.nativeElement.querySelectorAll('.year-event.star-marker'),
+    ).filter((element) =>
+      (element as HTMLElement).textContent?.includes('Seasonal'),
+    ) as HTMLElement[];
+    expect(seasonalTimelineEvents).toHaveLength(2);
+    expect(
+      new Set(seasonalTimelineEvents.map((element) => element.style.top)),
+    ).toEqual(new Set(['4.9rem', '7.3rem']));
+    expect(
+      seasonalTimelineEvents.map((element) =>
+        element.classList.contains('lane-0'),
+      ),
+    ).toContain(true);
+    expect(
+      seasonalTimelineEvents.map((element) =>
+        element.classList.contains('lane-1'),
+      ),
+    ).toContain(true);
+    const solarTimelineEvent = fixture.nativeElement.querySelector(
+      '.year-event.solar-season',
+    ) as HTMLElement | null;
+    expect(solarTimelineEvent?.textContent).toContain('Solar');
+    expect(solarTimelineEvent?.style.top).toBe('14.9rem');
+    const lunarTimelineEvent = fixture.nativeElement.querySelector(
+      '.year-event.new-moon',
+    ) as HTMLElement | null;
+    const holidayTimelineEvent = fixture.nativeElement.querySelector(
+      '.year-event.public-holiday',
+    ) as HTMLElement | null;
+    expect(lunarTimelineEvent?.style.top).toBe('21.2rem');
+    expect(holidayTimelineEvent?.style.top).toBe('25.1rem');
+    expect(
+      seasonalTimelineEvents.every((element) =>
+        element.classList.contains('seasonal-marker'),
+      ),
+    ).toBe(true);
   });
 
   it('updates the next mata countdown while the page is open', () => {
@@ -570,6 +757,37 @@ describe('MaramatakaPage', () => {
       fixture.nativeElement.querySelector('[data-testid="next-mata-countdown"]')
         ?.textContent,
     ).toContain('18h 44m');
+  });
+
+  it('places Ruhanui at the end of a 13-marama year timeline', () => {
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(
+      flushMaramatakaRequests(),
+      monthFixture(),
+      todayFixture(),
+      cycleFixture(),
+      moonDetailsFixture(),
+      ruhanuiYearFixture(),
+    );
+    fixture.detectChanges();
+
+    const monthTicks = Array.from(
+      fixture.nativeElement.querySelectorAll('.year-month-tick'),
+    ) as HTMLElement[];
+    const pipiriTick = monthTicks.find((tick) =>
+      tick.textContent?.includes('Te Tahi o Pipiri'),
+    );
+    const ruhanuiTick = monthTicks.find((tick) =>
+      tick.textContent?.includes('Ruhanui'),
+    );
+
+    expect(pipiriTick?.style.left).toBe('6.5%');
+    expect(Number.parseFloat(ruhanuiTick?.style.left ?? '0')).toBeGreaterThan(
+      90,
+    );
   });
 
   it('shows overlap and balanced marama states clearly', () => {

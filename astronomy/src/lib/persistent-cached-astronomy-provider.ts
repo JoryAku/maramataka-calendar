@@ -8,14 +8,17 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  SolarSeasonEvent,
   StarMarker,
   StarMarkerDefinition,
+  StarMarkerNightInvisibilityPeriod,
 } from './astronomy-provider';
 import { AstronomyCacheStore } from './persistent-astronomy-cache';
 
 type Reviver<T> = (value: T) => T;
 
 const STAR_DAWN_SAMPLING_CACHE_VERSION = 'dawn-window-first-appearance-v1';
+const STAR_NIGHT_INVISIBILITY_CACHE_VERSION = 'night-invisibility-v1';
 
 export class PersistentCachedAstronomyProvider implements AstronomyProvider {
   constructor(
@@ -55,6 +58,18 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
         fullMoons.map((fullMoon) => ({
           ...fullMoon,
           occursAt: new Date(fullMoon.occursAt),
+        })),
+    );
+  }
+
+  async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
+    return this.getOrSet(
+      `solar-seasons:${year}`,
+      () => this.provider.getSolarSeasons?.(year) ?? Promise.resolve([]),
+      (events) =>
+        events.map((event) => ({
+          ...event,
+          occursAt: new Date(event.occursAt),
         })),
     );
   }
@@ -176,6 +191,34 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
           ...marker,
           observedAt: new Date(marker.observedAt),
         })),
+    );
+  }
+
+  async getStarNightInvisibilityPeriods(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+    sunAltitudeThresholdDegrees?: number,
+  ): Promise<StarMarkerNightInvisibilityPeriod[]> {
+    return this.getOrSet(
+      [
+        'star-night-invisibility-periods',
+        STAR_NIGHT_INVISIBILITY_CACHE_VERSION,
+        this.locationCacheKey(startDate, location),
+        endDate,
+        this.starMarkerCacheKey(markers),
+        sunAltitudeThresholdDegrees ?? 'default',
+      ].join(':'),
+      () =>
+        this.provider.getStarNightInvisibilityPeriods?.(
+          startDate,
+          endDate,
+          location,
+          markers,
+          sunAltitudeThresholdDegrees,
+        ) ?? Promise.resolve([]),
+      (periods) => periods,
     );
   }
 

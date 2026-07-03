@@ -1,10 +1,11 @@
 import {
   calculateWhiroStart,
   findMoonriseForObservationWindow,
+  findWhiroMoonrise,
 } from './whiro-calculator';
 
 describe('calculateWhiroStart', () => {
-  it('uses the moonrise interval that contains the New Moon instant as Whiro', () => {
+  it('uses the moonrise on the local New Moon date as Whiro', () => {
     const result = calculateWhiroStart({
       newMoonAt: new Date('2026-01-01T20:00:00+13:00'),
       newMoonLocalDate: '2026-01-01',
@@ -25,7 +26,7 @@ describe('calculateWhiroStart', () => {
     expect(result).toEqual(new Date('2026-01-01T18:31:00+13:00'));
   });
 
-  it('can associate Whiro with the previous civil date when that moonrise interval contains the New Moon', () => {
+  it('does not borrow the previous civil date when the local New Moon date has a moonrise', () => {
     const result = calculateWhiroStart({
       newMoonAt: new Date('2026-01-01T22:00:00+13:00'),
       newMoonLocalDate: '2026-01-01',
@@ -51,11 +52,32 @@ describe('calculateWhiroStart', () => {
     expect(result).toEqual(new Date('2026-01-01T18:31:00+13:00'));
   });
 
-  it('uses the nearest moonrise inside the observation window when no containing interval is available', () => {
+  it('uses the first moonrise after the exact New Moon instant when the local New Moon date has no moonrise', () => {
     const result = calculateWhiroStart({
       newMoonAt: new Date('2026-01-01T10:00:00+13:00'),
       newMoonLocalDate: '2026-01-01',
       moonRises: [
+        {
+          date: '2026-01-02',
+          risesAt: new Date('2026-01-02T19:21:00+13:00'),
+          source: 'astronomy-engine',
+        },
+      ],
+    });
+
+    expect(result).toEqual(new Date('2026-01-02T19:21:00+13:00'));
+  });
+
+  it('does not use an earlier moonrise when the local New Moon date has no moonrise', () => {
+    const result = calculateWhiroStart({
+      newMoonAt: new Date('2026-01-01T10:00:00+13:00'),
+      newMoonLocalDate: '2026-01-01',
+      moonRises: [
+        {
+          date: '2025-12-31',
+          risesAt: new Date('2025-12-31T18:31:00+13:00'),
+          source: 'astronomy-engine',
+        },
         {
           date: '2026-01-02',
           risesAt: new Date('2026-01-02T19:21:00+13:00'),
@@ -83,6 +105,29 @@ describe('calculateWhiroStart', () => {
     ).toThrow(
       'Cannot anchor Whiro: no moonrise was found in the New Moon observation window for 2026-01-03',
     );
+  });
+});
+
+describe('findWhiroMoonrise', () => {
+  it('prefers the moonrise on the local New Moon date', () => {
+    const anchor = findWhiroMoonrise({
+      newMoonAt: new Date('2026-01-01T23:00:00+13:00'),
+      newMoonLocalDate: '2026-01-01',
+      moonRises: [
+        {
+          date: '2026-01-01',
+          risesAt: new Date('2026-01-01T18:31:00+13:00'),
+          source: 'astronomy-engine',
+        },
+        {
+          date: '2026-01-02',
+          risesAt: new Date('2026-01-02T19:21:00+13:00'),
+          source: 'astronomy-engine',
+        },
+      ],
+    });
+
+    expect(anchor?.date).toBe('2026-01-01');
   });
 });
 

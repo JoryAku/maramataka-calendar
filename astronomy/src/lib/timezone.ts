@@ -39,7 +39,9 @@ export function getTimezoneOffsetHours(timezone: string, date: Date): number {
     return 0;
   }
 
-  const match = timezoneName.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+  const match = timezoneName.match(
+    /^GMT([+-])(\d{1,2})(?::?(\d{2}))?(?::?(\d{2}))?$/,
+  );
   if (!match) {
     throw new Error(`Invalid timezone offset format: ${timezoneName}`);
   }
@@ -47,8 +49,9 @@ export function getTimezoneOffsetHours(timezone: string, date: Date): number {
   const sign = match[1] === '+' ? 1 : -1;
   const hours = Number(match[2]);
   const minutes = Number(match[3] ?? '0');
+  const seconds = Number(match[4] ?? '0');
 
-  return sign * (hours + minutes / 60);
+  return sign * (hours + minutes / 60 + seconds / 3600);
 }
 
 export function formatIsoDateInTimezone(date: Date, timezone: string): string {

@@ -8,22 +8,30 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  SolarSeasonEvent,
   StarMarker,
   StarMarkerDefinition,
+  StarMarkerNightInvisibilityPeriod,
 } from './astronomy-provider';
 
 const STAR_DAWN_SAMPLING_CACHE_VERSION = 'dawn-window-first-appearance-v1';
+const STAR_NIGHT_INVISIBILITY_CACHE_VERSION = 'night-invisibility-v1';
 
 export class CachedAstronomyProvider implements AstronomyProvider {
   private moonPhaseCache = new Map<number, Promise<MoonPhase[]>>();
   private newMoonCache = new Map<number, Promise<NewMoon[]>>();
   private fullMoonCache = new Map<number, Promise<FullMoon[]>>();
+  private solarSeasonCache = new Map<number, Promise<SolarSeasonEvent[]>>();
   private moonRiseCache = new Map<string, Promise<MoonRise>>();
   private moonRiseSetCache = new Map<string, Promise<MoonRiseSet>>();
   private moonTransitCache = new Map<string, Promise<MoonTransit>>();
   private moonDetailsCache = new Map<string, Promise<MoonDetails>>();
   private starMarkerCache = new Map<string, Promise<StarMarker[]>>();
   private starFirstAppearanceCache = new Map<string, Promise<StarMarker[]>>();
+  private starNightInvisibilityCache = new Map<
+    string,
+    Promise<StarMarkerNightInvisibilityPeriod[]>
+  >();
 
   constructor(private readonly provider: AstronomyProvider) {}
 
@@ -69,6 +77,23 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     });
 
     this.fullMoonCache.set(year, request);
+    return request;
+  }
+
+  async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
+    const cachedRequest = this.solarSeasonCache.get(year);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = (
+      this.provider.getSolarSeasons?.(year) ?? Promise.resolve([])
+    ).catch((error) => {
+      this.solarSeasonCache.delete(year);
+      throw error;
+    });
+
+    this.solarSeasonCache.set(year, request);
     return request;
   }
 
@@ -205,6 +230,43 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     });
 
     this.starFirstAppearanceCache.set(key, request);
+    return request;
+  }
+
+  async getStarNightInvisibilityPeriods(
+    startDate: string,
+    endDate: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+    sunAltitudeThresholdDegrees?: number,
+  ): Promise<StarMarkerNightInvisibilityPeriod[]> {
+    const key = [
+      STAR_NIGHT_INVISIBILITY_CACHE_VERSION,
+      this.locationCacheKey(startDate, location),
+      endDate,
+      this.starMarkerCacheKey(markers),
+      sunAltitudeThresholdDegrees ?? 'default',
+    ].join(':');
+
+    const cachedRequest = this.starNightInvisibilityCache.get(key);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = (
+      this.provider.getStarNightInvisibilityPeriods?.(
+        startDate,
+        endDate,
+        location,
+        markers,
+        sunAltitudeThresholdDegrees,
+      ) ?? Promise.resolve([])
+    ).catch((error) => {
+      this.starNightInvisibilityCache.delete(key);
+      throw error;
+    });
+
+    this.starNightInvisibilityCache.set(key, request);
     return request;
   }
 

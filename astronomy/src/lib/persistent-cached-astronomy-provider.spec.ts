@@ -92,6 +92,35 @@ describe('PersistentCachedAstronomyProvider', () => {
     );
   });
 
+  it('revives solar season dates from the cache', async () => {
+    const provider = createProvider({
+      getSolarSeasons: jest
+        .fn()
+        .mockRejectedValue(new Error('should not call')),
+    });
+    const store = createStore({
+      'solar-seasons:2026': [
+        {
+          name: 'June solstice',
+          occursAt: '2026-06-21T08:24:00.000Z',
+          source: 'astronomy-engine',
+        },
+      ],
+    });
+
+    const cached = new PersistentCachedAstronomyProvider(provider, store);
+    const seasons = await cached.getSolarSeasons(2026);
+
+    expect(provider.getSolarSeasons).not.toHaveBeenCalled();
+    expect(seasons).toEqual([
+      {
+        name: 'June solstice',
+        occursAt: new Date('2026-06-21T08:24:00.000Z'),
+        source: 'astronomy-engine',
+      },
+    ]);
+  });
+
   it('falls back to the wrapped provider when cache reads fail', async () => {
     const provider = createProvider({
       getFullMoons: jest.fn().mockResolvedValue([

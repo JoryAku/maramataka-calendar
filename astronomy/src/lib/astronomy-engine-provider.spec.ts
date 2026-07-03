@@ -75,6 +75,12 @@ function createEngine(overrides: Record<string, unknown> = {}) {
       time: { date: new Date('2025-12-31T22:42:00.000Z') },
     })),
     MoonPhase: jest.fn(() => 45),
+    Seasons: jest.fn(() => ({
+      mar_equinox: { date: new Date('2026-03-20T14:46:00.000Z') },
+      jun_solstice: { date: new Date('2026-06-21T08:24:00.000Z') },
+      sep_equinox: { date: new Date('2026-09-23T00:05:00.000Z') },
+      dec_solstice: { date: new Date('2026-12-21T20:50:00.000Z') },
+    })),
     Illumination: jest.fn(() => ({
       phase_fraction: 0.17,
       geo_dist: 0.00243,
@@ -189,6 +195,33 @@ describe('AstronomyEngineProvider', () => {
         source: 'astronomy-engine',
       },
     });
+  });
+
+  it('returns equinox and solstice events for a year', async () => {
+    const provider = new AstronomyEngineProvider(createEngine());
+
+    await expect(provider.getSolarSeasons(2026)).resolves.toEqual([
+      {
+        name: 'March equinox',
+        occursAt: new Date('2026-03-20T14:46:00.000Z'),
+        source: 'astronomy-engine',
+      },
+      {
+        name: 'June solstice',
+        occursAt: new Date('2026-06-21T08:24:00.000Z'),
+        source: 'astronomy-engine',
+      },
+      {
+        name: 'September equinox',
+        occursAt: new Date('2026-09-23T00:05:00.000Z'),
+        source: 'astronomy-engine',
+      },
+      {
+        name: 'December solstice',
+        occursAt: new Date('2026-12-21T20:50:00.000Z'),
+        source: 'astronomy-engine',
+      },
+    ]);
   });
 
   it('returns dawn sky markers from fixed stars and planets', async () => {
