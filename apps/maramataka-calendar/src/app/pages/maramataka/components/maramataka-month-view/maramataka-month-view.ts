@@ -26,10 +26,10 @@ export class MaramatakaMonthView {
     Tangaroa: 'tangaroa',
   };
   protected readonly phaseLegend = [
-    { name: 'Te Marama i te ra', token: 'te-marama-i-te-ra' },
+    { name: 'Te Marama i te rā', token: 'te-marama-i-te-ra' },
     { name: 'Te Hua', token: 'te-hua' },
-    { name: 'Tamatea', token: 'tamatea' },
-    { name: 'Te Rakau', token: 'te-rakau' },
+    { name: 'Tāmatea', token: 'tamatea' },
+    { name: 'Te Rākau', token: 'te-rakau' },
     { name: 'Te Atarau', token: 'te-atarau' },
     { name: 'Korekore', token: 'korekore' },
     { name: 'Tangaroa', token: 'tangaroa' },
@@ -191,6 +191,8 @@ export class MaramatakaMonthView {
         return '●';
       case 'public-holiday':
         return '✦';
+      case 'solar-season':
+        return '☼';
       case 'month-start':
         return '◇';
     }
@@ -210,6 +212,8 @@ export class MaramatakaMonthView {
         return 'Full Moon';
       case 'public-holiday':
         return 'Holiday';
+      case 'solar-season':
+        return 'Solar';
       case 'month-start':
         return 'Month start';
     }

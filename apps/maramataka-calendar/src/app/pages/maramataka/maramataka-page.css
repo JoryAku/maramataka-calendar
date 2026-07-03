@@ -407,6 +407,10 @@ dd {
   color: #7ce0c9;
 }
 
+.band-chip.solar {
+  color: #e8d494;
+}
+
 .band-chip.lunar {
   color: #b9c4ff;
 }
@@ -417,8 +421,8 @@ dd {
   border-block: 1px solid #27493f;
   background:
     linear-gradient(180deg, transparent 0 15.6rem, #27493f66 15.6rem 15.65rem, transparent 15.65rem),
-    linear-gradient(180deg, transparent 0 19.85rem, #27493f66 19.85rem 19.9rem, transparent 19.9rem),
-    linear-gradient(180deg, transparent 0 25.35rem, #27493f66 25.35rem 25.4rem, transparent 25.4rem),
+    linear-gradient(180deg, transparent 0 19.45rem, #27493f66 19.45rem 19.5rem, transparent 19.5rem),
+    linear-gradient(180deg, transparent 0 24.55rem, #27493f66 24.55rem 24.6rem, transparent 24.6rem),
     linear-gradient(180deg, transparent 0 28.6rem, #27493f66 28.6rem 28.65rem, transparent 28.65rem),
     linear-gradient(180deg, #071613 0%, #0a1d18 100%);
 }
@@ -521,9 +525,26 @@ dd {
   width: 5.4rem;
 }
 
+.year-event.star-marker.compact-label {
+  grid-template-rows: 2.8rem 2.4rem 1.8rem;
+}
+
+.year-event.star-marker.seasonal-marker.compact-label {
+  grid-template-rows: 2.8rem 1rem 1.8rem;
+}
+
+.year-event.star-marker.seasonal-marker.lane-1 {
+  grid-template-rows: 2.8rem 3.4rem 1.8rem;
+}
+
 .year-event.public-holiday {
-  grid-template-rows: 2.6rem 2.7rem 1.8rem;
+  grid-template-rows: 2.6rem 1.1rem 1.8rem;
   width: 6rem;
+}
+
+.year-event.solar-season {
+  grid-template-rows: 2.4rem 0.75rem 1.8rem;
+  width: 5.8rem;
 }
 
 .year-event.star-invisibility {
@@ -531,8 +552,32 @@ dd {
   width: 6.2rem;
 }
 
+.year-event.star-invisibility.compact-label {
+  grid-template-rows: 2.6rem 1.65rem 1.8rem;
+}
+
 .year-event.star-marker .event-stem {
   min-height: 3.9rem;
+}
+
+.year-event.star-marker.compact-label .event-stem {
+  min-height: 2rem;
+}
+
+.year-event.star-marker.seasonal-marker.compact-label .event-stem {
+  min-height: 0.8rem;
+}
+
+.year-event.star-marker.seasonal-marker.lane-1 .event-stem {
+  min-height: 3.1rem;
+}
+
+.year-event.star-marker.seasonal-marker.lane-0 .event-label {
+  transform: translateX(-0.75rem);
+}
+
+.year-event.star-marker.seasonal-marker.lane-1 .event-label {
+  transform: translateX(0.75rem);
 }
 
 .year-event.new-moon .event-label,
@@ -597,9 +642,19 @@ dd {
   color: #7ce0c9;
 }
 
+.year-event.solar-season .event-symbol,
+.year-event.solar-season .event-label strong {
+  color: #e8d494;
+}
+
 .year-event.public-holiday .event-symbol {
   border-color: #3a6f62;
   background: #0d2c25;
+}
+
+.year-event.solar-season .event-symbol {
+  border-color: #6b5b32;
+  background: #1f1a0a;
 }
 
 .event-label strong {

@@ -165,7 +165,7 @@ const MITA_TE_TAI_BEST_STAR_MONTH_NOTES = [
     name: 'Ruhanui',
     markerIds: [],
     description:
-      'Working name for an intercalary regulating marama before Te Tahi o Pipiri in 13-marama star years.',
+      'Working name for the intercalary regulating marama after the twelve regular marama in 13-marama star years.',
     sourceText:
       'Working project rule from the thirteenth-month / regulating marama interpretation.',
   },

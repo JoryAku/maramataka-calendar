@@ -14,6 +14,18 @@ export interface FullMoon {
   source: string;
 }
 
+export type SolarSeasonName =
+  | 'March equinox'
+  | 'June solstice'
+  | 'September equinox'
+  | 'December solstice';
+
+export interface SolarSeasonEvent {
+  name: SolarSeasonName;
+  occursAt: Date;
+  source: string;
+}
+
 export interface MoonRiseSet {
   date: string;
   risesAt: Date;
@@ -132,6 +144,7 @@ export interface AstronomyProvider {
   getMoonPhases(year: number): Promise<MoonPhase[]>;
   getNewMoons(year: number): Promise<NewMoon[]>;
   getFullMoons(year: number): Promise<FullMoon[]>;
+  getSolarSeasons?(year: number): Promise<SolarSeasonEvent[]>;
   getMoonRise(date: string, location: Location): Promise<MoonRise>;
   getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet>;
   getMoonTransit(date: string, location: Location): Promise<MoonTransit>;

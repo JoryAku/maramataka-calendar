@@ -74,6 +74,25 @@ describe('CachedAstronomyProvider', () => {
     expect(provider.getFullMoons).toHaveBeenCalledTimes(1);
   });
 
+  it('caches solar season results by year', async () => {
+    const provider = createProvider({
+      getSolarSeasons: jest.fn().mockResolvedValue([
+        {
+          name: 'June solstice',
+          occursAt: new Date('2026-06-21T08:24:00.000Z'),
+          source: 'astronomy-engine',
+        },
+      ]),
+    });
+
+    const cached = new CachedAstronomyProvider(provider);
+
+    await cached.getSolarSeasons(2026);
+    await cached.getSolarSeasons(2026);
+
+    expect(provider.getSolarSeasons).toHaveBeenCalledTimes(1);
+  });
+
   it('caches moonrise results by date and location', async () => {
     const provider = createProvider({
       getMoonRise: jest.fn().mockResolvedValue({

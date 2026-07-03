@@ -310,7 +310,8 @@
       Year view starts at Te Tahi o Pipiri and uses actual dates across the
       maramataka year. It marks marama boundaries, month and seasonal dawn
       appearances, Matariki disappearance, astronomical New Moons,
-      astronomical Full Moons, and the Matariki public holiday marker.
+      astronomical Full Moons, equinoxes, solstices, and the Matariki public
+      holiday marker.
     </p>
     @if (year()!.diagnostics.length) {
     <div class="year-diagnostics" data-testid="year-diagnostics">
@@ -339,8 +340,9 @@
       <div class="year-band-guide" aria-label="Timeline levels">
         <span class="band-chip star">Star</span>
         <span class="band-chip seasonal">Seasonal</span>
-        <span class="band-chip holiday">Holiday</span>
+        <span class="band-chip solar">Solar</span>
         <span class="band-chip lunar">Lunar phase</span>
+        <span class="band-chip holiday">Holiday</span>
       </div>
       <div class="year-axis" aria-hidden="true">
         <span>{{ year()!.startsAt | date: 'd MMM y' : nzTimeZone }}</span>

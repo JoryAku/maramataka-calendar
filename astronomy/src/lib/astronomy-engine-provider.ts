@@ -9,6 +9,7 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  SolarSeasonEvent,
   StarMarker,
   StarMarkerDefinition,
   StarMarkerNightInvisibilityPeriod,
@@ -206,6 +207,35 @@ export class AstronomyEngineProvider implements AstronomyProvider {
         occursAt: phase.occursAt,
         source: phase.source,
       }));
+  }
+
+  async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
+    return this.calculate('solar seasons', async (engine) => {
+      const seasons = engine.Seasons(year);
+
+      return [
+        {
+          name: 'March equinox' as const,
+          occursAt: seasons.mar_equinox.date,
+          source: ASTRONOMY_ENGINE_SOURCE,
+        },
+        {
+          name: 'June solstice' as const,
+          occursAt: seasons.jun_solstice.date,
+          source: ASTRONOMY_ENGINE_SOURCE,
+        },
+        {
+          name: 'September equinox' as const,
+          occursAt: seasons.sep_equinox.date,
+          source: ASTRONOMY_ENGINE_SOURCE,
+        },
+        {
+          name: 'December solstice' as const,
+          occursAt: seasons.dec_solstice.date,
+          source: ASTRONOMY_ENGINE_SOURCE,
+        },
+      ];
+    });
   }
 
   async getMoonRise(date: string, location: Location): Promise<MoonRise> {

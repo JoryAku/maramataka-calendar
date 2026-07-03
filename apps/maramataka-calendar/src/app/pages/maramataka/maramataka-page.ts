@@ -29,6 +29,7 @@ type YearEventLayoutGroup =
   | 'seasonal-marker'
   | 'star-invisibility'
   | 'public-holiday'
+  | 'solar-season'
   | 'lunar-phase';
 
 @Component({
@@ -463,7 +464,19 @@ export class MaramatakaPage implements OnInit {
   }
 
   protected yearEventClass(event: MaramatakaYearEvent): string {
-    return `year-event ${event.type}`;
+    const lane = this.yearEventLane(event);
+    const group = this.yearEventLayoutGroupForEvent(event);
+    const classes = ['year-event', event.type, `lane-${lane}`];
+
+    if (group) {
+      classes.push(group);
+    }
+
+    if (lane === 0) {
+      classes.push('compact-label');
+    }
+
+    return classes.join(' ');
   }
 
   protected yearEventTopRem(event: MaramatakaYearEvent): number {
@@ -471,16 +484,20 @@ export class MaramatakaPage implements OnInit {
 
     switch (event.type) {
       case 'star-marker':
-        return event.starMarkerScope === 'seasonal'
-          ? 6 + lane * 2.8
-          : 0.8 + lane * 2.8;
+        if (event.starMarkerScope === 'seasonal') {
+          return lane === 0 ? 7.3 : 4.9;
+        }
+
+        return 0.8 + lane * 2.8;
       case 'star-invisibility':
         return 13 + lane * 1.8;
-      case 'public-holiday':
-        return 17;
+      case 'solar-season':
+        return 14.9;
       case 'new-moon':
       case 'full-moon':
-        return 22.4 + lane * 1.25;
+        return 21.2 + lane * 1.25;
+      case 'public-holiday':
+        return 25.1;
       case 'month-start':
         return 29.2;
     }
@@ -498,6 +515,8 @@ export class MaramatakaPage implements OnInit {
         return '●';
       case 'public-holiday':
         return '✦';
+      case 'solar-season':
+        return '☼';
       case 'month-start':
         return '◇';
     }
@@ -517,6 +536,8 @@ export class MaramatakaPage implements OnInit {
         return 'Full Moon';
       case 'public-holiday':
         return 'Holiday';
+      case 'solar-season':
+        return 'Solar';
       case 'month-start':
         return 'Month start';
     }
@@ -594,6 +615,10 @@ export class MaramatakaPage implements OnInit {
         types: ['public-holiday'],
       },
       {
+        key: 'solar-season',
+        types: ['solar-season'],
+      },
+      {
         key: 'lunar-phase',
         types: ['new-moon', 'full-moon'],
       },
@@ -658,6 +683,8 @@ export class MaramatakaPage implements OnInit {
         return 'star-invisibility';
       case 'public-holiday':
         return 'public-holiday';
+      case 'solar-season':
+        return 'solar-season';
       case 'new-moon':
       case 'full-moon':
         return 'lunar-phase';
@@ -669,11 +696,13 @@ export class MaramatakaPage implements OnInit {
   private yearEventLaneCount(group: YearEventLayoutGroup): number {
     switch (group) {
       case 'star-marker':
+        return 2;
       case 'seasonal-marker':
         return 2;
       case 'star-invisibility':
         return 2;
       case 'public-holiday':
+      case 'solar-season':
         return 1;
       case 'lunar-phase':
         return 3;
@@ -688,6 +717,7 @@ export class MaramatakaPage implements OnInit {
       case 'star-invisibility':
         return 4;
       case 'public-holiday':
+      case 'solar-season':
         return 0;
       case 'lunar-phase':
         return 2.8;

@@ -33,6 +33,15 @@ describe('timezone helpers', () => {
     ).toBe(12);
   });
 
+  it('parses historical offsets that include seconds', () => {
+    expect(
+      getTimezoneOffsetHours(
+        'Pacific/Auckland',
+        new Date('1840-02-06T00:00:00.000Z'),
+      ),
+    ).toBeCloseTo(11 + 39 / 60 + 4 / 3600, 8);
+  });
+
   it('parses local date-times across daylight-saving offsets', () => {
     expect(
       parseLocalDateTimeInTimezone(

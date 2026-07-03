@@ -8,6 +8,7 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  SolarSeasonEvent,
   StarMarker,
   StarMarkerDefinition,
   StarMarkerNightInvisibilityPeriod,
@@ -57,6 +58,18 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
         fullMoons.map((fullMoon) => ({
           ...fullMoon,
           occursAt: new Date(fullMoon.occursAt),
+        })),
+    );
+  }
+
+  async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
+    return this.getOrSet(
+      `solar-seasons:${year}`,
+      () => this.provider.getSolarSeasons?.(year) ?? Promise.resolve([]),
+      (events) =>
+        events.map((event) => ({
+          ...event,
+          occursAt: new Date(event.occursAt),
         })),
     );
   }

@@ -709,7 +709,7 @@ describe('MaramatakaService', () => {
 
     await expect(
       calculateStarMonthSequence(newMoons, ruhanuiNewMoon, location),
-    ).resolves.toBe(0);
+    ).resolves.toBe(13);
     await expect(
       calculateStarMonthSequence(newMoons, pipiriNewMoon, location),
     ).resolves.toBe(1);
@@ -720,6 +720,152 @@ describe('MaramatakaService', () => {
       [expect.objectContaining({ id: 'matariki' })],
       -18,
     );
+  });
+
+  it('keeps dates inside Ruhanui on the previous year timeline', async () => {
+    const newMoons = [
+      '2027-05-27T00:00:00Z',
+      '2027-06-25T00:00:00Z',
+      '2027-07-24T00:00:00Z',
+      '2027-08-23T00:00:00Z',
+      '2027-09-21T00:00:00Z',
+      '2027-10-21T00:00:00Z',
+      '2027-11-19T00:00:00Z',
+      '2027-12-19T00:00:00Z',
+      '2028-01-17T00:00:00Z',
+      '2028-02-16T00:00:00Z',
+      '2028-03-16T00:00:00Z',
+      '2028-04-15T00:00:00Z',
+      '2028-05-24T00:00:00Z',
+      '2028-06-23T00:00:00Z',
+      '2028-07-22T00:00:00Z',
+      '2029-06-12T00:00:00Z',
+    ].map((occursAt) => ({
+      occursAt: new Date(occursAt),
+      source: 'astronomy-engine',
+    }));
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce(
+        newMoons.filter(
+          (newMoon) => newMoon.occursAt.getUTCFullYear() === 2027,
+        ),
+      )
+      .mockResolvedValueOnce(
+        newMoons.filter(
+          (newMoon) => newMoon.occursAt.getUTCFullYear() === 2028,
+        ),
+      )
+      .mockResolvedValueOnce(
+        newMoons.filter(
+          (newMoon) => newMoon.occursAt.getUTCFullYear() === 2029,
+        ),
+      )
+      .mockResolvedValueOnce([]);
+    const getStarFirstAppearances = jest.fn().mockImplementation((startDate) =>
+      Promise.resolve([
+        {
+          id: 'matariki',
+          name: 'Matariki',
+          type: 'asterism',
+          englishName: 'Pleiades',
+          description: 'Year-start marker.',
+          seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+          source: 'test',
+          confidence: 'confirmed',
+          observedAt: startDate.startsWith('2029')
+            ? new Date('2029-06-01T18:00:00Z')
+            : new Date(`${startDate.slice(0, 4)}-05-20T18:00:00Z`),
+          altitudeDegrees: 1,
+          azimuthDegrees: 80,
+          direction: 'E',
+          visibility: 'low',
+          calculation: 'test marker appearance',
+        },
+      ]),
+    );
+    const getStarMarkers = jest.fn().mockResolvedValue([
+      {
+        id: 'matariki',
+        name: 'Matariki',
+        type: 'asterism',
+        englishName: 'Pleiades',
+        description: 'Year-start marker.',
+        seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
+        source: 'test',
+        confidence: 'confirmed',
+        observedAt: new Date('2028-05-23T18:09:00Z'),
+        altitudeDegrees: -13.5,
+        azimuthDegrees: 70,
+        direction: 'E',
+        visibility: 'below-horizon',
+        calculation: 'test dawn sample',
+      },
+    ]);
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn().mockResolvedValue([]),
+        getMoonRise: jest.fn(),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+        getStarFirstAppearances,
+        getStarMarkers,
+        getStarNightInvisibilityPeriods: jest.fn().mockResolvedValue([
+          {
+            markerId: 'matariki',
+            markerName: 'Matariki',
+            startsOn: '2028-04-04',
+            endsOn: '2028-06-15',
+            days: 73,
+            sunAltitudeThresholdDegrees: -18,
+            calculation: 'test night invisibility period',
+          },
+        ]),
+      },
+    });
+    jest.spyOn(service, 'getMonth').mockImplementation(async (_location, date) => {
+      const index = newMoons.findIndex(
+        (newMoon) => newMoon.occursAt.getTime() === date.getTime(),
+      );
+      const nextNewMoon = newMoons[index + 1];
+      const whiroStartsAt = newMoons[index].occursAt;
+      const nextWhiroStartsAt = nextNewMoon?.occursAt ?? whiroStartsAt;
+
+      return {
+        version: 'mita-te-tai-best' as const,
+        ruleSet: summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET),
+        whiroStartsAt,
+        starMonthSequence: index + 1,
+        nights: [
+          {
+            mata: {
+              index: 1,
+              name: 'Whiro',
+              version: 'mita-te-tai-best' as const,
+            },
+            startsAt: whiroStartsAt,
+            endsAt: nextWhiroStartsAt,
+          },
+        ],
+      };
+    });
+
+    const year = await service.getYear(
+      location,
+      new Date('2028-06-10T12:00:00Z'),
+    );
+
+    expect(year.year).toBe(2027);
+    expect(year.startsAt).toEqual(new Date('2027-05-27T00:00:00.000Z'));
+    expect(year.endsAt).toEqual(new Date('2028-06-23T00:00:00.000Z'));
+    expect(year.months.at(-1)).toMatchObject({
+      sequence: 13,
+      name: 'Ruhanui',
+      startsAt: new Date('2028-05-24T00:00:00.000Z'),
+    });
   });
 
   it('adds the Matariki public holiday on the closest Friday to the Korekore/Tangaroa window in Pipiri', async () => {
@@ -863,6 +1009,104 @@ describe('MaramatakaService', () => {
         }),
       ]),
     );
+  });
+
+  it('adds equinox and solstice events within the maramataka year', async () => {
+    const getNewMoons = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          occursAt: new Date('2026-06-15T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+        {
+          occursAt: new Date('2026-07-14T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          occursAt: new Date('2027-06-04T00:00:00Z'),
+          source: 'astronomy-engine',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    const getSolarSeasons = jest
+      .fn()
+      .mockResolvedValueOnce([
+        {
+          name: 'March equinox',
+          occursAt: new Date('2026-03-20T14:46:00.000Z'),
+          source: 'astronomy-engine',
+        },
+        {
+          name: 'June solstice',
+          occursAt: new Date('2026-06-21T08:24:00.000Z'),
+          source: 'astronomy-engine',
+        },
+        {
+          name: 'December solstice',
+          occursAt: new Date('2026-12-21T20:50:00.000Z'),
+          source: 'astronomy-engine',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          name: 'June solstice',
+          occursAt: new Date('2027-06-21T14:10:00.000Z'),
+          source: 'astronomy-engine',
+        },
+      ]);
+    const service = new MaramatakaService({
+      astronomyProvider: {
+        getNewMoons,
+        getMoonPhases: jest.fn(),
+        getFullMoons: jest.fn().mockResolvedValue([]),
+        getSolarSeasons,
+        getMoonRise: jest.fn(),
+        getMoonRiseSet: jest.fn(),
+        getMoonTransit: jest.fn(),
+        getMoonDetails: jest.fn(),
+      },
+    });
+    const whiroStartsAt = new Date('2026-06-15T06:00:00Z');
+    const nights = MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.mata
+      .slice(0, 29)
+      .map((mata, index) => ({
+        mata,
+        startsAt: new Date(whiroStartsAt.getTime() + index * 86_400_000),
+        endsAt: new Date(whiroStartsAt.getTime() + (index + 1) * 86_400_000),
+      }));
+    jest.spyOn(service, 'getMonth').mockResolvedValue({
+      version: 'mita-te-tai-best',
+      ruleSet: summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET),
+      whiroStartsAt,
+      starMonthSequence: 1,
+      nights,
+    });
+
+    const year = await service.getYear(
+      location,
+      new Date('2026-07-10T12:00:00Z'),
+    );
+
+    expect(getSolarSeasons).toHaveBeenCalledWith(2026);
+    expect(getSolarSeasons).toHaveBeenCalledWith(2027);
+    expect(
+      year.events.filter((event) => event.type === 'solar-season'),
+    ).toEqual([
+      expect.objectContaining({
+        type: 'solar-season',
+        name: 'June solstice',
+        occursAt: new Date('2026-06-21T08:24:00.000Z'),
+      }),
+      expect.objectContaining({
+        type: 'solar-season',
+        name: 'December solstice',
+        occursAt: new Date('2026-12-21T20:50:00.000Z'),
+      }),
+    ]);
   });
 
   it('derives the holiday window from phase groups even when names are changed', async () => {

@@ -8,6 +8,7 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
+  SolarSeasonEvent,
   StarMarker,
   StarMarkerDefinition,
   StarMarkerNightInvisibilityPeriod,
@@ -20,6 +21,7 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   private moonPhaseCache = new Map<number, Promise<MoonPhase[]>>();
   private newMoonCache = new Map<number, Promise<NewMoon[]>>();
   private fullMoonCache = new Map<number, Promise<FullMoon[]>>();
+  private solarSeasonCache = new Map<number, Promise<SolarSeasonEvent[]>>();
   private moonRiseCache = new Map<string, Promise<MoonRise>>();
   private moonRiseSetCache = new Map<string, Promise<MoonRiseSet>>();
   private moonTransitCache = new Map<string, Promise<MoonTransit>>();
@@ -75,6 +77,23 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     });
 
     this.fullMoonCache.set(year, request);
+    return request;
+  }
+
+  async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
+    const cachedRequest = this.solarSeasonCache.get(year);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = (
+      this.provider.getSolarSeasons?.(year) ?? Promise.resolve([])
+    ).catch((error) => {
+      this.solarSeasonCache.delete(year);
+      throw error;
+    });
+
+    this.solarSeasonCache.set(year, request);
     return request;
   }
 

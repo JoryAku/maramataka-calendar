@@ -78,7 +78,8 @@ prioritise:
 - lunar age, illumination, phase direction, and distance where available
 - the 30-mata cycle wheel
 - the year rhythm view, including marama boundaries, month-scoped dawn markers,
-  seasonal dawn markers, and astronomical New Moon / Full Moon events
+  seasonal dawn markers, Matariki disappearance, astronomical New Moon / Full
+  Moon events, equinoxes, solstices, and the Matariki public holiday marker
 
 Tide, weather, wind, and three-year intercalation views remain future state
 until the core moon tracking is trusted.
@@ -102,6 +103,14 @@ Year-view star events are split into two scopes:
   horizon during astronomical night (`Sun <= -18°`) within the displayed
   maramataka year.
 
+## Solar Season Anchors
+
+The year rhythm view includes the four astronomical solar season anchors:
+March equinox, June solstice, September equinox, and December solstice. These
+are informational timeline events from Astronomy Engine `Seasons(year)` data.
+They do not currently drive Whiro, marama naming, Ruhanui, or Matariki public
+holiday calculations.
+
 ## Star Year And Thirteenth Month Rule
 
 The current star-year model treats Matariki as the year-start tohu rather than
@@ -114,22 +123,30 @@ successive marker-anchored year starts, the generated year contains thirteen
 marama. This is a working implementation of the source idea that an extra month
 could be used to regulate the year and recover seasonal drift.
 
-Ruhanui is treated as the regulating marama at the usual New Year Whiro when
-the star-year contains a thirteenth lunar cycle and Matariki has not yet returned
-strongly enough to the night sky. In implementation terms, the candidate must
-open an interval with more than twelve Whiro anchors before the next
-marker-anchored Pipiri, Matariki must pass through a full-night invisibility
-period in the current working 71-73 day band, and the candidate Whiro must sit
-in the search window around that disappearance / reappearance arc. Astronomical
-night is measured with the Sun at or below -18° altitude. The dawn position is
-then used as a second astronomy-only discriminator: a 73-day invisibility period
-requires Matariki at or below -8° altitude at candidate dawn, while a shorter
-71-72 day period requires Matariki at or below -13° altitude. When those
-conditions are met, the candidate marama is labelled `Ruhanui`, and `Te Tahi o
-Pipiri` begins at the following Whiro. This keeps the regulating month distinct
-from Pipiri so Matariki public holiday calculations use the Pipiri Tangaroa
-phase group rather than the intercalary marama. In 13-marama years, the extra
-month is labelled `Ruhanui` rather than repeating `Te Tahi o Pipiri`.
+Ruhanui is treated as the regulating marama after the twelve regular marama
+when the interval between one Pipiri and the next contains a thirteenth lunar
+cycle and Matariki has not yet returned strongly enough to the night sky. In
+implementation terms, the candidate must be the thirteenth Whiro anchor before
+the next marker-anchored Pipiri, Matariki must pass through a full-night
+invisibility period in the current working 71-73 day band, and the candidate
+Whiro must sit in the search window around that disappearance / reappearance
+arc. Astronomical night is measured with the Sun at or below -18° altitude. The
+dawn position is then used as a second astronomy-only discriminator: a 73-day
+invisibility period requires Matariki at or below -8° altitude at candidate
+dawn, while a shorter 71-72 day period requires Matariki at or below -13°
+altitude.
+
+When those conditions are met, the candidate marama is labelled `Ruhanui` as
+the thirteenth and final marama of the previous displayed star year. The
+following Whiro becomes `Te Tahi o Pipiri` and starts the next displayed star
+year. This keeps the regulating month distinct from Pipiri so Matariki public
+holiday calculations use the Pipiri Tangaroa phase group rather than the
+intercalary marama. In 13-marama years, the extra month is labelled `Ruhanui`
+rather than repeating `Te Tahi o Pipiri`.
+
+When the user selects a date inside Ruhanui, the year rhythm view remains on the
+previous star year timeline because Ruhanui closes that year. It does not move
+to the next year timeline until the following Pipiri Whiro.
 
 The Matariki public holiday event is calculated from the closest Friday to the
 Korekore/Tangaroa transition window in Te Tahi o Pipiri. For this rule set, the
@@ -149,7 +166,8 @@ Current calibration notes:
 ## Astronomy Provider Resilience
 
 The MVP treats Astronomy Engine as the authoritative astronomy provider for New
-Moon, Full Moon, moonrise, moonset, transit, phase, and illumination data.
+Moon, Full Moon, moonrise, moonset, transit, phase, illumination, equinox, and
+solstice data.
 
 Provider calls must fail predictably:
 
