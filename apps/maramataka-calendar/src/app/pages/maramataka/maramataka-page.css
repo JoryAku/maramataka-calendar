@@ -420,8 +420,16 @@ dd {
     linear-gradient(180deg, transparent 0 19.85rem, #27493f66 19.85rem 19.9rem, transparent 19.9rem),
     linear-gradient(180deg, transparent 0 25.35rem, #27493f66 25.35rem 25.4rem, transparent 25.4rem),
     linear-gradient(180deg, transparent 0 28.6rem, #27493f66 28.6rem 28.65rem, transparent 28.65rem),
-    linear-gradient(90deg, #25493f 0 1px, transparent 1px) 0 0 / 8.333% 100%,
     linear-gradient(180deg, #071613 0%, #0a1d18 100%);
+}
+
+.year-month-grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid #25493f;
+  transform: translateX(-1px);
+  pointer-events: none;
 }
 
 .year-rail {

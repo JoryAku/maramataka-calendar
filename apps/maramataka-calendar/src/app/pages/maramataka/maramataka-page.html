@@ -348,6 +348,13 @@
       </div>
       <div class="year-event-track">
         <div class="year-rail" aria-hidden="true"></div>
+        @for (month of year()!.months; track 'grid-' + month.startsAt.toISOString()) {
+        <span
+          class="year-month-grid-line"
+          [style.left.%]="yearMonthOffsetPercent(month)"
+          aria-hidden="true"
+        ></span>
+        }
         @for (month of year()!.months; track month.startsAt.toISOString()) {
         <span
           class="year-month-tick"
