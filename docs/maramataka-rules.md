@@ -93,6 +93,15 @@ from the Sun crossing 18° below the horizon through sunrise, so markers that
 rise after astronomical dawn, such as Kōpū/Venus in some years, can still be
 placed at their first dawn-window horizon appearance.
 
+The first-appearance scan is implemented as a reusable dawn-rising rule with
+per-marker settings. The active marker settings currently preserve the previous
+behavior for every configured star: start when the Sun is `-18°`, end at
+sunrise (`0°`), require the marker to be at least `0°` above the horizon, keep
+the eastern azimuth window from `45°` to `135°`, and sample every five minutes.
+These settings are intentionally explicit so individual stars can later use
+stricter heliacal-rising thresholds without changing the rest of the timeline
+logic.
+
 Year-view star events are split into two scopes:
 
 - Month-scoped markers are searched within the relevant named marama.
@@ -125,9 +134,17 @@ could be used to regulate the year and recover seasonal drift.
 
 Ruhanui is treated as the regulating marama after the twelve regular marama
 when the interval between one Pipiri and the next contains a thirteenth lunar
-cycle and Matariki has not yet returned strongly enough to the night sky. In
-implementation terms, the candidate must be the thirteenth Whiro anchor before
-the next marker-anchored Pipiri, Matariki must pass through a full-night
+cycle and Matariki has not yet returned strongly enough to the night sky.
+
+The Matariki guard exists because a thirteenth Whiro anchor by itself is too
+broad: some Pipiri-to-Pipiri intervals contain thirteen lunar cycles without
+needing an intercalary marama. The guard keeps Ruhanui for the narrower case
+the rule is trying to model, where the extra lunar cycle lines up with
+Matariki's seasonal disappearance / return pattern and suggests that the next
+Pipiri should wait one more marama.
+
+In implementation terms, the candidate must be the thirteenth Whiro anchor
+before the next marker-anchored Pipiri, Matariki must pass through a full-night
 invisibility period in the current working 71-73 day band, and the candidate
 Whiro must sit in the search window around that disappearance / reappearance
 arc. Astronomical night is measured with the Sun at or below -18° altitude. The
@@ -136,32 +153,34 @@ invisibility period requires Matariki at or below -8° altitude at candidate
 dawn, while a shorter 71-72 day period requires Matariki at or below -13°
 altitude.
 
-When those conditions are met, the candidate marama is labelled `Ruhanui` as
-the thirteenth and final marama of the previous displayed star year. The
-following Whiro becomes `Te Tahi o Pipiri` and starts the next displayed star
-year. This keeps the regulating month distinct from Pipiri so Matariki public
-holiday calculations use the Pipiri Tangaroa phase group rather than the
-intercalary marama. In 13-marama years, the extra month is labelled `Ruhanui`
-rather than repeating `Te Tahi o Pipiri`.
+When those conditions are met, the generated year that began at the preceding
+`Te Tahi o Pipiri` gets a thirteenth marama. That candidate marama is labelled
+`Ruhanui` and closes the 13-marama year. The following Whiro becomes the next
+year's `Te Tahi o Pipiri`. This keeps the regulating month distinct from
+Pipiri so Matariki public holiday calculations use the Pipiri Tangaroa phase
+group rather than the intercalary marama. In 13-marama years, the extra month
+is labelled `Ruhanui` rather than repeating `Te Tahi o Pipiri`.
 
 When the user selects a date inside Ruhanui, the year rhythm view remains on the
-previous star year timeline because Ruhanui closes that year. It does not move
-to the next year timeline until the following Pipiri Whiro.
+star year that owns the thirteenth marama because Ruhanui closes that year. It
+does not move to the next year timeline until the following Pipiri Whiro.
 
-The Matariki public holiday event is calculated from the closest Friday to the
-Korekore/Tangaroa transition window in Te Tahi o Pipiri. For this rule set, the
-window is treated as eight nights: `Korekore-te-whiwhia`,
-`Korekore-te-rawea`, `Korekore-piri-ki-ngā-Tangaroa`, `Tangaroa-ā-mua`,
-`Tangaroa-ā-roto`, `Tangaroa-kiokio`, `Ōtāne`, and `Ōrongonui`.
+The Matariki public holiday event is calculated from the Friday closest to a
+provisional four-night Tangaroa boundary window. Candidate Fridays are local
+dates within Te Tahi o Pipiri. For this rule set, the current target window
+starts one night before `Korekore-piri-ki-ngā-Tangaroa` and runs through
+`Tangaroa-kiokio`: `Korekore-te-rawea`, `Korekore-piri-ki-ngā-Tangaroa`,
+`Tangaroa-ā-mua`, `Tangaroa-ā-roto`, and `Tangaroa-kiokio`.
 
 Against the official 2022-2052 public holiday schedule this astronomy-only
-model currently matches 29 of 31 dates. The official schedule is used only as a
+model currently matches 28 of 31 dates. The official schedule is used only as a
 comparison target, not as an input to the calculation.
 
 Current calibration notes:
 
-- 2033 and 2044 estimate one Friday early; both have two Fridays close to the
-  generated Korekore/Tangaroa transition window.
+- The current rule considers Fridays within Te Tahi o Pipiri. The remaining
+  comparison differences are 2027 and 2030 estimating one Friday late, and
+  2044 estimating one Friday early.
 
 ## Astronomy Provider Resilience
 

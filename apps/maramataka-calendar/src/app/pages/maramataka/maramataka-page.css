@@ -184,27 +184,29 @@ input[type='date'].control-input::-webkit-calendar-picker-indicator {
   place-items: center;
 }
 
-.moon-disc {
-  position: relative;
+.moon-phase-art {
   width: min(78%, 17rem);
   aspect-ratio: 1;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 30%, #f1f0e8 0 4%, transparent 5%),
-    radial-gradient(circle at 58% 48%, #626865 0 7%, transparent 8%),
-    radial-gradient(circle at 40% 58%, #767d79 0 9%, transparent 10%),
-    radial-gradient(circle at 54% 32%, #949b96 0 5%, transparent 6%),
-    linear-gradient(90deg, #d8dad4 0 44%, #949b96 45% 64%, #242c2a 65% 100%);
-  box-shadow:
-    0 0 45px #d5e8df55,
-    inset -32px 0 45px #10171599;
+  overflow: visible;
 }
 
-.moon-disc span {
-  position: absolute;
-  inset: -0.7rem;
-  border-radius: 50%;
-  border: 1px solid #d5e8df22;
+.moon-phase-base {
+  fill: #f1efe6;
+}
+
+.moon-phase-shadow {
+  fill: #232d2a;
+}
+
+.moon-phase-rim {
+  fill: none;
+  stroke: #d5e8df22;
+  stroke-width: 1;
+}
+
+.moon-phase-glint {
+  fill: #f7f4e8;
+  opacity: 0.65;
 }
 
 .mata-panel {
@@ -449,29 +451,36 @@ dd {
 
 .year-month-tick {
   position: absolute;
-  top: 29.1rem;
-  height: 2.9rem;
+  top: 28.95rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.12rem;
+  height: 3.7rem;
   border-left: 1px solid #416b5f;
   color: #9fb5ac;
   transform: translateX(-1px);
 }
 
-.year-month-tick span {
-  position: absolute;
-  top: 3.15rem;
-  left: 0.28rem;
+.year-month-name,
+.year-month-start {
   display: -webkit-box;
-  width: 5.25rem;
-  max-height: 1.7rem;
+  width: 5.35rem;
   overflow: hidden;
   color: #9fb5ac;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
   line-height: 1.15;
   text-overflow: ellipsis;
   -webkit-box-orient: vertical;
   line-clamp: 2;
   -webkit-line-clamp: 2;
+}
+
+.year-month-start {
+  color: #7ce0c9;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .year-event {

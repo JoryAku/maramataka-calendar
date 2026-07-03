@@ -16,24 +16,6 @@ import { NZ_TIMEZONE } from '../../maramataka.constants';
 })
 export class MaramatakaMonthView {
   protected readonly nzTimeZone = NZ_TIMEZONE;
-  private readonly phaseGroupTokens: Readonly<Record<string, string>> = {
-    'Te Marama i te rā': 'te-marama-i-te-ra',
-    'Te Hua': 'te-hua',
-    'Tāmatea': 'tamatea',
-    'Te Rākau': 'te-rakau',
-    'Te Atarau': 'te-atarau',
-    Korekore: 'korekore',
-    Tangaroa: 'tangaroa',
-  };
-  protected readonly phaseLegend = [
-    { name: 'Te Marama i te rā', token: 'te-marama-i-te-ra' },
-    { name: 'Te Hua', token: 'te-hua' },
-    { name: 'Tāmatea', token: 'tamatea' },
-    { name: 'Te Rākau', token: 'te-rakau' },
-    { name: 'Te Atarau', token: 'te-atarau' },
-    { name: 'Korekore', token: 'korekore' },
-    { name: 'Tangaroa', token: 'tangaroa' },
-  ] as const;
   private readonly wheelCenter = 50;
   private readonly outerRadius = 47;
   private readonly innerRadius = 31;
@@ -57,6 +39,7 @@ export class MaramatakaMonthView {
     const total = nights.length;
     const segmentAngle = total ? 360 / total : 0;
     const gapAngle = Math.min(1.1, segmentAngle * 0.16);
+    const midpointIndex = total ? Math.ceil(total / 2) : 0;
 
     return nights.map((night, index) => {
       const startAngle = -90 + segmentAngle * index + gapAngle / 2;
@@ -72,6 +55,7 @@ export class MaramatakaMonthView {
         path: this.describeSegment(startAngle, endAngle),
         labelX: labelPoint.x,
         labelY: labelPoint.y,
+        fill: this.segmentFill(index, midpointIndex, total),
         isCurrent: this.isCurrentNight(night),
         isFullMoonAnchor: this.isFullMoonAnchor(night),
         hasOverlap: (night.overlappingMata?.length ?? 0) > 0,
@@ -93,9 +77,6 @@ export class MaramatakaMonthView {
   protected readonly hasBalancedLength = computed(
     () => this.month().nights.length !== 30 || this.repeatedMata().length > 0,
   );
-  protected readonly hasUnknownPhaseGroup = computed(() =>
-    this.month().nights.some((night) => this.phaseGroupToken(night) === 'unknown'),
-  );
 
   isCurrentNight(night: MaramatakaNight): boolean {
     const currentTime = this.now().getTime();
@@ -110,25 +91,12 @@ export class MaramatakaMonthView {
     this.nightSelected.emit(night);
   }
 
-  protected phaseGroupToken(night: MaramatakaNight): string {
-    const phaseGroupName = night.phaseGroup?.name;
-
-    if (!phaseGroupName) {
-      return 'unknown';
-    }
-
-    return this.phaseGroupTokens[phaseGroupName] ?? 'unknown';
-  }
-
-  protected phaseGroupName(night: MaramatakaNight): string {
-    return night.phaseGroup?.name ?? 'Unknown phase group';
-  }
 
   protected segmentA11yLabel(night: MaramatakaNight): string {
     const anchor = this.anchorLabel(night);
 
     return [
-      `${night.mata} (${this.phaseGroupName(night)})`,
+      night.mata,
       `moonrise ${this.formatNightStart(night)}`,
       anchor,
     ]
@@ -140,10 +108,10 @@ export class MaramatakaMonthView {
     const anchor = this.anchorLabel(night);
 
     if (anchor) {
-      return `${night.mata} (${this.phaseGroupName(night)}) - ${anchor}`;
+      return `${night.mata} - ${anchor}`;
     }
 
-    return `${night.mata} (${this.phaseGroupName(night)})`;
+    return night.mata;
   }
 
   anchorLabel(night: MaramatakaNight): string | null {
@@ -186,7 +154,7 @@ export class MaramatakaMonthView {
       case 'star-invisibility':
         return '◌';
       case 'new-moon':
-        return '◐';
+        return '○';
       case 'full-moon':
         return '●';
       case 'public-holiday':
@@ -227,6 +195,66 @@ export class MaramatakaMonthView {
         fullMoon.occursAt.getTime() >= night.startsAt.getTime() &&
         fullMoon.occursAt.getTime() < night.endsAt.getTime(),
     );
+  }
+
+  private segmentFill(
+    index: number,
+    midpointIndex: number,
+    total: number,
+  ): string {
+    if (!total) {
+      return '#5f7480';
+    }
+
+    const progress =
+      index <= midpointIndex
+        ? midpointIndex === 0
+          ? 0.5
+          : (index / midpointIndex) * 0.5
+        : total - 1 === midpointIndex
+          ? 0.5
+          : 0.5 + ((index - midpointIndex) / (total - 1 - midpointIndex)) * 0.5;
+
+    const ramp = ['#4a6476', '#e0b34f', '#4a6476'];
+
+    return this.samplePalette(ramp, progress);
+  }
+
+  private samplePalette(colors: string[], ratio: number): string {
+    if (colors.length === 1) {
+      return colors[0];
+    }
+
+    const scaled = ratio * (colors.length - 1);
+    const startIndex = Math.min(colors.length - 2, Math.floor(scaled));
+    const endIndex = startIndex + 1;
+    const localRatio = scaled - startIndex;
+
+    return this.mixHex(colors[startIndex], colors[endIndex], localRatio);
+  }
+
+  private mixHex(startColor: string, endColor: string, ratio: number): string {
+    const start = this.hexToRgb(startColor);
+    const end = this.hexToRgb(endColor);
+
+    const red = Math.round(this.interpolate(start.red, end.red, ratio));
+    const green = Math.round(this.interpolate(start.green, end.green, ratio));
+    const blue = Math.round(this.interpolate(start.blue, end.blue, ratio));
+
+    return `rgb(${red} ${green} ${blue})`;
+  }
+
+  private hexToRgb(color: string): { red: number; green: number; blue: number } {
+    const value = color.replace('#', '');
+    const red = Number.parseInt(value.slice(0, 2), 16);
+    const green = Number.parseInt(value.slice(2, 4), 16);
+    const blue = Number.parseInt(value.slice(4, 6), 16);
+
+    return { red, green, blue };
+  }
+
+  private interpolate(start: number, end: number, ratio: number): number {
+    return start + (end - start) * ratio;
   }
 
   private formatNightStart(night: MaramatakaNight): string {

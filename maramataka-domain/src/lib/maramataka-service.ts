@@ -74,6 +74,13 @@ const RUHANUI_MATARIKI_INVISIBILITY_LOOKAHEAD_DAYS = 35;
 const ASTRONOMICAL_NIGHT_SUN_ALTITUDE_DEGREES = -18;
 const RUHANUI_MATARIKI_MAXIMUM_INVISIBILITY_DAWN_ALTITUDE_DEGREES = -8;
 const RUHANUI_MATARIKI_SHORTER_INVISIBILITY_DAWN_ALTITUDE_DEGREES = -13;
+const MATARIKI_PUBLIC_HOLIDAY_TARGET_MATA = new Set([
+  'Korekore-te-rawea',
+  'Korekore-piri-ki-ngā-Tangaroa',
+  'Tangaroa-ā-mua',
+  'Tangaroa-ā-roto',
+  'Tangaroa-kiokio',
+]);
 
 interface YearMonthResult {
   month: MaramatakaYearMonth;
@@ -778,18 +785,20 @@ export class MaramatakaService {
       return [];
     }
 
-    const tangaroaNights = month.nights
-      .filter((night) => this.isKorekoreTangaroaWindowNight(night))
+    const targetNights = month.nights
+      .filter((night) => this.isMatarikiPublicHolidayTargetNight(night))
       .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
-    const firstTangaroaNight = tangaroaNights[0];
-    const lastTangaroaNight = tangaroaNights[tangaroaNights.length - 1];
-    if (!firstTangaroaNight || !lastTangaroaNight) {
+    const firstTargetNight = targetNights[0];
+    const lastTargetNight = targetNights[targetNights.length - 1];
+    if (!firstTargetNight || !lastTargetNight) {
       return [];
     }
 
-    const holidayDate = this.closestFridayToDateRange(
-      this.formatIsoDateForLocation(firstTangaroaNight.startsAt, location),
-      this.formatIsoDateForLocation(lastTangaroaNight.endsAt, location),
+    const holidayDate = this.closestFridayInDateRangeToDateRange(
+      this.formatIsoDateForLocation(yearMonth.startsAt, location),
+      this.formatIsoDateForLocation(yearMonth.endsAt, location),
+      this.formatIsoDateForLocation(firstTargetNight.startsAt, location),
+      this.formatIsoDateForLocation(lastTargetNight.endsAt, location),
     );
 
     return [
@@ -800,17 +809,14 @@ export class MaramatakaService {
         monthSequence: yearMonth.sequence,
         monthName: yearMonth.name,
         description:
-          'Estimated as the closest Friday to the Korekore/Tangaroa transition window in Te Tahi o Pipiri.',
+          'Estimated as the Friday within Te Tahi o Pipiri closest to the four-night Tangaroa boundary window from Korekore-te-rawea through Tangaroa-kiokio.',
         source: 'Matariki public holiday maramataka rule',
       },
     ];
   }
 
-  private isKorekoreTangaroaWindowNight(night: MaramatakaNight): boolean {
-    return (
-      night.mata.phaseGroup?.name === 'Korekore' ||
-      night.mata.phaseGroup?.name === 'Tangaroa'
-    );
+  private isMatarikiPublicHolidayTargetNight(night: MaramatakaNight): boolean {
+    return MATARIKI_PUBLIC_HOLIDAY_TARGET_MATA.has(night.mata.name);
   }
 
   private async createStarInvisibilityEvents(
@@ -1647,16 +1653,20 @@ export class MaramatakaService {
     return formatIsoDateInTimezone(date, location.timezone);
   }
 
-  private closestFridayToDateRange(
+  private closestFridayInDateRangeToDateRange(
+    candidateStartsOn: string,
+    candidateEndsOn: string,
     startsOn: string,
     endsOn: string,
   ): string {
+    const candidateStartDay = this.localDateOrdinal(candidateStartsOn);
+    const candidateEndDay = this.localDateOrdinal(candidateEndsOn);
     const startDay = this.localDateOrdinal(startsOn);
     const endDay = this.localDateOrdinal(endsOn);
-    let closestFriday = startDay;
+    let closestFriday: number | undefined;
     let closestDistance = Number.POSITIVE_INFINITY;
 
-    for (let day = startDay - 7; day <= endDay + 7; day += 1) {
+    for (let day = candidateStartDay; day < candidateEndDay; day += 1) {
       if (this.weekdayForOrdinal(day) !== 5) {
         continue;
       }
@@ -1665,14 +1675,15 @@ export class MaramatakaService {
         day < startDay ? startDay - day : day > endDay ? day - endDay : 0;
       if (
         distanceToRange < closestDistance ||
-        (distanceToRange === closestDistance && day < closestFriday)
+        (distanceToRange === closestDistance &&
+          (closestFriday === undefined || day < closestFriday))
       ) {
         closestFriday = day;
         closestDistance = distanceToRange;
       }
     }
 
-    return this.localDateFromOrdinal(closestFriday);
+    return this.localDateFromOrdinal(closestFriday ?? startDay);
   }
 
   private localDateStart(localDate: string, location: Location): Date {

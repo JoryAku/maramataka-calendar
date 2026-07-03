@@ -10,6 +10,7 @@ import {
   MoonTransit,
   NewMoon,
   SolarSeasonEvent,
+  StarMarkerDawnRisingConfig,
   StarMarker,
   StarMarkerDefinition,
   StarMarkerNightInvisibilityPeriod,
@@ -29,6 +30,15 @@ const MS_PER_MINUTE = 60 * 1000;
 const DAWN_FIRST_APPEARANCE_SAMPLE_MINUTES = 5;
 const NIGHT_VISIBILITY_SAMPLE_MINUTES = 10;
 const ASTRONOMICAL_NIGHT_SUN_ALTITUDE_DEGREES = -18;
+
+export const DEFAULT_DAWN_RISING_CONFIG: StarMarkerDawnRisingConfig = {
+  startSunAltitudeDegrees: -18,
+  endSunAltitudeDegrees: 0,
+  minimumMarkerAltitudeDegrees: 0,
+  minimumAzimuthDegrees: 45,
+  maximumAzimuthDegrees: 135,
+  sampleMinutes: DAWN_FIRST_APPEARANCE_SAMPLE_MINUTES,
+};
 
 type AstronomyEngineModule = typeof import('astronomy-engine');
 
@@ -50,6 +60,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     seasonalAssociation: 'Year-start ariki for Te Tahi o Pipiri',
     source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
+    dawnRising: DEFAULT_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 3.7914,
@@ -65,6 +76,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     seasonalAssociation: 'Second seasonal month marker',
     source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
+    dawnRising: DEFAULT_DAWN_RISING_CONFIG,
     representative: {
       kind: 'body',
       body: 'Venus',
@@ -79,6 +91,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     seasonalAssociation: 'Second named month marker',
     source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
+    dawnRising: DEFAULT_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 6.7525,
@@ -95,6 +108,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     seasonalAssociation: 'Second seasonal month marker',
     source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
+    dawnRising: DEFAULT_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 5.6036,
@@ -111,6 +125,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     seasonalAssociation: 'Late winter / early spring marker',
     source: 'Te Aka / project star-marker notes',
     confidence: 'working',
+    dawnRising: DEFAULT_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 7.5767,
@@ -126,6 +141,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     seasonalAssociation: 'Summer marker',
     source: STAR_MARKER_SOURCE,
     confidence: 'confirmed',
+    dawnRising: DEFAULT_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 16.4901,
@@ -142,6 +158,7 @@ export const DEFAULT_STAR_MARKERS: StarMarkerDefinition[] = [
     seasonalAssociation: 'Provisional sky-figure marker',
     source: 'Project working interpretation',
     confidence: 'working',
+    dawnRising: DEFAULT_DAWN_RISING_CONFIG,
     representative: {
       kind: 'fixed-equatorial',
       rightAscensionHours: 17.5601,
@@ -394,19 +411,14 @@ export class AstronomyEngineProvider implements AstronomyProvider {
 
       while (date < endDate && remainingMarkers.size > 0) {
         const observer = this.observer(engine, location);
-        const dawnWindow = this.dawnObservationWindow(
-          date,
-          location,
-          engine,
-          observer,
-        );
 
         for (const marker of [...remainingMarkers.values()]) {
-          const starMarker = this.findFirstDawnWindowAppearance(
+          const starMarker = this.findFirstDawnRisingAppearance(
             marker,
+            date,
+            location,
             engine,
             observer,
-            dawnWindow,
           );
 
           if (starMarker) {
@@ -546,17 +558,25 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     return { astronomicalDawn, nauticalDawn, sunrise };
   }
 
-  private findFirstDawnWindowAppearance(
+  private findFirstDawnRisingAppearance(
     marker: StarMarkerDefinition,
+    date: string,
+    location: Location,
     engine: AstronomyEngineModule,
     observer: InstanceType<AstronomyEngineModule['Observer']>,
-    dawnWindow: { astronomicalDawn: Date; sunrise: Date },
   ): StarMarker | undefined {
-    const calculation =
-      'First dawn-window sample between the rising Sun crossing 18° below the horizon and sunrise where the marker is above the eastern horizon.';
-    let observedAt = dawnWindow.astronomicalDawn;
+    const config = this.dawnRisingConfig(marker);
+    const dawnWindow = this.dawnRisingObservationWindow(
+      date,
+      location,
+      engine,
+      observer,
+      config,
+    );
+    const calculation = this.dawnRisingCalculation(config);
+    let observedAt = dawnWindow.startsAt;
 
-    while (observedAt.getTime() <= dawnWindow.sunrise.getTime()) {
+    while (observedAt.getTime() <= dawnWindow.endsAt.getTime()) {
       const starMarker = this.calculateStarMarker(
         marker,
         engine,
@@ -565,17 +585,75 @@ export class AstronomyEngineProvider implements AstronomyProvider {
         calculation,
       );
 
-      if (this.isEasternHorizonAppearance(starMarker)) {
+      if (this.isDawnRisingAppearance(starMarker, config)) {
         return starMarker;
       }
 
       observedAt = new Date(
-        observedAt.getTime() +
-          DAWN_FIRST_APPEARANCE_SAMPLE_MINUTES * MS_PER_MINUTE,
+        observedAt.getTime() + config.sampleMinutes * MS_PER_MINUTE,
       );
     }
 
     return undefined;
+  }
+
+  private dawnRisingConfig(
+    marker: StarMarkerDefinition,
+  ): StarMarkerDawnRisingConfig {
+    return marker.dawnRising ?? DEFAULT_DAWN_RISING_CONFIG;
+  }
+
+  private dawnRisingObservationWindow(
+    date: string,
+    location: Location,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    config: StarMarkerDawnRisingConfig,
+  ): { startsAt: Date; endsAt: Date } {
+    const localStart = this.localDateAtTime(date, location, 0, 0);
+    const startsAt = engine.SearchAltitude(
+      engine.Body.Sun,
+      observer,
+      1,
+      localStart,
+      1,
+      config.startSunAltitudeDegrees,
+    )?.date;
+    const endsAt = startsAt
+      ? engine.SearchAltitude(
+          engine.Body.Sun,
+          observer,
+          1,
+          startsAt,
+          1,
+          config.endSunAltitudeDegrees,
+        )?.date
+      : null;
+
+    if (!startsAt || !endsAt) {
+      throw this.dataUnavailable(`No dawn rising data found for ${date}`);
+    }
+
+    return { startsAt, endsAt };
+  }
+
+  private dawnRisingCalculation(config: StarMarkerDawnRisingConfig): string {
+    if (
+      config.startSunAltitudeDegrees ===
+        DEFAULT_DAWN_RISING_CONFIG.startSunAltitudeDegrees &&
+      config.endSunAltitudeDegrees ===
+        DEFAULT_DAWN_RISING_CONFIG.endSunAltitudeDegrees &&
+      config.minimumMarkerAltitudeDegrees ===
+        DEFAULT_DAWN_RISING_CONFIG.minimumMarkerAltitudeDegrees &&
+      config.minimumAzimuthDegrees ===
+        DEFAULT_DAWN_RISING_CONFIG.minimumAzimuthDegrees &&
+      config.maximumAzimuthDegrees ===
+        DEFAULT_DAWN_RISING_CONFIG.maximumAzimuthDegrees
+    ) {
+      return 'First dawn-window sample between the rising Sun crossing 18° below the horizon and sunrise where the marker is above the eastern horizon.';
+    }
+
+    return `First dawn-rising sample where the Sun is between ${config.startSunAltitudeDegrees}° and ${config.endSunAltitudeDegrees}° altitude, the marker is at least ${config.minimumMarkerAltitudeDegrees}° altitude, and azimuth is between ${config.minimumAzimuthDegrees}° and ${config.maximumAzimuthDegrees}°.`;
   }
 
   private async getMoonPhasesForSurroundingYears(
@@ -770,11 +848,14 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     return horizon.altitude;
   }
 
-  private isEasternHorizonAppearance(marker: StarMarker): boolean {
+  private isDawnRisingAppearance(
+    marker: StarMarker,
+    config: StarMarkerDawnRisingConfig,
+  ): boolean {
     return (
-      marker.altitudeDegrees >= 0 &&
-      marker.azimuthDegrees >= 45 &&
-      marker.azimuthDegrees <= 135
+      marker.altitudeDegrees >= config.minimumMarkerAltitudeDegrees &&
+      marker.azimuthDegrees >= config.minimumAzimuthDegrees &&
+      marker.azimuthDegrees <= config.maximumAzimuthDegrees
     );
   }
 

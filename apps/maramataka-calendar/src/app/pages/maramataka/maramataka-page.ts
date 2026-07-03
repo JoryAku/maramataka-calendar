@@ -15,6 +15,7 @@ import {
   LocationSummary,
   MaramatakaCycleDetails,
   MaramatakaMonth,
+  MaramatakaNight,
   MaramatakaToday,
   MaramatakaYear,
   MaramatakaYearEvent,
@@ -107,6 +108,24 @@ export class MaramatakaPage implements OnInit {
 
     return fraction === undefined ? null : Math.round(fraction * 100);
   });
+  protected readonly moonVisual = computed(() => {
+    const details = this.moonDetails();
+
+    if (!details) {
+      return null;
+    }
+
+    const fraction = Math.max(0, Math.min(1, details.fractionIlluminated));
+    const orbitRadius = 42;
+    const travel = Math.round(fraction * orbitRadius * 2);
+    const phaseLabel = details.phase.toLowerCase();
+    const isWaxing = !phaseLabel.includes('waning');
+
+    return {
+      ariaLabel: `${details.phase}, ${Math.round(fraction * 100)}% illuminated`,
+      shadowOffset: isWaxing ? -travel : travel,
+    };
+  });
   protected readonly fishingGuidance = computed(() =>
     this.today()?.mata.contentLayers?.find(
       (layer) =>
@@ -182,6 +201,10 @@ export class MaramatakaPage implements OnInit {
     if (shouldReload) {
       this.reloadData();
     }
+  }
+
+  protected selectNight(night: MaramatakaNight): void {
+    this.selectDate(night.startsAt);
   }
 
   protected selectYearMonth(month: MaramatakaYearMonth): void {
@@ -510,7 +533,7 @@ export class MaramatakaPage implements OnInit {
       case 'star-invisibility':
         return '◌';
       case 'new-moon':
-        return '◐';
+        return '○';
       case 'full-moon':
         return '●';
       case 'public-holiday':
