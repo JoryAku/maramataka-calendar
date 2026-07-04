@@ -151,6 +151,8 @@ export class MaramatakaMonthView {
     switch (event.type) {
       case 'star-marker':
         return '★';
+      case 'star-appearance':
+        return '◉';
       case 'star-invisibility':
         return '◌';
       case 'new-moon':
@@ -172,6 +174,8 @@ export class MaramatakaMonthView {
         return event.starMarkerScope === 'seasonal'
           ? 'Seasonal'
           : 'Star';
+      case 'star-appearance':
+        return 'Appears';
       case 'star-invisibility':
         return 'Disappears';
       case 'new-moon':

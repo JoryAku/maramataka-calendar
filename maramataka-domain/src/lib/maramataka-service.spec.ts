@@ -1,7 +1,14 @@
 import {
+  LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
+  LIVING_BY_THE_STARS_STAR_MONTH_MARKERS,
+  LIVING_BY_THE_STARS_STAR_MONTH_NOTES,
+  LIVING_BY_THE_STARS_SOURCE,
+} from './living-by-the-stars';
+import {
   AstronomyProviderError,
   Location,
   MoonRise,
+  StarMarkerDefinition,
 } from '@maramataka-calendar/astronomy';
 import { MaramatakaService } from './maramataka-service';
 import { MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET } from './mita-te-tai-best';
@@ -339,6 +346,21 @@ describe('MaramatakaService', () => {
               'First dawn sample in this maramataka month where the marker is above the eastern horizon.',
           })),
       );
+    const seasonalMarker: StarMarkerDefinition = {
+      id: 'seasonal-test-marker',
+      name: 'Seasonal Test',
+      type: 'star',
+      englishName: 'Seasonal Test Star',
+      description: 'A marker not assigned to a named marama.',
+      seasonalAssociation: 'Seasonal marker fixture',
+      source: LIVING_BY_THE_STARS_SOURCE,
+      confidence: 'working',
+      representative: {
+        kind: 'fixed-equatorial' as const,
+        rightAscensionHours: 1,
+        declinationDegrees: 1,
+      },
+    };
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
@@ -349,6 +371,14 @@ describe('MaramatakaService', () => {
         getMoonTransit: jest.fn(),
         getMoonDetails: jest.fn(),
         getStarFirstAppearances,
+      },
+      ruleSet: {
+        ...LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
+        starMonthNaming: {
+          ...LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming!,
+          markers: [...LIVING_BY_THE_STARS_STAR_MONTH_MARKERS, seasonalMarker],
+          months: LIVING_BY_THE_STARS_STAR_MONTH_NOTES,
+        },
       },
     });
     const firstMonth = {
@@ -449,11 +479,7 @@ describe('MaramatakaService', () => {
       '2026-06-15',
       '2027-06-04',
       location,
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'kopu' }),
-        expect.objectContaining({ id: 'mahuru' }),
-        expect.objectContaining({ id: 'rehua' }),
-      ]),
+      [expect.objectContaining({ id: 'seasonal-test-marker' })],
     );
     expect(year.events.filter((event) => event.type === 'star-marker')).toEqual(
       expect.arrayContaining([
@@ -470,8 +496,16 @@ describe('MaramatakaService', () => {
           starMarkerScope: 'month',
         }),
         expect.objectContaining({
-          name: 'Kōpū',
+          name: 'Seasonal Test',
           occursAt: new Date('2026-06-15T18:00:00Z'),
+          starMarkerScope: 'seasonal',
+        }),
+      ]),
+    );
+    expect(year.events.filter((event) => event.type === 'star-marker')).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          name: 'Kōpū',
           starMarkerScope: 'seasonal',
         }),
       ]),
@@ -1055,7 +1089,7 @@ describe('MaramatakaService', () => {
     ).toBe('2044-06-24');
   });
 
-  it('adds Matariki disappearance as a year timeline event', async () => {
+  it('adds Matariki appearance and disappearance as year timeline events', async () => {
     const getNewMoons = jest
       .fn()
       .mockResolvedValueOnce([])
@@ -1087,6 +1121,32 @@ describe('MaramatakaService', () => {
         calculation: 'test night invisibility period',
       },
     ]);
+    const getStarFirstAppearances = jest.fn(
+      async (startDate: string, endDate: string) => {
+        if (startDate === '2026-06-15' && endDate === '2027-06-04') {
+          return [
+            {
+              id: 'matariki',
+              name: 'Matariki',
+              type: 'asterism' as const,
+              englishName: 'Pleiades',
+              description: 'Pleiades.',
+              seasonalAssociation: 'Year-start calibration marker',
+              observedAt: new Date('2026-06-20T18:30:00.000Z'),
+              altitudeDegrees: 1,
+              azimuthDegrees: 57,
+              direction: 'NE' as const,
+              visibility: 'low' as const,
+              source: 'astronomy-engine',
+              confidence: 'confirmed' as const,
+              calculation: 'test dawn appearance',
+            },
+          ];
+        }
+
+        return [];
+      },
+    );
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
@@ -1097,6 +1157,7 @@ describe('MaramatakaService', () => {
         getMoonTransit: jest.fn(),
         getMoonDetails: jest.fn(),
         getStarNightInvisibilityPeriods,
+        getStarFirstAppearances,
       },
     });
     const whiroStartsAt = new Date('2026-06-15T06:00:00Z');
@@ -1119,6 +1180,19 @@ describe('MaramatakaService', () => {
       location,
       new Date('2026-07-10T12:00:00Z'),
     );
+
+    const appearanceEvent = year.events.find(
+      (event) => event.type === 'star-appearance',
+    );
+    expect(appearanceEvent).toMatchObject({
+      type: 'star-appearance',
+      name: 'Matariki appears',
+      occursAt: new Date('2026-06-20T18:30:00.000Z'),
+      description: expect.stringContaining('configured dawn sky window'),
+      source: 'test dawn appearance',
+    });
+    expect(appearanceEvent).not.toHaveProperty('monthName');
+    expect(appearanceEvent).not.toHaveProperty('monthSequence');
 
     expect(year.events).toEqual(
       expect.arrayContaining([

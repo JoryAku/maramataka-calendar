@@ -409,6 +409,14 @@ describe('MaramatakaPage', () => {
           source: 'astronomy-engine',
         },
         {
+          type: 'star-appearance',
+          name: 'Matariki appears',
+          occursAt: '2026-01-10T18:00:00.000Z',
+          description:
+            'Matariki first appears in the configured dawn sky window.',
+          source: 'test dawn appearance',
+        },
+        {
           type: 'star-invisibility',
           name: 'Matariki disappears',
           occursAt: '2026-01-11T09:00:00.000Z',
@@ -692,6 +700,8 @@ describe('MaramatakaPage', () => {
       .join(' ');
     expect(nightEventContent).toContain('New Moon');
     expect(nightEventContent).toContain('Matariki');
+    expect(nightEventContent).toContain('Appears');
+    expect(nightEventContent).toContain('Matariki appears');
     expect(nightEventContent).toContain('Disappears');
     expect(nightEventContent).toContain('Matariki disappears');
     expect(nightEventContent).toContain('Holiday');

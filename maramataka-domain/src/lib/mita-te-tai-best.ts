@@ -51,7 +51,7 @@ const MITA_TE_TAI_BEST_DAWN_RISING_CONFIG = {
   startSunAltitudeDegrees: -18,
   endSunAltitudeDegrees: 0,
   minimumMarkerAltitudeDegrees: 0,
-  minimumAzimuthDegrees: 45,
+  minimumAzimuthDegrees: 0,
   maximumAzimuthDegrees: 135,
   sampleMinutes: 5,
 };
@@ -438,7 +438,7 @@ export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   },
   starMonthNaming: {
     strategy:
-      'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      'Marama is named from a rule-set star or asterism rising in the north-through-east dawn sky around Whiro',
     sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
     source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     sourceQuote: MITA_TE_TAI_BEST_STAR_MONTH_QUOTE,

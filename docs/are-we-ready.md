@@ -24,8 +24,8 @@ interpretation.
   event timestamp.
 - Clicking a mata moves the selected day to that mata.
 - Year view shows marama boundaries, month-scoped star markers, seasonal star
-  markers, Matariki disappearance, astronomical New Moon and Full Moon markers,
-  and the Matariki public holiday event.
+  markers, year-level Matariki appearance/disappearance, astronomical New Moon
+  and Full Moon markers, and the Matariki public holiday event.
 - Clicking a year-view marama moves the selected day to the first mata of that
   marama.
 - The year timeline has separated visual lanes for event types, reducing

@@ -75,7 +75,7 @@ describe('MITA_TE_TAI_BEST_MATA', () => {
       MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET.starMonthNaming,
     ).toMatchObject({
       strategy:
-        'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+        'Marama is named from a rule-set star or asterism rising in the north-through-east dawn sky around Whiro',
       sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
       source: 'Elsdon Best, The Maori Division of Time',
     });
@@ -199,7 +199,7 @@ describe('LIVING_BY_THE_STARS_MATA', () => {
       LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming,
     ).toMatchObject({
       strategy:
-        'Marama are named from the stars that rise in the eastern dawn sky.',
+        'Marama are named from the stars that rise in the north-through-east dawn sky.',
       sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
       source: 'Living by the Stars',
     });
@@ -228,7 +228,7 @@ describe('LIVING_BY_THE_STARS_MATA', () => {
           marker.dawnRising?.startSunAltitudeDegrees === -18 &&
           marker.dawnRising.endSunAltitudeDegrees === 0 &&
           marker.dawnRising.minimumMarkerAltitudeDegrees === 0 &&
-          marker.dawnRising.minimumAzimuthDegrees === 45 &&
+          marker.dawnRising.minimumAzimuthDegrees === 0 &&
           marker.dawnRising.maximumAzimuthDegrees === 135 &&
           marker.dawnRising.sampleMinutes === 5,
       ),

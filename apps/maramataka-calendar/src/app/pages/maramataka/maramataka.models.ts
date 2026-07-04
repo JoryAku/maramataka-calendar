@@ -75,6 +75,7 @@ export interface MaramatakaYearEvent<TDate = Date> {
   type:
     | 'month-start'
     | 'star-marker'
+    | 'star-appearance'
     | 'star-invisibility'
     | 'solar-season'
     | 'new-moon'

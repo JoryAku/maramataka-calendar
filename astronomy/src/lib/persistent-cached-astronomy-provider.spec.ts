@@ -245,4 +245,56 @@ describe('PersistentCachedAstronomyProvider', () => {
     expect(details.moonset?.setsAt).toBeInstanceOf(Date);
     expect(details.transit?.transitsAt).toBeInstanceOf(Date);
   });
+
+  it('keys persisted star first appearances by marker dawn-rising config', async () => {
+    const provider = createProvider({
+      getStarFirstAppearances: jest.fn().mockResolvedValue([]),
+    });
+    const store = createStore();
+    const baseMarker = {
+      id: 'te-toru-here-o-pipiri',
+      name: 'Te Toru Here o Pipiri',
+      type: 'star' as const,
+      description: 'Zeta Persei.',
+      seasonalAssociation: 'Third named month marker',
+      source: 'test',
+      confidence: 'confirmed' as const,
+      representative: {
+        kind: 'fixed-equatorial' as const,
+        rightAscensionHours: 3.9022,
+        declinationDegrees: 31.8836,
+      },
+    };
+
+    const cached = new PersistentCachedAstronomyProvider(provider, store);
+
+    await cached.getStarFirstAppearances('2026-08-13', '2026-09-11', location, [
+      {
+        ...baseMarker,
+        dawnRising: {
+          startSunAltitudeDegrees: -18,
+          endSunAltitudeDegrees: 0,
+          minimumMarkerAltitudeDegrees: 0,
+          minimumAzimuthDegrees: 45,
+          maximumAzimuthDegrees: 135,
+          sampleMinutes: 5,
+        },
+      },
+    ]);
+    await cached.getStarFirstAppearances('2026-08-13', '2026-09-11', location, [
+      {
+        ...baseMarker,
+        dawnRising: {
+          startSunAltitudeDegrees: -18,
+          endSunAltitudeDegrees: 0,
+          minimumMarkerAltitudeDegrees: 0,
+          minimumAzimuthDegrees: 0,
+          maximumAzimuthDegrees: 135,
+          sampleMinutes: 5,
+        },
+      },
+    ]);
+
+    expect(provider.getStarFirstAppearances).toHaveBeenCalledTimes(2);
+  });
 });

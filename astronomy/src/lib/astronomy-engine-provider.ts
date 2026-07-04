@@ -35,7 +35,7 @@ export const DEFAULT_DAWN_RISING_CONFIG: StarMarkerDawnRisingConfig = {
   startSunAltitudeDegrees: -18,
   endSunAltitudeDegrees: 0,
   minimumMarkerAltitudeDegrees: 0,
-  minimumAzimuthDegrees: 45,
+  minimumAzimuthDegrees: 0,
   maximumAzimuthDegrees: 135,
   sampleMinutes: DAWN_FIRST_APPEARANCE_SAMPLE_MINUTES,
 };

@@ -512,6 +512,7 @@ export class MaramatakaPage implements OnInit {
         }
 
         return 0.8 + lane * 2.8;
+      case 'star-appearance':
       case 'star-invisibility':
         return 13 + lane * 1.8;
       case 'solar-season':
@@ -530,6 +531,8 @@ export class MaramatakaPage implements OnInit {
     switch (event.type) {
       case 'star-marker':
         return '★';
+      case 'star-appearance':
+        return '◉';
       case 'star-invisibility':
         return '◌';
       case 'new-moon':
@@ -551,6 +554,8 @@ export class MaramatakaPage implements OnInit {
         return event.starMarkerScope === 'seasonal'
           ? 'Seasonal'
           : 'Star';
+      case 'star-appearance':
+        return 'Appears';
       case 'star-invisibility':
         return 'Disappears';
       case 'new-moon':
@@ -631,7 +636,7 @@ export class MaramatakaPage implements OnInit {
       },
       {
         key: 'star-invisibility',
-        types: ['star-invisibility'],
+        types: ['star-appearance', 'star-invisibility'],
       },
       {
         key: 'public-holiday',
@@ -702,6 +707,7 @@ export class MaramatakaPage implements OnInit {
         return event.starMarkerScope === 'seasonal'
           ? 'seasonal-marker'
           : 'star-marker';
+      case 'star-appearance':
       case 'star-invisibility':
         return 'star-invisibility';
       case 'public-holiday':

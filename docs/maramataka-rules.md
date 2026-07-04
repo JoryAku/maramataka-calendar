@@ -84,8 +84,9 @@ prioritise:
 - lunar age, illumination, phase direction, and distance where available
 - the 30-mata cycle wheel
 - the year rhythm view, including marama boundaries, month-scoped dawn markers,
-  seasonal dawn markers, Matariki disappearance, astronomical New Moon / Full
-  Moon events, equinoxes, solstices, and the Matariki public holiday marker
+  seasonal dawn markers, year-level Matariki appearance/disappearance,
+  astronomical New Moon / Full Moon events, equinoxes, solstices, and the
+  Matariki public holiday marker
 
 Tide, weather, wind, and three-year intercalation views remain future state
 until the core moon tracking is trusted.
@@ -103,7 +104,7 @@ The first-appearance scan is implemented as a reusable dawn-rising rule with
 per-marker settings. The active marker settings currently preserve the previous
 behavior for every configured star: start when the Sun is `-18°`, end at
 sunrise (`0°`), require the marker to be at least `0°` above the horizon, keep
-the eastern azimuth window from `45°` to `135°`, and sample every five minutes.
+the north-through-east azimuth window from `0°` to `135°`, and sample every five minutes.
 These settings are intentionally explicit so individual stars can later use
 stricter heliacal-rising thresholds without changing the rest of the timeline
 logic.
@@ -113,8 +114,10 @@ Year-view star events are split into two scopes:
 - Month-scoped markers are searched within the relevant named marama.
 - Seasonal markers are searched across the maramataka year after month-scoped
   markers have been placed.
-- Matariki disappearance is marked separately from first appearance. It is the
-  first local date in the longest period where Matariki is never above the
+- Matariki appearance/disappearance is marked separately from named marama
+  markers. First appearance is the configured year-start marker's first
+  dawn-window appearance inside the displayed maramataka year. Disappearance is
+  the first local date in the longest period where Matariki is never above the
   horizon during astronomical night (`Sun <= -18°`) within the displayed
   maramataka year.
 
@@ -133,7 +136,7 @@ from the Matariki calibration marker:
 
 - Pipiri / Hamal is the named-month marker for Te Tahi o Pipiri.
 - The year begins at the first New Moon / Whiro after Pipiri first reappears in
-  the eastern dawn sky, unless Matariki returns too late in that candidate
+  the north-through-east dawn sky, unless Matariki returns too late in that candidate
   marama.
 - Matariki remains the absence check for deciding whether that year stays with
   the first marama or defers the celebration to the following regulating

@@ -379,6 +379,14 @@ export class MaramatakaService {
       ...monthScopedStarFirstAppearances,
       ...seasonalStarFirstAppearances,
     ];
+    const yearStartMarkerAppearanceEvents =
+      months.length > 0
+        ? await this.createYearStartMarkerAppearanceEvents(
+            location,
+            this.formatIsoDateForLocation(timelineStartsAt, location),
+            this.formatIsoDateForLocation(timelineEndsAt, location),
+          )
+        : [];
     const starInvisibilityEvents =
       months.length > 0
         ? await this.createStarInvisibilityEvents(
@@ -408,6 +416,7 @@ export class MaramatakaService {
         starFirstAppearances,
         [
           ...yearSpecificEvents,
+          ...yearStartMarkerAppearanceEvents,
           ...starInvisibilityEvents,
           ...solarSeasonEvents,
         ],
@@ -532,7 +541,7 @@ export class MaramatakaService {
     if (markerIds) {
       // Once a named marama is selected, show the current details for its
       // mentioned markers. Do not hide them merely because they are below the
-      // horizon or away from the eastern dawn sky at the sample time.
+      // horizon or away from the configured dawn sky band at the sample time.
       return starMarkers.filter((marker) => markerIds.includes(marker.id));
     }
 
@@ -561,7 +570,7 @@ export class MaramatakaService {
     );
     const note = this.findStarMonthNote(starMonthSequence);
     // Month naming follows the rule-set sequence from the star-year start.
-    // Visible eastern markers are only a fallback when there is no sequence
+    // Visible configured-band markers are only a fallback when there is no sequence
     // note, not the primary naming rule.
     const marker = note
       ? starMarkers.find((candidate) => note.markerIds.includes(candidate.id))
@@ -851,6 +860,37 @@ export class MaramatakaService {
         occursAt: this.localDateStart(longestPeriod.startsOn, location),
         description: `${yearStartMarker.name} is not visible during astronomical night until ${longestPeriod.endsOn} (${longestPeriod.days} days).`,
         source: longestPeriod.calculation,
+      },
+    ];
+  }
+
+  private async createYearStartMarkerAppearanceEvents(
+    location: Location,
+    startDate: string,
+    endDate: string,
+  ): Promise<MaramatakaYearEvent[]> {
+    const yearStartMarker = this.getYearStartMarkerDefinition();
+    if (!yearStartMarker) {
+      return [];
+    }
+
+    const [appearance] = await this.getOptionalStarFirstAppearances(
+      location,
+      startDate,
+      endDate,
+      [yearStartMarker],
+    );
+    if (!appearance) {
+      return [];
+    }
+
+    return [
+      {
+        type: 'star-appearance',
+        name: `${yearStartMarker.name} appears`,
+        occursAt: appearance.observedAt,
+        description: `${yearStartMarker.name} first appears in the configured dawn sky window for this maramataka year.`,
+        source: appearance.calculation ?? appearance.source,
       },
     ];
   }
@@ -1160,9 +1200,17 @@ export class MaramatakaService {
     const alreadyPlacedMarkerIds = new Set(
       monthScopedMarkers.map((marker) => marker.id),
     );
+    const monthMarkerIds = new Set(
+      (this.ruleSet.starMonthNaming?.months ?? []).flatMap(
+        (month) => month.markerIds,
+      ),
+    );
     const seasonalMarkers = (
       this.ruleSet.starMonthNaming?.markers ?? []
-    ).filter((marker) => !alreadyPlacedMarkerIds.has(marker.id));
+    ).filter(
+      (marker) =>
+        !alreadyPlacedMarkerIds.has(marker.id) && !monthMarkerIds.has(marker.id),
+    );
 
     if (!seasonalMarkers.length) {
       return [];

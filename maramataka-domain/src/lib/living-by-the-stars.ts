@@ -10,7 +10,7 @@ const LIVING_BY_THE_STARS_DAWN_RISING_CONFIG = {
   startSunAltitudeDegrees: -18,
   endSunAltitudeDegrees: 0,
   minimumMarkerAltitudeDegrees: 0,
-  minimumAzimuthDegrees: 45,
+  minimumAzimuthDegrees: 0,
   maximumAzimuthDegrees: 135,
   sampleMinutes: 5,
 };
@@ -445,7 +445,7 @@ export const LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   },
   starMonthNaming: {
     strategy:
-      'Marama are named from the stars that rise in the eastern dawn sky.',
+      'Marama are named from the stars that rise in the north-through-east dawn sky.',
     sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
     source: LIVING_BY_THE_STARS_SOURCE,
     sourceQuote: LIVING_BY_THE_STARS_SOURCE_QUOTE,
