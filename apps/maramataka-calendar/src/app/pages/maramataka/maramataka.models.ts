@@ -160,11 +160,24 @@ export interface MaramatakaRuleSet {
   mataBoundary: string;
   calibration: string;
   balancing: string;
+  yearStartRule?: {
+    strategy: string;
+    marker: {
+      id: string;
+      name: string;
+      type: StarMarkerType;
+      englishName?: string;
+      seasonalAssociation: string;
+      confidence: StarMarkerConfidence;
+    };
+    description: string;
+    source: string;
+    sourceUrl?: string;
+    sourceQuote?: string;
+  };
   starMonthNaming?: {
     strategy: string;
     sampleTimeLocal: string;
-    yearStartMarkerId: string;
-    yearStartDescription: string;
     source: string;
     sourceUrl?: string;
     sourceQuote?: string;

@@ -20,8 +20,6 @@ export interface StarMonthNamingRuleSet {
    * Dawn sampling definition used for star marker visibility calculations.
    */
   sampleTimeLocal: string;
-  yearStartMarkerId: string;
-  yearStartDescription: string;
   source: string;
   sourceUrl?: string;
   sourceQuote?: string;
@@ -38,6 +36,15 @@ export interface StarMonthNamingRuleSet {
   months: StarMonthNote[];
 }
 
+export interface YearStartRuleSet {
+  strategy: string;
+  marker: StarMarkerDefinition;
+  description: string;
+  source: string;
+  sourceUrl?: string;
+  sourceQuote?: string;
+}
+
 export interface MaramatakaRuleSetSummary {
   id: string;
   name: string;
@@ -49,6 +56,17 @@ export interface MaramatakaRuleSetSummary {
   mataBoundary: string;
   calibration: string;
   balancing: string;
+  yearStartRule?: Omit<YearStartRuleSet, 'marker'> & {
+    marker: Pick<
+      StarMarkerDefinition,
+      | 'id'
+      | 'name'
+      | 'type'
+      | 'englishName'
+      | 'seasonalAssociation'
+      | 'confidence'
+    >;
+  };
   starMonthNaming?: Omit<StarMonthNamingRuleSet, 'markers'> & {
     markers: Array<
       Pick<
@@ -65,6 +83,7 @@ export interface MaramatakaRuleSetSummary {
 }
 
 export interface MaramatakaRuleSet extends MaramatakaRuleSetSummary {
+  yearStartRule?: YearStartRuleSet;
   starMonthNaming?: StarMonthNamingRuleSet;
   mata: Mata[];
   mataVersion: MaramatakaVersion;
@@ -84,13 +103,28 @@ export function summarizeRuleSet(
     mataBoundary: ruleSet.mataBoundary,
     calibration: ruleSet.calibration,
     balancing: ruleSet.balancing,
+    yearStartRule: ruleSet.yearStartRule
+      ? {
+          strategy: ruleSet.yearStartRule.strategy,
+          marker: {
+            id: ruleSet.yearStartRule.marker.id,
+            name: ruleSet.yearStartRule.marker.name,
+            type: ruleSet.yearStartRule.marker.type,
+            englishName: ruleSet.yearStartRule.marker.englishName,
+            seasonalAssociation:
+              ruleSet.yearStartRule.marker.seasonalAssociation,
+            confidence: ruleSet.yearStartRule.marker.confidence,
+          },
+          description: ruleSet.yearStartRule.description,
+          source: ruleSet.yearStartRule.source,
+          sourceUrl: ruleSet.yearStartRule.sourceUrl,
+          sourceQuote: ruleSet.yearStartRule.sourceQuote,
+        }
+      : undefined,
     starMonthNaming: ruleSet.starMonthNaming
       ? {
           strategy: ruleSet.starMonthNaming.strategy,
           sampleTimeLocal: ruleSet.starMonthNaming.sampleTimeLocal,
-          yearStartMarkerId: ruleSet.starMonthNaming.yearStartMarkerId,
-          yearStartDescription:
-            ruleSet.starMonthNaming.yearStartDescription,
           source: ruleSet.starMonthNaming.source,
           sourceUrl: ruleSet.starMonthNaming.sourceUrl,
           sourceQuote: ruleSet.starMonthNaming.sourceQuote,

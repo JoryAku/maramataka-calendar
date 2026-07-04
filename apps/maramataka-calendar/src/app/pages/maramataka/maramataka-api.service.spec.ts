@@ -28,13 +28,25 @@ describe('MaramatakaApiService', () => {
     mataBoundary: 'moonrise-to-moonrise',
     calibration: 'full-moon-observation-window-ohua',
     balancing: 'duplicate-ohua-drop-final-mata',
+    yearStartRule: {
+      strategy:
+        'Start Te Tahi o Pipiri at the first Whiro after the configured year-start marker rises at dawn.',
+      marker: {
+        id: 'matariki',
+        name: 'Matariki',
+        type: 'asterism',
+        englishName: 'Pleiades',
+        seasonalAssociation: 'Year-start calibration marker',
+        confidence: 'confirmed',
+      },
+      description:
+        'The year commences with Matariki appearing on the horizon at dawn.',
+      source: 'Elsdon Best, The Maori Division of Time',
+    },
     starMonthNaming: {
       strategy:
         'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
       sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
-      yearStartMarkerId: 'matariki',
-      yearStartDescription:
-        'The year commences with Matariki appearing on the horizon at dawn.',
       source: 'Elsdon Best, The Maori Division of Time',
       months: [
         {

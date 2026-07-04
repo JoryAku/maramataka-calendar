@@ -37,20 +37,26 @@ code depends on a `MaramatakaRuleSet`, which records:
 - how mata boundaries are calculated
 - which mata names are used
 - which astronomical event calibrates the middle of the marama
+- which year-start marker defines the first Whiro of the star year
+- which named-month markers label marama after the year boundary is known
 - how balancing is expected to work
 - which source, tradition, and rule-set version produced the result
 
-The current default rule set is `mita-te-tai-best-observational-v1`. It keeps
-the existing MVP behaviour while making the source and assumptions explicit:
+The current default rule set is `living-by-the-stars-observational-v1`. It
+keeps the existing MVP moonrise behaviour while making the source and
+assumptions explicit:
 
 - Whiro/Kohititanga is anchored to the New Moon date's moonrise.
 - Mata boundaries are moonrise-to-next-moonrise.
 - Full Moon is retained as an observed astronomical anchor.
 - Mata names follow the fixed 1-30 sequence; if the next Whiro arrives before
   all 30 intervals are used, trailing mata names are dropped.
-- Named marama can carry source-linked dawn markers. Te Tahi o Pipiri is
-  anchored to Matariki; Puanga is not included in the active marker set because
-  it duplicates the same year-start function in this implementation.
+- Pipiri / Hamal provides the candidate Whiro for Te Tahi o Pipiri; Matariki's
+  return timing decides whether that candidate is accepted, followed by
+  Ruhanui, or skipped.
+- `yearStartRule` currently keeps Matariki as the Ruhanui and holiday
+  calibration marker, while `starMonthNaming` carries the source-linked
+  named-month markers from _Living by the Stars_.
 
 The exact source passage used for this balancing rule is:
 
@@ -122,65 +128,61 @@ holiday calculations.
 
 ## Star Year And Thirteenth Month Rule
 
-The current star-year model treats Matariki as the year-start tohu rather than
-the literal first day of the year. The year begins at the first New Moon / Whiro
-after the configured year-start marker first reappears in the eastern dawn sky.
+The active _Living by the Stars_ model separates the named year-start marker
+from the Matariki calibration marker:
 
-This makes thirteenth months emerge from the astronomical interval between one
-star-year start and the next: if there are thirteen New Moon anchors between
-successive marker-anchored year starts, the generated year contains thirteen
-marama. This is a working implementation of the source idea that an extra month
-could be used to regulate the year and recover seasonal drift.
+- Pipiri / Hamal is the named-month marker for Te Tahi o Pipiri.
+- The year begins at the first New Moon / Whiro after Pipiri first reappears in
+  the eastern dawn sky, unless Matariki returns too late in that candidate
+  marama.
+- Matariki remains the absence check for deciding whether that year stays with
+  the first marama or defers the celebration to the following regulating
+  marama.
 
-Ruhanui is treated as the regulating marama after the twelve regular marama
-when the interval between one Pipiri and the next contains a thirteenth lunar
-cycle and Matariki has not yet returned strongly enough to the night sky.
+The current source-calendar calibration distinguishes an early Matariki return
+from a late return. In implementation terms, the service compares the first
+dawn appearance of the configured Matariki marker with the calculated Whiro
+start for the Pipiri New Moon:
 
-The Matariki guard exists because a thirteenth Whiro anchor by itself is too
-broad: some Pipiri-to-Pipiri intervals contain thirteen lunar cycles without
-needing an intercalary marama. The guard keeps Ruhanui for the narrower case
-the rule is trying to model, where the extra lunar cycle lines up with
-Matariki's seasonal disappearance / return pattern and suggests that the next
-Pipiri should wait one more marama.
+- If Matariki has already appeared by that Whiro, the candidate Whiro is
+  labelled `Te Tahi o Pipiri`.
+- If Matariki appears after that Whiro but within the calibrated early-return
+  window (currently 11 local days), the candidate Whiro remains
+  `Te Tahi o Pipiri`, the next Whiro is labelled `Ruhanui`, and Takurua follows
+  after Ruhanui.
+- If Matariki appears later than that early-return window, the candidate Whiro
+  is skipped and the next Whiro becomes `Te Tahi o Pipiri` rather than
+  `Ruhanui`.
 
-In implementation terms, the candidate must be the thirteenth Whiro anchor
-before the next marker-anchored Pipiri, Matariki must pass through a full-night
-invisibility period in the current working 71-73 day band, and the candidate
-Whiro must sit in the search window around that disappearance / reappearance
-arc. Astronomical night is measured with the Sun at or below -18° altitude. The
-dawn position is then used as a second astronomy-only discriminator: a 73-day
-invisibility period requires Matariki at or below -8° altitude at candidate
-dawn, while a shorter 71-72 day period requires Matariki at or below -13°
-altitude.
+This is not a requirement that Matariki appear during Pipiri. The rule only
+uses Matariki's timing relative to the candidate Pipiri Whiro: already-returned
+keeps Te Tahi o Pipiri, early-return inserts Ruhanui, and late-return shifts Te
+Tahi o Pipiri to the next Whiro. The 11-day threshold is a working
+source-calendar calibration from the 2021/2022, 2022/2023, and 2023/2024
+_Living by the Stars_ examples: it preserves the explicit Ruhanui in 2023/2024
+while treating 10 June 2021 as Te Tahi o Pipiri rather than Ruhanui.
 
-When those conditions are met, the generated year that began at the preceding
-`Te Tahi o Pipiri` gets a thirteenth marama. That candidate marama is labelled
-`Ruhanui` and closes the 13-marama year. The following Whiro becomes the next
-year's `Te Tahi o Pipiri`. This keeps the regulating month distinct from
-Pipiri so Matariki public holiday calculations use the Pipiri Tangaroa phase
-group rather than the intercalary marama. In 13-marama years, the extra month
-is labelled `Ruhanui` rather than repeating `Te Tahi o Pipiri`.
+This rule is intentionally astronomy-only. Official holiday dates are used as a
+calibration report, not as an input to the calculation. Among the rules tested
+so far, this Hamal/Pipiri plus Matariki early-return rule gives the closest
+Tangaroa-period calibration while keeping the source indicators explicit.
 
-When the user selects a date inside Ruhanui, the year rhythm view remains on the
-star year that owns the thirteenth marama because Ruhanui closes that year. It
-does not move to the next year timeline until the following Pipiri Whiro.
-
-The Matariki public holiday event is calculated from the Friday closest to a
-provisional four-night Tangaroa boundary window. Candidate Fridays are local
-dates within Te Tahi o Pipiri. For this rule set, the current target window
-starts one night before `Korekore-piri-ki-ngā-Tangaroa` and runs through
-`Tangaroa-kiokio`: `Korekore-te-rawea`, `Korekore-piri-ki-ngā-Tangaroa`,
-`Tangaroa-ā-mua`, `Tangaroa-ā-roto`, and `Tangaroa-kiokio`.
+The Matariki public holiday event is calculated from the Friday closest to the
+four-night Tangaroa period in the selected holiday marama. That marama is Te
+Tahi o Pipiri by default, or Ruhanui when Matariki returns within the
+calibrated early-return window after the candidate Pipiri Whiro. Candidate
+Fridays are local dates within the selected marama, but the comparison uses
+exact instants: each Friday is treated as a local civil-day interval and
+compared to the exact start/end instants of the generated Tangaroa period. For
+this rule set, the current Tangaroa target is `Tangaroa-ā-mua`,
+`Tangaroa-ā-roto`, `Tangaroa-whakapau`, and
+`Tangaroa whāriki kio-kio`.
 
 Against the official 2022-2052 public holiday schedule this astronomy-only
-model currently matches 28 of 31 dates. The official schedule is used only as a
-comparison target, not as an input to the calculation.
-
-Current calibration notes:
-
-- The current rule considers Fridays within Te Tahi o Pipiri. The remaining
-  comparison differences are 2027 and 2030 estimating one Friday late, and
-  2044 estimating one Friday early.
+model currently matches 20 of 31 holiday dates. The selected holiday marama's
+generated Tangaroa period overlaps the official Tangaroa period in 28 of 31
+comparison years. The remaining differences are useful calibration clues for
+refining mata boundaries and the source-specific Matariki/Ruhanui rule.
 
 ## Astronomy Provider Resilience
 
@@ -212,23 +214,32 @@ Maramataka domain service.
 
 ## Source Reference
 
-The current mata phase-group structure is sourced from _Living by the Stars_.
-The current sequence and balancing context also use the Mita Te Tai / Elsdon
-Best reference already represented in the domain model. The working source set
-is:
+The active default config is now source-specific:
 
-- _Living by the Stars_ (mata phase-group reference used by this implementation).
+- `living-by-the-stars-observational-v1` supplies the current mata sequence,
+  phase groups, named marama, and named-marama star associations. Its marama
+  names are `Te Tahi o Pipiri`, `Te Rua o Takurua`,
+  `Te Toru Here o Pipiri`, `Te Whā o Mahuru`, `Te Rima o Kōpū`,
+  `Te Ono o Whitiānaunau`, `Te Whitu o Hakihea`, `Te Waru o Rehua`,
+  `Te Iwa o Rūhī`, `Te Ngahuru o Poutūterangi`,
+  `Te Ngahuru mā tahi o Paengawhāwhā`, and
+  `Te Ngahuru mā rua o Haki Haratua`, with `Ruhanui` as the regulating
+  intercalary marama.
+- `mita-te-tai-best-observational-v1` remains available for the Mita Te Tai /
+  Elsdon Best material, including the fishing guidance content layer and the
+  Himiona Tikitu / Best named-month list.
 
-- Elsdon Best, _Fishing Methods and Devices of the Maori_, NZETC, archived by
-  the National Library of New Zealand:
-  https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html
+Elsdon Best, _Fishing Methods and Devices of the Maori_, NZETC, archived by the
+National Library of New Zealand:
+https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html
 
-The source is useful because it records a 30-night lunar sequence, Whiro as the
-first night, the kohititanga/new-moon marker, and the huanga/full-moon marker.
-The current implementation keeps the full moon as a separate astronomical
-anchor and uses a fixed mata sequence, dropping trailing names only when the
-next Whiro closes the marama early. The MVP moonrise-to-moonrise boundary is an
-application rule layered onto that reference.
+The Mita Te Tai / Best source remains useful because it records a 30-night
+lunar sequence, Whiro as the first night, the kohititanga/new-moon marker, and
+the huanga/full-moon marker. The current implementation keeps the full moon as
+a separate astronomical anchor and uses a fixed mata sequence, dropping
+trailing names only when the next Whiro closes the marama early. The MVP
+moonrise-to-moonrise boundary is an application rule layered onto the selected
+source-specific rule set.
 
 ## Implementation Decisions To Keep Reviewing
 

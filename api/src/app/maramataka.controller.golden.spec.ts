@@ -76,8 +76,8 @@ const API_GOLDEN_DATE_FIXTURES: ApiGoldenDateFixture[] = [
       nightCount: 29,
       firstFiveMata: ['Whiro', 'Tirea', 'Hoata', 'Ōuenuku', 'Okoro'],
       lastFiveMata: [
-        'Tangaroa-ā-roto',
-        'Tangaroa-kiokio',
+        'Tangaroa-whakapau',
+        'Tangaroa whāriki kio-kio',
         'Ōtāne',
         'Ōrongonui',
         'Ōmutu',
