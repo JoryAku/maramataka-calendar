@@ -7,6 +7,7 @@ import {
 import {
   MaramatakaMonth,
   MaramatakaService,
+  MaramatakaYearMonth,
 } from '@maramataka-calendar/maramataka-domain';
 import { join } from 'node:path';
 
@@ -330,6 +331,19 @@ function dateRange(start: string, end: string): string {
   return `${start}..${end}`;
 }
 
+function datesInRange(start: string, end: string): string[] {
+  const dates = [];
+  for (
+    let ordinal = localDateOrdinal(start);
+    ordinal <= localDateOrdinal(end);
+    ordinal += 1
+  ) {
+    dates.push(new Date(ordinal * 86_400_000).toISOString().slice(0, 10));
+  }
+
+  return dates;
+}
+
 function dateRangeDelta(
   calculatedStart: string,
   calculatedEnd: string,
@@ -339,6 +353,10 @@ function dateRangeDelta(
   return `${localDateOrdinal(calculatedStart) - localDateOrdinal(
     officialStart,
   )}/${localDateOrdinal(calculatedEnd) - localDateOrdinal(officialEnd)}`;
+}
+
+function localMidday(date: string): Date {
+  return new Date(`${date}T12:00:00+12:00`);
 }
 
 function containsDateRange(
@@ -383,6 +401,23 @@ async function detailedMonthForYearMonth(
   );
 }
 
+async function detailedMonthsForYear(
+  service: MaramatakaService,
+  months: MaramatakaYearMonth[],
+): Promise<
+  Array<{
+    yearMonth: MaramatakaYearMonth;
+    month: MaramatakaMonth;
+  }>
+> {
+  return Promise.all(
+    months.map(async (yearMonth) => ({
+      yearMonth,
+      month: await detailedMonthForYearMonth(service, yearMonth),
+    })),
+  );
+}
+
 function tangaroaPeriod(month: MaramatakaMonth):
   | {
       startsOn: string;
@@ -403,8 +438,71 @@ function tangaroaPeriod(month: MaramatakaMonth):
   };
 }
 
-async function officialComparisonRows(service: MaramatakaService): Promise<
-  Array<{
+function generatedCoverageForOfficialTangaroa(
+  detailedMonths: Array<{
+    yearMonth: MaramatakaYearMonth;
+    month: MaramatakaMonth;
+  }>,
+  officialStart: string,
+  officialEnd: string,
+): {
+  generatedMarama: string;
+  generatedMata: string;
+  generatedMataByDate: Array<{
+    officialDate: string;
+    generatedMarama: string;
+    generatedMata: string;
+    isTangaroa: boolean;
+  }>;
+  generatedMataAreTangaroa: boolean;
+} {
+  const coverage = datesInRange(officialStart, officialEnd).map((date) => {
+    const officialDateMidday = localMidday(date).getTime();
+
+    for (const { yearMonth, month } of detailedMonths) {
+      const night = month.nights.find(
+        (candidate) =>
+          candidate.startsAt.getTime() <= officialDateMidday &&
+          candidate.endsAt.getTime() > officialDateMidday,
+      );
+
+      if (night) {
+        return {
+          date,
+          marama: yearMonth.name,
+          mata: night.mata.name,
+          isTangaroa: holidayTangaroaTargetMata.has(night.mata.name),
+        };
+      }
+    }
+
+    return {
+      date,
+      marama: 'missing',
+      mata: 'missing',
+      isTangaroa: false,
+    };
+  });
+  const generatedMarama = [
+    ...new Set(coverage.map((entry) => entry.marama)),
+  ].join('; ');
+  const generatedMata = coverage.map((entry) => entry.mata).join(' -> ');
+
+  return {
+    generatedMarama,
+    generatedMata,
+    generatedMataByDate: coverage.map((entry) => ({
+      officialDate: entry.date,
+      generatedMarama: entry.marama,
+      generatedMata: entry.mata,
+      isTangaroa: entry.isTangaroa,
+    })),
+    generatedMataAreTangaroa: coverage.every((entry) => entry.isTangaroa),
+  };
+}
+
+async function officialComparisonRows(service: MaramatakaService): Promise<{
+  rows: Array<{
     year: number;
     officialHoliday: string;
     calculatedHoliday: string;
@@ -415,9 +513,20 @@ async function officialComparisonRows(service: MaramatakaService): Promise<
     holidayMonthDelta: string;
     holidayMonthContainsOfficial: boolean;
     holidayMonthOverlapsOfficial: boolean;
-  }>
-> {
+    officialTangaroaGeneratedMarama: string;
+    officialTangaroaGeneratedMata: string;
+    officialTangaroaGeneratedMataAreTarget: boolean;
+  }>;
+  details: Array<{
+    year: number;
+    officialDate: string;
+    generatedMarama: string;
+    generatedMata: string;
+    isTangaroaTarget: boolean;
+  }>;
+}> {
   const rows = [];
+  const details = [];
 
   for (const [year, official] of officialDates) {
     const maramatakaYear = await service.getYear(
@@ -443,6 +552,11 @@ async function officialComparisonRows(service: MaramatakaService): Promise<
       : undefined;
     const holidayTangaroaStart = holidayTangaroa?.startsOn ?? 'missing';
     const holidayTangaroaEnd = holidayTangaroa?.endsOn ?? 'missing';
+    const officialCoverage = generatedCoverageForOfficialTangaroa(
+      await detailedMonthsForYear(service, maramatakaYear.months),
+      official.tangaroaStartsOn,
+      official.tangaroaEndsOn,
+    );
 
     rows.push({
       year,
@@ -481,10 +595,23 @@ async function officialComparisonRows(service: MaramatakaService): Promise<
           official.tangaroaStartsOn,
           official.tangaroaEndsOn,
         ),
+      officialTangaroaGeneratedMarama: officialCoverage.generatedMarama,
+      officialTangaroaGeneratedMata: officialCoverage.generatedMata,
+      officialTangaroaGeneratedMataAreTarget:
+        officialCoverage.generatedMataAreTangaroa,
     });
+    details.push(
+      ...officialCoverage.generatedMataByDate.map((entry) => ({
+        year,
+        officialDate: entry.officialDate,
+        generatedMarama: entry.generatedMarama,
+        generatedMata: entry.generatedMata,
+        isTangaroaTarget: entry.isTangaroa,
+      })),
+    );
   }
 
-  return rows;
+  return { rows, details };
 }
 
 async function sourceCalendarRows(service: MaramatakaService): Promise<
@@ -549,11 +676,14 @@ async function main(): Promise<void> {
     ),
   );
   const service = new MaramatakaService({ astronomyProvider: provider });
-  const officialRows = await officialComparisonRows(service);
+  const officialReport = await officialComparisonRows(service);
+  const officialRows = officialReport.rows;
   const sourceRows = await sourceCalendarRows(service);
 
-  console.log('Official Matariki holiday comparison');
+  console.log('Official Matariki calibration report');
   console.table(officialRows);
+  console.log('Official Tangaroa date coverage by generated maramataka');
+  console.table(officialReport.details);
   console.log(
     `holiday matches ${
       officialRows.filter((row) => row.holidayStatus === 'MATCH').length
@@ -572,6 +702,12 @@ async function main(): Promise<void> {
   console.log(
     `holiday-month Tangaroa overlaps official ${
       officialRows.filter((row) => row.holidayMonthOverlapsOfficial).length
+    }/${officialRows.length}`,
+  );
+  console.log(
+    `official Tangaroa dates land on generated target Tangaroa mata ${
+      officialRows.filter((row) => row.officialTangaroaGeneratedMataAreTarget)
+        .length
     }/${officialRows.length}`,
   );
 
