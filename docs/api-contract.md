@@ -31,7 +31,7 @@ The API uses a global exception filter. Error responses use this shape:
   "statusCode": 400,
   "error": "Bad Request",
   "message": "date must be in YYYY-MM-DD format",
-  "path": "/maramataka/month?date=bad",
+  "path": "/maramataka/cycle?date=bad",
   "timestamp": "2026-01-01T00:00:00.000Z"
 }
 ```

@@ -10,6 +10,7 @@ import {
 } from '@maramataka-calendar/astronomy';
 import {
   LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
+  MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaService,
   MaramatakaYearMonth,
@@ -37,37 +38,254 @@ const OFFICIAL_MATARIKI_DATES = new Map<
     holiday: string;
   }
 >([
-  [2022, { tangaroaStartsOn: '2022-06-21', tangaroaEndsOn: '2022-06-24', holiday: '2022-06-24' }],
-  [2023, { tangaroaStartsOn: '2023-07-10', tangaroaEndsOn: '2023-07-13', holiday: '2023-07-14' }],
-  [2024, { tangaroaStartsOn: '2024-06-29', tangaroaEndsOn: '2024-07-02', holiday: '2024-06-28' }],
-  [2025, { tangaroaStartsOn: '2025-06-19', tangaroaEndsOn: '2025-06-22', holiday: '2025-06-20' }],
-  [2026, { tangaroaStartsOn: '2026-07-08', tangaroaEndsOn: '2026-07-11', holiday: '2026-07-10' }],
-  [2027, { tangaroaStartsOn: '2027-06-27', tangaroaEndsOn: '2027-06-30', holiday: '2027-06-25' }],
-  [2028, { tangaroaStartsOn: '2028-07-15', tangaroaEndsOn: '2028-07-18', holiday: '2028-07-14' }],
-  [2029, { tangaroaStartsOn: '2029-07-04', tangaroaEndsOn: '2029-07-07', holiday: '2029-07-06' }],
-  [2030, { tangaroaStartsOn: '2030-06-23', tangaroaEndsOn: '2030-06-26', holiday: '2030-06-21' }],
-  [2031, { tangaroaStartsOn: '2031-07-11', tangaroaEndsOn: '2031-07-14', holiday: '2031-07-11' }],
-  [2032, { tangaroaStartsOn: '2032-06-30', tangaroaEndsOn: '2032-07-02', holiday: '2032-07-02' }],
-  [2033, { tangaroaStartsOn: '2033-06-20', tangaroaEndsOn: '2033-06-23', holiday: '2033-06-24' }],
-  [2034, { tangaroaStartsOn: '2034-07-09', tangaroaEndsOn: '2034-07-12', holiday: '2034-07-07' }],
-  [2035, { tangaroaStartsOn: '2035-06-29', tangaroaEndsOn: '2035-07-01', holiday: '2035-06-29' }],
-  [2036, { tangaroaStartsOn: '2036-07-17', tangaroaEndsOn: '2036-07-20', holiday: '2036-07-18' }],
-  [2037, { tangaroaStartsOn: '2037-07-06', tangaroaEndsOn: '2037-07-09', holiday: '2037-07-10' }],
-  [2038, { tangaroaStartsOn: '2038-06-25', tangaroaEndsOn: '2038-06-28', holiday: '2038-06-25' }],
-  [2039, { tangaroaStartsOn: '2039-07-13', tangaroaEndsOn: '2039-07-16', holiday: '2039-07-15' }],
-  [2040, { tangaroaStartsOn: '2040-07-01', tangaroaEndsOn: '2040-07-04', holiday: '2040-07-06' }],
-  [2041, { tangaroaStartsOn: '2041-07-21', tangaroaEndsOn: '2041-07-24', holiday: '2041-07-19' }],
-  [2042, { tangaroaStartsOn: '2042-07-10', tangaroaEndsOn: '2042-07-14', holiday: '2042-07-11' }],
-  [2043, { tangaroaStartsOn: '2043-06-30', tangaroaEndsOn: '2043-07-03', holiday: '2043-07-03' }],
-  [2044, { tangaroaStartsOn: '2044-06-19', tangaroaEndsOn: '2044-06-22', holiday: '2044-06-24' }],
-  [2045, { tangaroaStartsOn: '2045-07-07', tangaroaEndsOn: '2045-07-10', holiday: '2045-07-07' }],
-  [2046, { tangaroaStartsOn: '2046-06-26', tangaroaEndsOn: '2046-06-29', holiday: '2046-06-29' }],
-  [2047, { tangaroaStartsOn: '2047-07-15', tangaroaEndsOn: '2047-07-18', holiday: '2047-07-19' }],
-  [2048, { tangaroaStartsOn: '2048-07-03', tangaroaEndsOn: '2048-07-06', holiday: '2048-07-03' }],
-  [2049, { tangaroaStartsOn: '2049-06-22', tangaroaEndsOn: '2049-06-25', holiday: '2049-06-25' }],
-  [2050, { tangaroaStartsOn: '2050-07-11', tangaroaEndsOn: '2050-07-14', holiday: '2050-07-15' }],
-  [2051, { tangaroaStartsOn: '2051-07-01', tangaroaEndsOn: '2051-07-04', holiday: '2051-06-30' }],
-  [2052, { tangaroaStartsOn: '2052-06-20', tangaroaEndsOn: '2052-06-23', holiday: '2052-06-21' }],
+  [
+    2022,
+    {
+      tangaroaStartsOn: '2022-06-21',
+      tangaroaEndsOn: '2022-06-24',
+      holiday: '2022-06-24',
+    },
+  ],
+  [
+    2023,
+    {
+      tangaroaStartsOn: '2023-07-10',
+      tangaroaEndsOn: '2023-07-13',
+      holiday: '2023-07-14',
+    },
+  ],
+  [
+    2024,
+    {
+      tangaroaStartsOn: '2024-06-29',
+      tangaroaEndsOn: '2024-07-02',
+      holiday: '2024-06-28',
+    },
+  ],
+  [
+    2025,
+    {
+      tangaroaStartsOn: '2025-06-19',
+      tangaroaEndsOn: '2025-06-22',
+      holiday: '2025-06-20',
+    },
+  ],
+  [
+    2026,
+    {
+      tangaroaStartsOn: '2026-07-08',
+      tangaroaEndsOn: '2026-07-11',
+      holiday: '2026-07-10',
+    },
+  ],
+  [
+    2027,
+    {
+      tangaroaStartsOn: '2027-06-27',
+      tangaroaEndsOn: '2027-06-30',
+      holiday: '2027-06-25',
+    },
+  ],
+  [
+    2028,
+    {
+      tangaroaStartsOn: '2028-07-15',
+      tangaroaEndsOn: '2028-07-18',
+      holiday: '2028-07-14',
+    },
+  ],
+  [
+    2029,
+    {
+      tangaroaStartsOn: '2029-07-04',
+      tangaroaEndsOn: '2029-07-07',
+      holiday: '2029-07-06',
+    },
+  ],
+  [
+    2030,
+    {
+      tangaroaStartsOn: '2030-06-23',
+      tangaroaEndsOn: '2030-06-26',
+      holiday: '2030-06-21',
+    },
+  ],
+  [
+    2031,
+    {
+      tangaroaStartsOn: '2031-07-11',
+      tangaroaEndsOn: '2031-07-14',
+      holiday: '2031-07-11',
+    },
+  ],
+  [
+    2032,
+    {
+      tangaroaStartsOn: '2032-06-30',
+      tangaroaEndsOn: '2032-07-02',
+      holiday: '2032-07-02',
+    },
+  ],
+  [
+    2033,
+    {
+      tangaroaStartsOn: '2033-06-20',
+      tangaroaEndsOn: '2033-06-23',
+      holiday: '2033-06-24',
+    },
+  ],
+  [
+    2034,
+    {
+      tangaroaStartsOn: '2034-07-09',
+      tangaroaEndsOn: '2034-07-12',
+      holiday: '2034-07-07',
+    },
+  ],
+  [
+    2035,
+    {
+      tangaroaStartsOn: '2035-06-29',
+      tangaroaEndsOn: '2035-07-01',
+      holiday: '2035-06-29',
+    },
+  ],
+  [
+    2036,
+    {
+      tangaroaStartsOn: '2036-07-17',
+      tangaroaEndsOn: '2036-07-20',
+      holiday: '2036-07-18',
+    },
+  ],
+  [
+    2037,
+    {
+      tangaroaStartsOn: '2037-07-06',
+      tangaroaEndsOn: '2037-07-09',
+      holiday: '2037-07-10',
+    },
+  ],
+  [
+    2038,
+    {
+      tangaroaStartsOn: '2038-06-25',
+      tangaroaEndsOn: '2038-06-28',
+      holiday: '2038-06-25',
+    },
+  ],
+  [
+    2039,
+    {
+      tangaroaStartsOn: '2039-07-13',
+      tangaroaEndsOn: '2039-07-16',
+      holiday: '2039-07-15',
+    },
+  ],
+  [
+    2040,
+    {
+      tangaroaStartsOn: '2040-07-01',
+      tangaroaEndsOn: '2040-07-04',
+      holiday: '2040-07-06',
+    },
+  ],
+  [
+    2041,
+    {
+      tangaroaStartsOn: '2041-07-21',
+      tangaroaEndsOn: '2041-07-24',
+      holiday: '2041-07-19',
+    },
+  ],
+  [
+    2042,
+    {
+      tangaroaStartsOn: '2042-07-10',
+      tangaroaEndsOn: '2042-07-14',
+      holiday: '2042-07-11',
+    },
+  ],
+  [
+    2043,
+    {
+      tangaroaStartsOn: '2043-06-30',
+      tangaroaEndsOn: '2043-07-03',
+      holiday: '2043-07-03',
+    },
+  ],
+  [
+    2044,
+    {
+      tangaroaStartsOn: '2044-06-19',
+      tangaroaEndsOn: '2044-06-22',
+      holiday: '2044-06-24',
+    },
+  ],
+  [
+    2045,
+    {
+      tangaroaStartsOn: '2045-07-07',
+      tangaroaEndsOn: '2045-07-10',
+      holiday: '2045-07-07',
+    },
+  ],
+  [
+    2046,
+    {
+      tangaroaStartsOn: '2046-06-26',
+      tangaroaEndsOn: '2046-06-29',
+      holiday: '2046-06-29',
+    },
+  ],
+  [
+    2047,
+    {
+      tangaroaStartsOn: '2047-07-15',
+      tangaroaEndsOn: '2047-07-18',
+      holiday: '2047-07-19',
+    },
+  ],
+  [
+    2048,
+    {
+      tangaroaStartsOn: '2048-07-03',
+      tangaroaEndsOn: '2048-07-06',
+      holiday: '2048-07-03',
+    },
+  ],
+  [
+    2049,
+    {
+      tangaroaStartsOn: '2049-06-22',
+      tangaroaEndsOn: '2049-06-25',
+      holiday: '2049-06-25',
+    },
+  ],
+  [
+    2050,
+    {
+      tangaroaStartsOn: '2050-07-11',
+      tangaroaEndsOn: '2050-07-14',
+      holiday: '2050-07-15',
+    },
+  ],
+  [
+    2051,
+    {
+      tangaroaStartsOn: '2051-07-01',
+      tangaroaEndsOn: '2051-07-04',
+      holiday: '2051-06-30',
+    },
+  ],
+  [
+    2052,
+    {
+      tangaroaStartsOn: '2052-06-20',
+      tangaroaEndsOn: '2052-06-23',
+      holiday: '2052-06-21',
+    },
+  ],
 ]);
 
 const TANGAROA_TARGET_MATA = new Set(
@@ -203,7 +421,10 @@ function localDateFromOptions(options: CliOptions, location: Location): string {
   }
 
   if (typeof options.at === 'string') {
-    return formatIsoDateInTimezone(parseDateTime(options.at, location), location.timezone);
+    return formatIsoDateInTimezone(
+      parseDateTime(options.at, location),
+      location.timezone,
+    );
   }
 
   return formatIsoDateInTimezone(new Date(), location.timezone);
@@ -357,7 +578,13 @@ function bodyPosition(
     throw new Error(`Unknown Astronomy Engine body: ${bodyName}`);
   }
 
-  const coordinates = engine.Equator(body, at, observer(engine, location), true, true);
+  const coordinates = engine.Equator(
+    body,
+    at,
+    observer(engine, location),
+    true,
+    true,
+  );
   const horizon = engine.Horizon(
     at,
     observer(engine, location),
@@ -411,7 +638,10 @@ function overlapDays(
   return Math.max(0, Math.round((end - start) / 86_400_000) + 1);
 }
 
-function localDayBounds(date: string, location: Location): {
+function localDayBounds(
+  date: string,
+  location: Location,
+): {
   startsAt: Date;
   endsAt: Date;
 } {
@@ -460,9 +690,7 @@ function dawnWindowRows(
         markerAzimuth: markerAt.azimuth,
         direction: markerAt.direction,
         passes,
-        reason: passes
-          ? 'passes'
-          : failureReason(markerAt, sun, config),
+        reason: passes ? 'passes' : failureReason(markerAt, sun, config),
       });
     }
 
@@ -526,11 +754,43 @@ async function detailedMonthForYearMonth(
   location: Location,
   yearMonth: MaramatakaYearMonth,
 ): Promise<MaramatakaMonth> {
-  return svc.getMonth(
+  const cycle = await svc.getCycleDetails(
     location,
     yearMonth.anchors.whiro.astronomicalOccursAt ??
       yearMonth.anchors.whiro.occursAt,
   );
+
+  if (!cycle) {
+    throw new Error(`No cycle details found for ${yearMonth.name}`);
+  }
+
+  return monthFromCycle(cycle);
+}
+
+async function detailedMonthForDate(
+  svc: MaramatakaService,
+  location: Location,
+  at: Date,
+): Promise<MaramatakaMonth> {
+  const cycle = await svc.getCycleDetails(location, at);
+
+  if (!cycle) {
+    throw new Error(
+      `No cycle details found for ${formatLocal(at, location.timezone)}`,
+    );
+  }
+
+  return monthFromCycle(cycle);
+}
+
+function monthFromCycle(cycle: MaramatakaCycleDetails): MaramatakaMonth {
+  return {
+    version: cycle.version,
+    ruleSet: cycle.ruleSet,
+    whiroStartsAt: cycle.anchors.whiro.occursAt,
+    starMonthSequence: cycle.starMonth?.note?.sequence,
+    nights: cycle.nights,
+  };
 }
 
 function findNight(month: MaramatakaMonth, at: Date) {
@@ -559,7 +819,9 @@ async function inspectSky(options: CliOptions) {
   }
 
   console.log(`Sky position at ${formatLocal(at, location.timezone)}`);
-  console.log(`${location.name}: ${location.latitude}, ${location.longitude}, ${location.timezone}`);
+  console.log(
+    `${location.name}: ${location.latitude}, ${location.longitude}, ${location.timezone}`,
+  );
   console.table(rows);
   console.table([
     bodyPosition(engine, 'Sun', at, location),
@@ -614,8 +876,10 @@ async function debugFirstAppearance(options: CliOptions) {
       date = addDays(date, 1);
     }
 
-    const windowStart = firstDate === 'missing' ? start : addDays(firstDate, -3);
-    const windowEnd = firstDate === 'missing' ? addDays(start, 7) : addDays(firstDate, 4);
+    const windowStart =
+      firstDate === 'missing' ? start : addDays(firstDate, -3);
+    const windowEnd =
+      firstDate === 'missing' ? addDays(start, 7) : addDays(firstDate, 4);
     date = windowStart;
     while (date < windowEnd) {
       const rows = dawnWindowRows(engine, date, location, marker);
@@ -654,19 +918,25 @@ async function inspectMaramaBoundary(options: CliOptions) {
     location,
   );
   const svc = service();
-  const month = await svc.getMonth(location, at);
+  const month = await detailedMonthForDate(svc, location, at);
   const night = findNight(month, at);
 
-  console.log(`Marama boundary inspector for ${formatLocal(at, location.timezone)}`);
+  console.log(
+    `Marama boundary inspector for ${formatLocal(at, location.timezone)}`,
+  );
   console.table([
     {
       monthStartsAt: formatLocal(month.whiroStartsAt, location.timezone),
-      monthEndsAt: formatLocal(month.nights[month.nights.length - 1]?.endsAt, location.timezone),
+      monthEndsAt: formatLocal(
+        month.nights[month.nights.length - 1]?.endsAt,
+        location.timezone,
+      ),
       nights: month.nights.length,
       overlappingMata:
         month.nights
-          .flatMap((entry) =>
-            entry.overlappingMata?.map((overlap) => overlap.mata.name) ?? [],
+          .flatMap(
+            (entry) =>
+              entry.overlappingMata?.map((overlap) => overlap.mata.name) ?? [],
           )
           .join(', ') || 'none',
       currentMata: night?.mata.name ?? 'outside generated nights',
@@ -774,7 +1044,8 @@ async function exploreHoliday(options: CliOptions) {
           )
         : 'n/a',
       containsOfficialHoliday: official
-        ? official.holiday >= formatDate(yearMonth.startsAt, location.timezone) &&
+        ? official.holiday >=
+            formatDate(yearMonth.startsAt, location.timezone) &&
           official.holiday < formatDate(yearMonth.endsAt, location.timezone)
         : 'n/a',
     });
@@ -812,7 +1083,7 @@ async function explainEventPlacement(options: CliOptions) {
   );
   const month = yearMonth
     ? await detailedMonthForYearMonth(svc, location, yearMonth)
-    : await svc.getMonth(location, at);
+    : await detailedMonthForDate(svc, location, at);
   const night = findNight(month, at);
 
   console.log(`Event placement: ${formatLocal(at, location.timezone)}`);

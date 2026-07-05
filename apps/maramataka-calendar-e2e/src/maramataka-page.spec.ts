@@ -29,8 +29,9 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
           name: 'Te Tahi o Pipiri',
           markerIds: ['matariki'],
           description:
-            'The first named month in Himiona Tikitu\'s list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.',
-          sourceText: 'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
+            "The first named month in Himiona Tikitu's list is Te Tahi o Pipiri, with the year commencing when Matariki appears on the dawn horizon.",
+          sourceText:
+            'Te Tahi o Pipiri .. The First of Pipiri. The year commenced with the appearance of Matariki (Pleiades) on the horizon at dawn.',
         },
       ],
       markers: [
@@ -126,64 +127,6 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     { now: fixedNowIso },
   );
 
-  await page.route('**/api/maramataka/month**', async (route) => {
-    const url = new URL(route.request().url());
-    const location = url.searchParams.get('location');
-    const date = url.searchParams.get('date');
-    const isAuckland = location === 'auckland';
-    const isDemoDate = date === '2026-06-26';
-
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        version: 'mita-te-tai-best',
-        ruleSet,
-        whiroStartsAt: '2026-06-24T06:00:00.000Z',
-        nights: isDemoDate
-          ? [
-              {
-                mata: { index: 14, name: 'Atua', version: 'mita-te-tai-best' },
-                startsAt: '2026-06-26T04:30:00.000Z',
-                endsAt: '2026-06-26T05:30:00.000Z',
-              },
-              {
-                mata: { index: 15, name: 'Ohua', version: 'mita-te-tai-best' },
-                startsAt: '2026-06-26T05:30:00.000Z',
-                endsAt: '2026-06-26T06:30:00.000Z',
-              },
-            ]
-          : isAuckland
-            ? [
-                {
-                  mata: { index: 1, name: 'Mako', version: 'mita-te-tai-best' },
-                  startsAt: '2026-06-25T04:30:00.000Z',
-                  endsAt: '2026-06-25T05:30:00.000Z',
-                },
-              ]
-            : [
-                {
-                  mata: {
-                    index: 1,
-                    name: 'Whiro',
-                    version: 'mita-te-tai-best',
-                  },
-                  startsAt: '2026-06-25T04:30:00.000Z',
-                  endsAt: '2026-06-25T05:30:00.000Z',
-                },
-                {
-                  mata: {
-                    index: 2,
-                    name: 'Tirea',
-                    version: 'mita-te-tai-best',
-                  },
-                  startsAt: '2026-06-25T05:30:00.000Z',
-                  endsAt: '2026-06-25T06:30:00.000Z',
-                },
-              ],
-      }),
-    });
-  });
-
   await page.route('**/api/maramataka/cycle**', async (route) => {
     const url = new URL(route.request().url());
     const location = url.searchParams.get('location');
@@ -195,6 +138,47 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
       name: isDemoDate ? 'Atua' : isAuckland ? 'Mako' : 'Whiro',
       version: 'mita-te-tai-best',
     };
+    const nights = isDemoDate
+      ? [
+          {
+            mata: { index: 14, name: 'Atua', version: 'mita-te-tai-best' },
+            startsAt: '2026-06-26T04:30:00.000Z',
+            endsAt: '2026-06-26T05:30:00.000Z',
+          },
+          {
+            mata: { index: 15, name: 'Ohua', version: 'mita-te-tai-best' },
+            startsAt: '2026-06-26T05:30:00.000Z',
+            endsAt: '2026-06-26T06:30:00.000Z',
+          },
+        ]
+      : isAuckland
+        ? [
+            {
+              mata: { index: 1, name: 'Mako', version: 'mita-te-tai-best' },
+              startsAt: '2026-06-25T04:30:00.000Z',
+              endsAt: '2026-06-25T05:30:00.000Z',
+            },
+          ]
+        : [
+            {
+              mata: {
+                index: 1,
+                name: 'Whiro',
+                version: 'mita-te-tai-best',
+              },
+              startsAt: '2026-06-25T04:30:00.000Z',
+              endsAt: '2026-06-25T05:30:00.000Z',
+            },
+            {
+              mata: {
+                index: 2,
+                name: 'Tirea',
+                version: 'mita-te-tai-best',
+              },
+              startsAt: '2026-06-25T05:30:00.000Z',
+              endsAt: '2026-06-25T06:30:00.000Z',
+            },
+          ];
 
     await route.fulfill({
       contentType: 'application/json',
@@ -248,13 +232,7 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
           note: ruleSet.starMonthNaming.months[0],
         },
         starMarkers: [starMarker],
-        nights: [
-          {
-            mata,
-            startsAt: '2026-06-25T04:30:00.000Z',
-            endsAt: '2026-06-25T05:30:00.000Z',
-          },
-        ],
+        nights,
         events: [
           {
             type: 'month-start',
@@ -486,9 +464,7 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByTestId('moon-details-panel')).toContainText(
     '2.5 days',
   );
-  await expect(page.getByTestId('star-marker-layer')).toContainText(
-    'Matariki',
-  );
+  await expect(page.getByTestId('star-marker-layer')).toContainText('Matariki');
   await expect(page.getByTestId('star-marker-layer')).not.toContainText(
     'Rigel',
   );

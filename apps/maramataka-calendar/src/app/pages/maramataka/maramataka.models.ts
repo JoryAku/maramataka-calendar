@@ -283,14 +283,6 @@ export interface MataContentLayer {
   unavailableReason?: string;
 }
 
-export interface ApiMaramatakaMonth {
-  version: string;
-  ruleSet: MaramatakaRuleSet;
-  whiroStartsAt: string;
-  starMonthSequence?: number;
-  nights: ApiMaramatakaNight[];
-}
-
 export type ApiMaramatakaCycleDetails = Omit<
   MaramatakaCycleDetails<string>,
   'currentNight' | 'nights'

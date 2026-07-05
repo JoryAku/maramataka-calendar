@@ -8,7 +8,6 @@ import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { MaramatakaApiService } from './maramataka-api.service';
 import {
   MaramatakaCycleDetails,
-  MaramatakaMonth,
   MaramatakaYear,
   StarMarker,
 } from './maramataka.models';
@@ -87,50 +86,6 @@ describe('MaramatakaApiService', () => {
   afterEach(() => {
     httpTestingController.verify();
     TestBed.resetTestingModule();
-  });
-
-  it('maps month mata phase groups from the API', () => {
-    let month: MaramatakaMonth | undefined;
-
-    service
-      .getMonth('gisborne', new Date('2026-09-14T12:00:00.000Z'))
-      .subscribe((response) => {
-        month = response;
-      });
-
-    const request = httpTestingController.expectOne(
-      (req) =>
-        req.url === '/api/maramataka/month' &&
-        req.params.get('location') === 'gisborne',
-    );
-
-    expect(request.request.params.get('date')).toBe('2026-09-15');
-    request.flush({
-      version: 'mita-te-tai-best',
-      ruleSet,
-      whiroStartsAt: '2026-09-10T18:03:00.000Z',
-      starMonthSequence: 9,
-      nights: [
-        {
-          mata: {
-            index: 1,
-            name: 'Whiro',
-            version: 'mita-te-tai-best',
-            phaseGroup: {
-              name: 'Te Marama i te rā',
-            },
-          },
-          startsAt: '2026-09-10T18:03:00.000Z',
-          endsAt: '2026-09-11T18:27:00.000Z',
-        },
-      ],
-    });
-
-    expect(month?.nights[0].mata).toBe('Whiro');
-    expect(month?.nights[0].phaseGroup?.name).toBe('Te Marama i te rā');
-    expect(month?.nights[0].startsAt).toEqual(
-      new Date('2026-09-10T18:03:00.000Z'),
-    );
   });
 
   it('maps cycle detail anchors and nights from the API', () => {
