@@ -1027,6 +1027,41 @@ describe('MaramatakaPage', () => {
       'Waxing Crescent',
     );
     expect(moonPhaseArt?.getAttribute('aria-label')).toContain('17%');
+
+    const litPhase = moonPhaseArt?.querySelector(
+      '.moon-phase-light',
+    ) as SVGPathElement | null;
+    expect(litPhase?.getAttribute('data-phase-side')).toBe('left');
+    expect(litPhase?.getAttribute('d')).toContain('A 42 42');
+  });
+
+  it('moves the moon shadow direction after the full-moon mata', () => {
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(
+      flushMaramatakaRequests(),
+      monthFixture(),
+      {
+        ...todayFixture(),
+        mata: { index: 24, name: 'Tangaroa-ā-roto' },
+      },
+      cycleFixture(),
+      {
+        ...moonDetailsFixture(),
+        phase: 'Waning Crescent',
+        fractionIlluminated: 0.17,
+      },
+    );
+    fixture.detectChanges();
+
+    const litPhase = fixture.nativeElement.querySelector(
+      '.moon-phase-light',
+    ) as SVGPathElement | null;
+
+    expect(litPhase?.getAttribute('data-phase-side')).toBe('right');
+    expect(litPhase?.getAttribute('d')).toContain('A 42 42');
   });
 
   it('uses the selected location for API requests', () => {

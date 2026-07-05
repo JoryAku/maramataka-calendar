@@ -1,7 +1,6 @@
 <section class="maramataka-page">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Maramataka</p>
       <h1>Maramataka</h1>
     </div>
 
@@ -32,24 +31,25 @@
 
       <section class="control-panel" aria-label="View date">
         <label class="control-label" for="date-select">View date</label>
-        <div class="date-control">
-          <input
-            id="date-select"
-            class="control-input"
-            type="date"
-            [value]="selectedDate()"
-            (change)="onDateChange($any($event.target).value)"
-          />
-          <button
-            class="secondary-button"
-            type="button"
-            [disabled]="useLiveDate()"
-            (click)="resetDateToToday()"
-          >
-            Use today
-          </button>
-        </div>
+        <input
+          id="date-select"
+          class="control-input"
+          type="date"
+          [value]="selectedDate()"
+          (change)="onDateChange($any($event.target).value)"
+        />
       </section>
+
+      <div class="control-actions">
+        <button
+          class="secondary-button"
+          type="button"
+          [disabled]="useLiveDate()"
+          (click)="resetDateToToday()"
+        >
+          Use today
+        </button>
+      </div>
     </div>
   </header>
 

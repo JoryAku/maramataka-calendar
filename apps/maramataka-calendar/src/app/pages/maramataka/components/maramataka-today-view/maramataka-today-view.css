@@ -1,0 +1,477 @@
+:host {
+  display: block;
+}
+
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h2 {
+  margin-bottom: 0;
+  color: #e6f8f0;
+  font-size: 1.1rem;
+}
+
+.today-section {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #223d35;
+  border-radius: 8px;
+  background: #071613cc;
+  box-shadow: 0 24px 70px #0000002e;
+}
+
+.section-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-header > div,
+.section-header > p {
+  min-width: 0;
+}
+
+.section-header p:last-child {
+  margin-bottom: 0;
+  color: #9fb5ac;
+  overflow-wrap: anywhere;
+}
+
+.eyebrow {
+  margin-bottom: 0.25rem;
+  color: #69d8c5;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.state {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  background: #102821;
+  color: #d2e8df;
+}
+
+.state.compact {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.state.error {
+  border-color: #7e423d;
+  background: #2b1715;
+  color: #ffd9d3;
+}
+
+.moon-tracker {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.moon-tracker > * {
+  min-width: 0;
+}
+
+.moon-visual,
+.mata-panel,
+.timing-panel {
+  border: 1px solid #223d35;
+  border-radius: 8px;
+  background: #081b17;
+}
+
+.moon-visual {
+  display: grid;
+  min-height: 18rem;
+  place-items: center;
+}
+
+.moon-phase-art {
+  width: min(78%, 17rem);
+  aspect-ratio: 1;
+  overflow: visible;
+}
+
+.moon-phase-light {
+  fill: #f1efe6;
+}
+
+.moon-phase-shadow {
+  fill: #232d2a;
+}
+
+.moon-phase-rim {
+  fill: none;
+  stroke: #d5e8df22;
+  stroke-width: 1;
+}
+
+.mata-panel {
+  padding: 1rem;
+}
+
+.mata-panel h3 {
+  margin-bottom: 0.3rem;
+  color: #fff9df;
+  font-size: clamp(1.75rem, 5.6vw, 3.8rem);
+  line-height: 1.06;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.overlap-label {
+  margin-bottom: 0.75rem;
+  color: #f0c66b;
+  font-weight: 700;
+}
+
+.countdown {
+  display: inline-flex;
+  margin-bottom: 1rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #31534a;
+  border-radius: 999px;
+  background: #102821;
+  color: #d8eee6;
+  font-weight: 800;
+}
+
+.guidance-layer,
+.star-layer {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #27493f;
+  border-radius: 8px;
+  background: #0d211c;
+}
+
+.guidance-title {
+  margin: 0;
+  color: #7ce0c9;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.guidance-layer ul,
+.star-layer ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guidance-layer li,
+.star-layer li {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #31534a;
+  border-radius: 999px;
+  background: #102821;
+  color: #f4fbf8;
+  font-size: 0.86rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.star-layer li {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 8rem;
+  border-radius: 8px;
+}
+
+.star-layer span,
+.star-layer em {
+  color: #91aaa0;
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.dawn-sky-layer {
+  gap: 0.65rem;
+}
+
+.dawn-sky-heading {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dawn-sky-time,
+.dawn-sky-scope,
+.dawn-sky-hidden {
+  margin: 0.15rem 0 0;
+  color: #91aaa0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.dawn-sky-scope {
+  max-width: 34rem;
+  color: #b9cbc4;
+}
+
+.dawn-sky-count {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid #31534a;
+  border-radius: 999px;
+  background: #071613;
+  color: #bfeee3;
+  white-space: nowrap;
+}
+
+.dawn-horizon {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.horizon-sky {
+  position: relative;
+  min-height: 13.5rem;
+  overflow: hidden;
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, #0c211f 0%, #071613 78%),
+    #071613;
+}
+
+.horizon-sky::before,
+.horizon-sky::after {
+  position: absolute;
+  inset-inline: 0.75rem;
+  border-top: 1px solid #1f3c35;
+  content: '';
+}
+
+.horizon-sky::before {
+  top: 26%;
+}
+
+.horizon-sky::after {
+  top: 52%;
+}
+
+.horizon-arc {
+  position: absolute;
+  right: 8%;
+  bottom: -44%;
+  left: 8%;
+  height: 76%;
+  border: 1px solid #31534a;
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  opacity: 0.6;
+}
+
+.horizon-line {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 14%;
+  left: 0.75rem;
+  height: 0.22rem;
+  border-radius: 999px;
+  background: #6aa391;
+  box-shadow: 0 0 18px #6aa39144;
+}
+
+.horizon-marker {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  gap: 0.2rem;
+  justify-items: center;
+  width: 5.8rem;
+  min-height: 2.8rem;
+  color: #f0c66b;
+  text-align: center;
+  transform: translate(-50%, 50%);
+}
+
+.horizon-dot {
+  display: block;
+  width: 0.8rem;
+  aspect-ratio: 1;
+  border: 2px solid #1b352e;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0.35rem #102821;
+}
+
+.horizon-label {
+  max-width: 100%;
+  color: #fff9df;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px #000;
+  white-space: nowrap;
+}
+
+.horizon-marker.visible {
+  color: #d9e7cf;
+}
+
+.horizon-marker.low {
+  color: #9fb5ac;
+}
+
+.horizon-marker.planet {
+  color: #9adfcb;
+}
+
+.horizon-marker.asterism {
+  color: #f0c66b;
+}
+
+.horizon-compass {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  color: #91aaa0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.dawn-sky-list li {
+  min-width: min(100%, 8.8rem);
+  max-width: 100%;
+}
+
+.dawn-sky-list li > span {
+  color: #7ce0c9;
+  text-transform: capitalize;
+}
+
+.dawn-sky-list small {
+  color: #b9cbc4;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.dawn-sky-moon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+  align-items: baseline;
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  background: #071613;
+  color: #d8eee6;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.dawn-sky-moon span {
+  color: #91aaa0;
+}
+
+.dawn-sky-moon strong {
+  color: #fff9df;
+}
+
+.guidance-source {
+  margin: 0;
+  color: #91aaa0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.guidance-source a {
+  color: #bfeee3;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18rem;
+}
+
+.moon-facts,
+.timing-panel {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.moon-facts {
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+}
+
+.moon-facts div,
+.timing-panel div {
+  padding: 0.75rem;
+  border: 1px solid #213a33;
+  border-radius: 8px;
+  background: #0d211c;
+}
+
+dt {
+  color: #91aaa0;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+dd {
+  margin: 0.2rem 0 0;
+  color: #f4fbf8;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.timing-panel {
+  padding: 1rem;
+}
+
+@media (max-width: 900px) {
+  .section-header,
+  .moon-tracker {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    display: grid;
+  }
+
+  .moon-visual {
+    min-height: 13rem;
+  }
+}
+
+@media (max-width: 1120px) {
+  .moon-tracker {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .timing-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .today-section {
+    padding: 0.75rem;
+  }
+}

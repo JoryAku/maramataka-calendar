@@ -11,9 +11,12 @@ import { NZ_TIMEZONE } from '../../maramataka.constants';
   selector: 'app-maramataka-today-view',
   imports: [CommonModule],
   templateUrl: './maramataka-today-view.html',
+  styleUrl: './maramataka-today-view.css',
 })
 export class MaramatakaTodayView {
   protected readonly nzTimeZone = NZ_TIMEZONE;
+  private readonly moonVisualRadius = 42;
+  private readonly moonVisualCenter = 50;
   private readonly horizonAltitudeMin = -8;
   private readonly horizonAltitudeMax = 32;
   private readonly dawnFieldMinAzimuth = 0;
@@ -67,14 +70,12 @@ export class MaramatakaTodayView {
     }
 
     const fraction = Math.max(0, Math.min(1, details.fractionIlluminated));
-    const orbitRadius = 42;
-    const travel = Math.round(fraction * orbitRadius * 2);
-    const phaseLabel = details.phase.toLowerCase();
-    const isWaxing = !phaseLabel.includes('waning');
+    const isWaxing = this.isWaxingMoon();
 
     return {
       ariaLabel: `${details.phase}, ${Math.round(fraction * 100)}% illuminated`,
-      shadowOffset: isWaxing ? -travel : travel,
+      litPath: this.moonLitPath(fraction, !isWaxing),
+      litSide: isWaxing ? 'left' : 'right',
     };
   });
 
@@ -182,6 +183,52 @@ export class MaramatakaTodayView {
 
   private normalizedAzimuth(marker: StarMarker): number {
     return ((marker.azimuthDegrees % 360) + 360) % 360;
+  }
+
+  private isWaxingMoon(): boolean {
+    const mataIndex = this.today()?.mata.index;
+
+    if (mataIndex !== undefined) {
+      return mataIndex <= 16;
+    }
+
+    const phaseLabel = this.moonDetails()?.phase.toLowerCase() ?? '';
+
+    return !phaseLabel.includes('waning');
+  }
+
+  private moonLitPath(fractionIlluminated: number, isWaxing: boolean): string {
+    if (fractionIlluminated <= 0.005) {
+      return '';
+    }
+
+    const center = this.moonVisualCenter;
+    const radius = this.moonVisualRadius;
+
+    if (fractionIlluminated >= 0.995) {
+      return [
+        `M ${center} ${center - radius}`,
+        `A ${radius} ${radius} 0 1 1 ${center} ${center + radius}`,
+        `A ${radius} ${radius} 0 1 1 ${center} ${center - radius}`,
+        'Z',
+      ].join(' ');
+    }
+
+    const topY = center - radius;
+    const bottomY = center + radius;
+    const litSideArcSweep = isWaxing ? 1 : 0;
+    const terminatorBias = 1 - 2 * fractionIlluminated;
+    const terminatorControlX =
+      center + (isWaxing ? 1 : -1) * terminatorBias * radius * 1.34;
+
+    return [
+      `M ${center} ${topY}`,
+      `A ${radius} ${radius} 0 0 ${litSideArcSweep} ${center} ${bottomY}`,
+      `C ${terminatorControlX.toFixed(2)} ${bottomY}`,
+      `${terminatorControlX.toFixed(2)} ${topY}`,
+      `${center} ${topY}`,
+      'Z',
+    ].join(' ');
   }
 
   protected starMarkerAltitudeLabel(marker: StarMarker): string {

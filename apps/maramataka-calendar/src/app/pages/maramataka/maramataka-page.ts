@@ -35,6 +35,7 @@ import {
     MaramatakaYearView,
   ],
   templateUrl: './maramataka-page.html',
+  styleUrl: './maramataka-page.css',
 })
 export class MaramatakaPage implements OnInit {
   private readonly api = inject(MaramatakaApiService);

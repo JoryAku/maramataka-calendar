@@ -12,6 +12,7 @@ import {
   selector: 'app-maramataka-cycle-view',
   imports: [CommonModule, MaramatakaMonthView],
   templateUrl: './maramataka-cycle-view.html',
+  styleUrl: './maramataka-cycle-view.css',
 })
 export class MaramatakaCycleView {
   selectedLocationName = input.required<string>();

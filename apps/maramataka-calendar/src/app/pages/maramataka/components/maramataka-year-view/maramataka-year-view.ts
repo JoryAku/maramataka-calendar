@@ -19,6 +19,7 @@ type YearEventLayoutGroup =
   selector: 'app-maramataka-year-view',
   imports: [CommonModule],
   templateUrl: './maramataka-year-view.html',
+  styleUrl: './maramataka-year-view.css',
 })
 export class MaramatakaYearView {
   protected readonly nzTimeZone = NZ_TIMEZONE;
