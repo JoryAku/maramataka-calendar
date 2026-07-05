@@ -1,0 +1,39 @@
+<section class="month-section" aria-labelledby="cycle-section-heading">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">2. Cycle</p>
+      <h2 id="cycle-section-heading">Where am I in this lunar cycle?</h2>
+    </div>
+    <p>Based on {{ selectedLocationName() }}</p>
+  </div>
+
+  @if (monthLoading()) {
+  <p class="state" data-testid="month-loading-state">
+    Loading maramataka month...
+  </p>
+  } @else if (monthError()) {
+  <p class="state error" data-testid="month-error-state">
+    {{ monthError() }}
+  </p>
+  } @else if (!month() || !hasNights()) {
+  <p class="state" data-testid="month-empty-state">
+    No maramataka nights are available for this month.
+  </p>
+  } @else { @if (cycleLoading()) {
+  <p class="state compact" data-testid="cycle-loading-state">
+    Loading cycle anchors...
+  </p>
+  } @else if (cycleError()) {
+  <p class="state compact" data-testid="cycle-error-state">
+    Cycle anchors are unavailable. The generated marama is still shown.
+  </p>
+  }
+  <app-maramataka-month-view
+    [month]="month()!"
+    [cycle]="cycle()"
+    [yearEvents]="yearEvents()"
+    [now]="now()"
+    (nightSelected)="selectNight($event)"
+  ></app-maramataka-month-view>
+  }
+</section>

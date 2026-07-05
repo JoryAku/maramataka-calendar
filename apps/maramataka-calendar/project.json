@@ -23,7 +23,8 @@
           }
         ],
         "styles": [
-          "apps/maramataka-calendar/src/styles.css"
+          "apps/maramataka-calendar/src/styles.css",
+          "apps/maramataka-calendar/src/app/pages/maramataka/maramataka-page.css"
         ]
       },
       "configurations": {

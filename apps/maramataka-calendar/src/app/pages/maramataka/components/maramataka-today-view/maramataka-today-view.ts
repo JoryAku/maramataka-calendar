@@ -1,0 +1,232 @@
+import { CommonModule } from '@angular/common';
+import { Component, computed, input } from '@angular/core';
+import {
+  MaramatakaToday,
+  MoonDetails,
+  StarMarker,
+} from '../../maramataka.models';
+import { NZ_TIMEZONE } from '../../maramataka.constants';
+
+@Component({
+  selector: 'app-maramataka-today-view',
+  imports: [CommonModule],
+  templateUrl: './maramataka-today-view.html',
+})
+export class MaramatakaTodayView {
+  protected readonly nzTimeZone = NZ_TIMEZONE;
+  private readonly horizonAltitudeMin = -8;
+  private readonly horizonAltitudeMax = 32;
+  private readonly dawnFieldMinAzimuth = 0;
+  private readonly dawnFieldMaxAzimuth = 180;
+
+  selectedLocationName = input.required<string>();
+  todayLoading = input.required<boolean>();
+  todayError = input<string | null>(null);
+  today = input<MaramatakaToday | null>(null);
+  now = input.required<Date>();
+  moonDetailsLoading = input.required<boolean>();
+  moonDetailsError = input<string | null>(null);
+  moonDetails = input<MoonDetails | null>(null);
+  starMarkersLoading = input.required<boolean>();
+  starMarkersError = input<string | null>(null);
+  starMarkers = input<StarMarker[]>([]);
+
+  protected readonly countdownToNextMata = computed(() => {
+    const today = this.today();
+    if (!today) {
+      return null;
+    }
+
+    const remainingMs = today.endsAt.getTime() - this.now().getTime();
+    if (remainingMs <= 0) {
+      return 'Now';
+    }
+
+    const totalMinutes = Math.ceil(remainingMs / 60_000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours <= 0) {
+      return `${minutes}m`;
+    }
+
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  });
+
+  protected readonly illuminationPercent = computed(() => {
+    const fraction = this.moonDetails()?.fractionIlluminated;
+
+    return fraction === undefined ? null : Math.round(fraction * 100);
+  });
+
+  protected readonly moonVisual = computed(() => {
+    const details = this.moonDetails();
+
+    if (!details) {
+      return null;
+    }
+
+    const fraction = Math.max(0, Math.min(1, details.fractionIlluminated));
+    const orbitRadius = 42;
+    const travel = Math.round(fraction * orbitRadius * 2);
+    const phaseLabel = details.phase.toLowerCase();
+    const isWaxing = !phaseLabel.includes('waning');
+
+    return {
+      ariaLabel: `${details.phase}, ${Math.round(fraction * 100)}% illuminated`,
+      shadowOffset: isWaxing ? -travel : travel,
+    };
+  });
+
+  protected readonly fishingGuidance = computed(() =>
+    this.today()?.mata.contentLayers?.find(
+      (layer) =>
+        layer.id === 'fishing-guidance' && layer.status === 'available',
+    ),
+  );
+
+  protected readonly dawnVisibleMarkers = computed(() =>
+    this.starMarkers()
+      .filter(
+        (marker) =>
+          marker.visibility !== 'below-horizon' &&
+          this.isInDawnFieldOfView(marker),
+      )
+      .sort(
+        (left, right) =>
+          this.normalizedAzimuth(left) - this.normalizedAzimuth(right) ||
+          this.starMarkerVisibilityRank(left) -
+            this.starMarkerVisibilityRank(right) ||
+          right.altitudeDegrees - left.altitudeDegrees ||
+          left.name.localeCompare(right.name),
+      ),
+  );
+
+  protected readonly dawnHiddenMarkerCount = computed(
+    () =>
+      this.starMarkers().filter(
+        (marker) => marker.visibility === 'below-horizon',
+      ).length,
+  );
+
+  protected readonly dawnOutOfViewMarkerCount = computed(
+    () =>
+      this.starMarkers().filter(
+        (marker) =>
+          marker.visibility !== 'below-horizon' &&
+          !this.isInDawnFieldOfView(marker),
+      ).length,
+  );
+
+  protected readonly dawnObservationTime = computed(
+    () =>
+      this.dawnVisibleMarkers()[0]?.observedAt ??
+      this.starMarkers()[0]?.observedAt ??
+      null,
+  );
+
+  protected readonly dawnMoonSummary = computed(() => {
+    const details = this.moonDetails();
+    const illumination = this.illuminationPercent();
+
+    if (!details || illumination === null) {
+      return null;
+    }
+
+    return `${details.phase}, ${illumination}% illuminated`;
+  });
+
+  protected horizonMarkerLeft(marker: StarMarker): number {
+    const normalizedAzimuth = this.normalizedAzimuth(marker);
+    const clampedAzimuth = Math.max(
+      this.dawnFieldMinAzimuth,
+      Math.min(this.dawnFieldMaxAzimuth, normalizedAzimuth),
+    );
+
+    return (
+      ((clampedAzimuth - this.dawnFieldMinAzimuth) /
+        (this.dawnFieldMaxAzimuth - this.dawnFieldMinAzimuth)) *
+      100
+    );
+  }
+
+  protected horizonMarkerBottom(marker: StarMarker): number {
+    const altitude = Math.max(
+      this.horizonAltitudeMin,
+      Math.min(this.horizonAltitudeMax, marker.altitudeDegrees),
+    );
+
+    return (
+      ((altitude - this.horizonAltitudeMin) /
+        (this.horizonAltitudeMax - this.horizonAltitudeMin)) *
+      72
+    );
+  }
+
+  protected horizonMarkerClass(marker: StarMarker): string {
+    return [
+      'horizon-marker',
+      marker.visibility,
+      marker.type,
+    ].join(' ');
+  }
+
+  private isInDawnFieldOfView(marker: StarMarker): boolean {
+    const azimuth = this.normalizedAzimuth(marker);
+
+    return (
+      azimuth >= this.dawnFieldMinAzimuth &&
+      azimuth <= this.dawnFieldMaxAzimuth
+    );
+  }
+
+  private normalizedAzimuth(marker: StarMarker): number {
+    return ((marker.azimuthDegrees % 360) + 360) % 360;
+  }
+
+  protected starMarkerAltitudeLabel(marker: StarMarker): string {
+    if (marker.visibility === 'below-horizon') {
+      return `${Math.abs(marker.altitudeDegrees)}° below horizon`;
+    }
+
+    return `${marker.altitudeDegrees}° above ${marker.direction}`;
+  }
+
+  protected starMarkerMetaLabel(marker: StarMarker): string {
+    return [marker.englishName, this.starMarkerTypeLabel(marker.type)]
+      .filter(Boolean)
+      .join(' / ');
+  }
+
+  protected starMarkerVisibilityLabel(marker: StarMarker): string {
+    return marker.visibility === 'below-horizon'
+      ? 'below horizon'
+      : marker.visibility;
+  }
+
+  private starMarkerTypeLabel(type: StarMarker['type']): string {
+    switch (type) {
+      case 'asterism':
+        return 'asterism';
+      case 'planet':
+        return 'planet';
+      case 'sky-figure':
+        return 'sky figure';
+      case 'star':
+        return 'star';
+    }
+  }
+
+  private starMarkerVisibilityRank(marker: StarMarker): number {
+    switch (marker.visibility) {
+      case 'prominent':
+        return 0;
+      case 'visible':
+        return 1;
+      case 'low':
+        return 2;
+      case 'below-horizon':
+        return 3;
+    }
+  }
+}

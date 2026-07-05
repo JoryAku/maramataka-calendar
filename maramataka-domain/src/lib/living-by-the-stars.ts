@@ -5,6 +5,7 @@ import { MaramatakaRuleSet } from './maramataka-rule-set';
 export const LIVING_BY_THE_STARS_SOURCE = 'Living by the Stars';
 export const LIVING_BY_THE_STARS_SOURCE_QUOTE =
   'Tohua ai nga marama o te Maori e nga whetu ka rewa i te atapo, ka mutu ka tapaina nga marama e hangai ana ki nga ingoa o aua whetu ra.';
+export const LIVING_BY_THE_STARS_MATA_VERSION = 'living-by-the-star';
 
 const LIVING_BY_THE_STARS_DAWN_RISING_CONFIG = {
   startSunAltitudeDegrees: -18,
@@ -48,14 +49,14 @@ const PHASE_GROUPS: Record<PhaseGroupKey, MataPhaseGroup> = {
   },
 };
 
-const LIVING_BY_THE_STARS_YEAR_START_MARKER = {
+const LIVING_BY_THE_STARS_MATARIKI_CALIBRATION_MARKER = {
   id: 'matariki',
   name: 'Matariki',
   type: 'asterism',
   englishName: 'Pleiades',
   description:
-    'Pleiades; retained as the year-start and Ruhanui calibration marker for the current astronomy-only rule.',
-  seasonalAssociation: 'Year-start calibration marker',
+    'Pleiades; retained as the Ruhanui and public holiday calibration marker for the current astronomy-only rule.',
+  seasonalAssociation: 'Ruhanui and public holiday calibration marker',
   source: 'Project Matariki / Ruhanui calibration notes',
   confidence: 'working',
   dawnRising: LIVING_BY_THE_STARS_DAWN_RISING_CONFIG,
@@ -66,6 +67,13 @@ const LIVING_BY_THE_STARS_YEAR_START_MARKER = {
   },
 } satisfies StarMarkerDefinition;
 
+const LIVING_BY_THE_STARS_MATARIKI_HOLIDAY_TARGET_MATA = [
+  'Tangaroa-ā-mua',
+  'Tangaroa-ā-roto',
+  'Tangaroa-whakapau',
+  'Tangaroa whāriki kio-kio',
+];
+
 function createMata(
   index: number,
   name: string,
@@ -74,7 +82,7 @@ function createMata(
   return {
     index,
     name,
-    version: 'mita-te-tai-best',
+    version: LIVING_BY_THE_STARS_MATA_VERSION,
     phaseGroup,
   };
 }
@@ -424,6 +432,9 @@ export const LIVING_BY_THE_STARS_STAR_MONTH_NOTES = [
   },
 ];
 
+const LIVING_BY_THE_STARS_YEAR_START_MARKER =
+  LIVING_BY_THE_STARS_STAR_MONTH_MARKERS[0];
+
 export const LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   id: 'living-by-the-stars-observational-v1',
   name: 'Living by the Stars observational maramataka',
@@ -437,10 +448,18 @@ export const LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   balancing: 'fixed-sequence-drop-final-mata',
   yearStartRule: {
     strategy:
-      'Use the configured marker to calibrate Matariki/Ruhanui placement after Pipiri / Hamal has set Te Tahi o Pipiri.',
+      'Use Pipiri / Hamal to set Te Tahi o Pipiri, then anchor the year to the next Whiro.',
     marker: LIVING_BY_THE_STARS_YEAR_START_MARKER,
     description:
-      'The active Living by the Stars year starts from Pipiri / Hamal in the starMonthNaming layer; Matariki is retained here as the astronomy-only Ruhanui and holiday calibration marker.',
+      'The active Living by the Stars year starts from Pipiri / Hamal, matching the first named marama marker.',
+    source: LIVING_BY_THE_STARS_SOURCE,
+  },
+  matarikiHoliday: {
+    monthSelection: 'year-start-or-ruhanui',
+    targetMataNames: LIVING_BY_THE_STARS_MATARIKI_HOLIDAY_TARGET_MATA,
+    calibrationMarker: LIVING_BY_THE_STARS_MATARIKI_CALIBRATION_MARKER,
+    description:
+      'Select Ruhanui when the Ruhanui intercalation rule inserts it; otherwise select Te Tahi o Pipiri. A Tangaroa-calibrated next-marama mode is available for review, but current calibration performs worse.',
     source: 'Project Matariki / Ruhanui calibration notes',
   },
   starMonthNaming: {
@@ -452,6 +471,6 @@ export const LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
     markers: LIVING_BY_THE_STARS_STAR_MONTH_MARKERS,
     months: LIVING_BY_THE_STARS_STAR_MONTH_NOTES,
   },
-  mataVersion: 'mita-te-tai-best',
+  mataVersion: LIVING_BY_THE_STARS_MATA_VERSION,
   mata: LIVING_BY_THE_STARS_MATA,
 };

@@ -54,9 +54,9 @@ assumptions explicit:
 - Pipiri / Hamal provides the candidate Whiro for Te Tahi o Pipiri; Matariki's
   return timing decides whether that candidate is accepted, followed by
   Ruhanui, or skipped.
-- `yearStartRule` currently keeps Matariki as the Ruhanui and holiday
-  calibration marker, while `starMonthNaming` carries the source-linked
-  named-month markers from _Living by the Stars_.
+- `yearStartRule` carries Pipiri / Hamal as the source-linked year-start
+  marker, while `matarikiHoliday.calibrationMarker` keeps Matariki available
+  for Ruhanui and public holiday calibration.
 
 The exact source passage used for this balancing rule is:
 
@@ -186,6 +186,53 @@ model currently matches 20 of 31 holiday dates. The selected holiday marama's
 generated Tangaroa period overlaps the official Tangaroa period in 28 of 31
 comparison years. The remaining differences are useful calibration clues for
 refining mata boundaries and the source-specific Matariki/Ruhanui rule.
+
+### Calibration And Diagnostic Tools
+
+Two terminal tools now support rule review without changing the calculation:
+
+- `npm run compare:matariki-holiday` produces the full official Matariki
+  calibration report. It compares generated public holiday dates, generated
+  Tangaroa periods, official Tangaroa periods, selected marama, likely
+  difference categories, and source-calendar fixture checks.
+- `npm run compare:matariki-holiday -- --focus=matariki-visibility` narrows
+  the report to the current Matariki/Ruhanui investigation. It prints Pipiri,
+  Matariki, and Ruhanui first-visibility dates against official Tangaroa
+  periods, then adds nearby New Moon and Full Moon anchors so proposed rules
+  can be checked against lunar events instead of raw day counts.
+- `npm run diagnose:maramataka -- <command>` provides targeted astronomy and
+  maramataka inspection. Current commands are `sky-position`,
+  `dawn-visibility`, `first-appearance`, `marama-boundary`, `year-trace`,
+  `holiday-explorer`, and `event-placement`.
+
+Useful examples:
+
+```sh
+npm run compare:matariki-holiday -- --focus=matariki-visibility
+npm run diagnose:maramataka -- year-trace --year 2041
+npm run diagnose:maramataka -- holiday-explorer --year 2041
+npm run diagnose:maramataka -- sky-position --at 2041-07-21T06:00 --marker all
+npm run diagnose:maramataka -- first-appearance --year 2041 --marker matariki
+```
+
+The latest calibration work tested whether the remaining one-marama-early
+years (`2036`, `2041`, and `2047`) could be explained by Matariki visibility,
+Pipiri visibility, Ruhanui visibility, nearby New Moon / Full Moon anchors, or
+other configured dawn-sky markers. The useful observations were:
+
+- The three one-marama-early years place the official Tangaroa period roughly
+  52-58 local days after Matariki first visibility.
+- Those same years fall around the lunar cycle after the second Full Moon and
+  before the third New Moon after Matariki first visibility.
+- That lunar pattern is not unique to the failing years; it also appears in
+  several years that currently calibrate well.
+- Dawn-sky checks for the configured markers and visible planets did not
+  reveal a stable discriminator that safely improves the Ruhanui rule.
+
+Because those diagnostics did not produce a clean astronomy-only rule, the
+active Pipiri/Ruhanui calculation remains unchanged. The tools remain in the
+repo as review aids and should be used to test future source-derived
+hypotheses before changing the rule set.
 
 ## Astronomy Provider Resilience
 

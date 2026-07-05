@@ -79,7 +79,19 @@
     <p>Dawn sky markers for this part of the cycle</p>
     }
     @if (month().ruleSet.starMonthNaming) {
-    <span>{{ month().ruleSet.starMonthNaming!.strategy }}</span>
+    <span>
+      Star month rule:
+      {{ month().ruleSet.starMonthNaming!.strategy }}.
+      Source: {{ month().ruleSet.starMonthNaming!.source }}
+      @if (month().ruleSet.starMonthNaming!.sourceUrl) {
+      <a
+        [href]="month().ruleSet.starMonthNaming!.sourceUrl"
+        target="_blank"
+        rel="noreferrer"
+        >View source</a
+      >
+      }
+    </span>
     }
     <ul>
       @for (marker of cycleStarMarkers(); track marker.id) {

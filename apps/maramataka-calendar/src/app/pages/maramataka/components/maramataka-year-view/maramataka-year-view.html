@@ -1,0 +1,174 @@
+<section class="year-section" aria-labelledby="year-heading">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">3. Year rhythm</p>
+      <h2 id="year-heading">How does this lunar year unfold?</h2>
+    </div>
+    @if (year()) {
+    <p>{{ year()!.year }}</p>
+    }
+  </div>
+
+  @if (yearLoading()) {
+  <p class="state" data-testid="year-loading-state">
+    Loading maramataka year...
+  </p>
+  } @else if (yearError()) {
+  <p class="state error" data-testid="year-error-state">
+    {{ yearError() }}
+  </p>
+  } @else if (!year() || !year()!.months.length) {
+  <p class="state" data-testid="year-empty-state">
+    No maramataka year timeline is available for this date.
+  </p>
+  } @else {
+  <p class="state compact year-rule-note">
+    Year view starts at Te Tahi o Pipiri and uses actual dates across the
+    maramataka year. It marks marama boundaries, month and seasonal dawn
+    appearances, Matariki appearance/disappearance, astronomical New Moons,
+    astronomical Full Moons, equinoxes, solstices, and the Matariki public
+    holiday marker.
+  </p>
+  @if (year()!.diagnostics.length) {
+  <div class="year-diagnostics" data-testid="year-diagnostics">
+    <h3>Year timeline notes</h3>
+    <ul>
+      @for (diagnostic of year()!.diagnostics; track diagnostic.name + diagnostic.reason) {
+      <li>
+        <strong>{{ diagnostic.name }}</strong>
+        @if (diagnostic.anchorDate) {
+        <span>
+          {{ diagnostic.anchorDate | date: 'd MMM y, h:mm a' : nzTimeZone }}
+        </span>
+        }
+        <small>{{ diagnostic.reason }}</small>
+      </li>
+      }
+    </ul>
+  </div>
+  }
+  <div
+    class="year-timeline"
+    data-testid="year-rhythm-timeline"
+    role="list"
+    aria-label="Maramataka year rhythm timeline"
+  >
+    <div class="year-band-guide" aria-label="Timeline levels">
+      <span class="band-chip star">Star</span>
+      <span class="band-chip seasonal">Seasonal</span>
+      <span class="band-chip solar">Solar</span>
+      <span class="band-chip lunar">Lunar phase</span>
+      <span class="band-chip holiday">Holiday</span>
+    </div>
+    <div class="year-axis" aria-hidden="true">
+      <span>{{ year()!.startsAt | date: 'd MMM y' : nzTimeZone }}</span>
+      <span>{{ year()!.endsAt | date: 'd MMM y' : nzTimeZone }}</span>
+    </div>
+    <div class="year-event-track">
+      <div class="year-rail" aria-hidden="true"></div>
+      @for (month of year()!.months; track 'grid-' + month.startsAt.toISOString()) {
+      <span
+        class="year-month-grid-line"
+        [style.left.%]="yearMonthOffsetPercent(month)"
+        aria-hidden="true"
+      ></span>
+      }
+      @for (month of year()!.months; track month.startsAt.toISOString()) {
+      <span
+        class="year-month-tick"
+        [style.left.%]="yearMonthOffsetPercent(month)"
+        aria-hidden="true"
+      >
+        <span class="year-month-name">{{ month.name }}</span>
+        <span class="year-month-start">
+          {{ month.startsAt | date: 'd MMM' : nzTimeZone }}
+        </span>
+      </span>
+      }
+      @if (selectedDateOffsetPercent() !== null) {
+      <span
+        class="year-selected-date"
+        data-testid="year-selected-date-marker"
+        [style.left.%]="selectedDateOffsetPercent()"
+        [attr.aria-label]="'Selected date ' + selectedDateLabel()"
+        role="img"
+      >
+        <span class="selected-date-label">Selected</span>
+        <span class="selected-date-line" aria-hidden="true"></span>
+        <span class="selected-date-dot" aria-hidden="true"></span>
+        <span class="selected-date-time">{{ selectedDateLabel() }}</span>
+      </span>
+      }
+      @for (event of year()!.events; track event.type + event.name + event.occursAt.toISOString()) {
+      @if (event.type !== 'month-start') {
+      <article
+        role="listitem"
+        tabindex="0"
+        [class]="yearEventClass(event)"
+        [style.left.%]="yearEventOffsetPercent(event)"
+        [style.top.rem]="yearEventTopRem(event)"
+        [attr.aria-label]="yearEventAriaLabel(event)"
+      >
+        <div class="event-label">
+          <small>{{ yearEventTypeLabel(event) }}</small>
+          <strong>{{ event.name }}</strong>
+          <span>{{ yearEventDateLabel(event) }}</span>
+        </div>
+        <span class="event-stem" aria-hidden="true"></span>
+        <span class="event-symbol" aria-hidden="true">
+          {{ yearEventSymbol(event) }}
+        </span>
+      </article>
+      }
+      }
+    </div>
+  </div>
+
+  <div class="year-marama-list" aria-label="Maramataka months in this year">
+    @for (month of year()!.months; track month.startsAt.toISOString()) {
+    <article
+      role="button"
+      tabindex="0"
+      [attr.aria-label]="yearMaramaAriaLabel(month)"
+      (click)="selectYearMonth(month)"
+      (keydown.enter)="selectYearMonth(month)"
+      (keydown.space)="$event.preventDefault(); selectYearMonth(month)"
+    >
+      <strong>{{ month.name }}</strong>
+      <span>
+        {{ month.anchors.whiro.occursAt | date: 'd MMM' : nzTimeZone }}
+        -
+        {{ month.anchors.nextWhiro.occursAt | date: 'd MMM' : nzTimeZone }}
+      </span>
+      @if (month.starMarkers?.length) {
+      <small>{{ month.starMarkers![0].name }}</small>
+      }
+      @if (month.isEstimated) {
+      <small>Astronomy anchors only</small>
+      } @else {
+      <small>{{ month.nightsCount }} mata</small>
+      }
+    </article>
+    }
+  </div>
+
+  <dl class="year-legend" aria-label="Year timeline legend">
+    <div>
+      <dt>Marama boundaries</dt>
+      <dd>Whiro starts and month spans</dd>
+    </div>
+    <div>
+      <dt>Dawn stars</dt>
+      <dd>Month and seasonal first appearances</dd>
+    </div>
+    <div>
+      <dt>Moon events</dt>
+      <dd>Astronomical new and full moons</dd>
+    </div>
+    <div>
+      <dt>Holiday</dt>
+      <dd>Matariki public holiday marker</dd>
+    </div>
+  </dl>
+  }
+</section>

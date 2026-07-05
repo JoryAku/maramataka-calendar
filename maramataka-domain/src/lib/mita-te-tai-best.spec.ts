@@ -146,6 +146,18 @@ describe('LIVING_BY_THE_STARS_MATA', () => {
     ]);
   });
 
+  it('keeps the rule-set version separate from the mata sequence version', () => {
+    expect(LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.version).toBe('1');
+    expect(LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.mataVersion).toBe(
+      'living-by-the-star',
+    );
+    expect(
+      LIVING_BY_THE_STARS_MATA.every(
+        (mata) => mata.version === 'living-by-the-star',
+      ),
+    ).toBe(true);
+  });
+
   it('groups mata into lunar phase groups', () => {
     expect(
       LIVING_BY_THE_STARS_MATA.map((mata) => mata.phaseGroup?.name),
@@ -188,12 +200,20 @@ describe('LIVING_BY_THE_STARS_MATA', () => {
       LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.yearStartRule,
     ).toMatchObject({
       strategy:
-        'Use the configured marker to calibrate Matariki/Ruhanui placement after Pipiri / Hamal has set Te Tahi o Pipiri.',
+        'Use Pipiri / Hamal to set Te Tahi o Pipiri, then anchor the year to the next Whiro.',
       marker: {
+        id: 'pipiri',
+        name: 'Pipiri',
+      },
+      source: 'Living by the Stars',
+    });
+    expect(
+      LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday,
+    ).toMatchObject({
+      calibrationMarker: {
         id: 'matariki',
         name: 'Matariki',
       },
-      source: 'Project Matariki / Ruhanui calibration notes',
     });
     expect(
       LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming,

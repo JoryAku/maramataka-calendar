@@ -9,7 +9,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, fromEvent, interval, merge } from 'rxjs';
-import { MaramatakaMonthView } from './components/maramataka-month-view/maramataka-month-view';
+import { MaramatakaCycleView } from './components/maramataka-cycle-view/maramataka-cycle-view';
+import { MaramatakaTodayView } from './components/maramataka-today-view/maramataka-today-view';
+import { MaramatakaYearView } from './components/maramataka-year-view/maramataka-year-view';
+import { NZ_TIMEZONE } from './maramataka.constants';
 import { MaramatakaApiService } from './maramataka-api.service';
 import {
   LocationSummary,
@@ -18,26 +21,20 @@ import {
   MaramatakaNight,
   MaramatakaToday,
   MaramatakaYear,
-  MaramatakaYearEvent,
   MaramatakaYearMonth,
   MoonDetails,
   StarMarker,
 } from './maramataka.models';
-import { NZ_TIMEZONE } from './maramataka.constants';
-
-type YearEventLayoutGroup =
-  | 'star-marker'
-  | 'seasonal-marker'
-  | 'star-invisibility'
-  | 'public-holiday'
-  | 'solar-season'
-  | 'lunar-phase';
 
 @Component({
   selector: 'app-maramataka-page',
-  imports: [CommonModule, MaramatakaMonthView],
+  imports: [
+    CommonModule,
+    MaramatakaCycleView,
+    MaramatakaTodayView,
+    MaramatakaYearView,
+  ],
   templateUrl: './maramataka-page.html',
-  styleUrl: './maramataka-page.css',
 })
 export class MaramatakaPage implements OnInit {
   private readonly api = inject(MaramatakaApiService);
@@ -45,7 +42,6 @@ export class MaramatakaPage implements OnInit {
   private requestGeneration = 0;
   private lastRequestedNzDate: string | null = null;
 
-  protected readonly nzTimeZone = NZ_TIMEZONE;
   protected readonly locationsLoading = signal(true);
   protected readonly locationsError = signal<string | null>(null);
   protected readonly locations = signal<LocationSummary[]>([]);
@@ -72,9 +68,6 @@ export class MaramatakaPage implements OnInit {
   protected readonly selectedDate = signal(this.api.formatDate(new Date()));
   private readonly selectedDateInstant = signal<Date | null>(null);
   protected readonly useLiveDate = signal(true);
-  protected readonly hasNights = computed(
-    () => (this.month()?.nights.length ?? 0) > 0,
-  );
   protected readonly selectedLocationName = computed(() => {
     const selectedLocation = this.locations().find(
       (location) => location.id === this.selectedLocationId(),
@@ -82,69 +75,6 @@ export class MaramatakaPage implements OnInit {
 
     return selectedLocation?.name ?? 'Selected location';
   });
-  protected readonly countdownToNextMata = computed(() => {
-    const today = this.today();
-    if (!today) {
-      return null;
-    }
-
-    const remainingMs = today.endsAt.getTime() - this.now().getTime();
-    if (remainingMs <= 0) {
-      return 'Now';
-    }
-
-    const totalMinutes = Math.ceil(remainingMs / 60_000);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    if (hours <= 0) {
-      return `${minutes}m`;
-    }
-
-    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
-  });
-  protected readonly illuminationPercent = computed(() => {
-    const fraction = this.moonDetails()?.fractionIlluminated;
-
-    return fraction === undefined ? null : Math.round(fraction * 100);
-  });
-  protected readonly moonVisual = computed(() => {
-    const details = this.moonDetails();
-
-    if (!details) {
-      return null;
-    }
-
-    const fraction = Math.max(0, Math.min(1, details.fractionIlluminated));
-    const orbitRadius = 42;
-    const travel = Math.round(fraction * orbitRadius * 2);
-    const phaseLabel = details.phase.toLowerCase();
-    const isWaxing = !phaseLabel.includes('waning');
-
-    return {
-      ariaLabel: `${details.phase}, ${Math.round(fraction * 100)}% illuminated`,
-      shadowOffset: isWaxing ? -travel : travel,
-    };
-  });
-  protected readonly fishingGuidance = computed(() =>
-    this.today()?.mata.contentLayers?.find(
-      (layer) =>
-        layer.id === 'fishing-guidance' && layer.status === 'available',
-    ),
-  );
-  protected readonly visibleStarMarkers = computed(() =>
-    this.relevantStarMarkers(this.starMarkers()).slice(0, 3),
-  );
-  protected readonly starMonthNaming = computed(
-    () =>
-      this.cycle()?.ruleSet.starMonthNaming ??
-      this.month()?.ruleSet.starMonthNaming ??
-      this.today()?.ruleSet.starMonthNaming,
-  );
-  protected readonly starMonth = computed(() => this.cycle()?.starMonth);
-  private readonly yearEventLayout = computed(
-    () => this.computeYearEventLayout(),
-  );
 
   ngOnInit(): void {
     this.loadLocations();
@@ -204,7 +134,7 @@ export class MaramatakaPage implements OnInit {
   }
 
   protected selectNight(night: MaramatakaNight): void {
-    this.selectDate(night.startsAt);
+    this.selectDate(this.dateInsideNight(night));
   }
 
   protected selectYearMonth(month: MaramatakaYearMonth): void {
@@ -474,344 +404,133 @@ export class MaramatakaPage implements OnInit {
     return this.selectedDateInstant() ?? this.nzMiddayForDate(this.selectedDate());
   }
 
+  private dateInsideNight(night: MaramatakaNight): Date {
+    const startsAt = night.startsAt.getTime();
+    const endsAt = night.endsAt.getTime();
+    const oneMinuteAfterStart = startsAt + 60_000;
+
+    if (oneMinuteAfterStart < endsAt) {
+      return new Date(oneMinuteAfterStart);
+    }
+
+    return new Date(startsAt + Math.max(0, endsAt - startsAt) / 2);
+  }
+
   private nzMiddayForDate(localDate: string): Date {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(localDate)) {
+    const match = localDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
       return new Date();
     }
 
-    return new Date(`${localDate}T12:00:00+12:00`);
+    return this.nzLocalDateTimeToDate({
+      year: Number(match[1]),
+      month: Number(match[2]),
+      day: Number(match[3]),
+      hour: 12,
+      minute: 0,
+      second: 0,
+    });
   }
 
-  protected yearEventOffsetPercent(event: MaramatakaYearEvent): number {
-    return this.yearEventLayout().get(this.yearEventLayoutKey(event))?.offset ?? 0;
-  }
+  private nzLocalDateTimeToDate(parts: {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+  }): Date {
+    const localDateTimeAsUtcMs = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+    );
+    const candidateOffsets = new Set(
+      [-24 * 60 * 60 * 1000, 0, 24 * 60 * 60 * 1000].map((probeOffset) =>
+        this.nzTimezoneOffsetMs(new Date(localDateTimeAsUtcMs + probeOffset)),
+      ),
+    );
 
-  protected yearEventClass(event: MaramatakaYearEvent): string {
-    const lane = this.yearEventLane(event);
-    const group = this.yearEventLayoutGroupForEvent(event);
-    const classes = ['year-event', event.type, `lane-${lane}`];
-
-    if (group) {
-      classes.push(group);
-    }
-
-    if (lane === 0) {
-      classes.push('compact-label');
-    }
-
-    return classes.join(' ');
-  }
-
-  protected yearEventTopRem(event: MaramatakaYearEvent): number {
-    const lane = this.yearEventLane(event);
-
-    switch (event.type) {
-      case 'star-marker':
-        if (event.starMarkerScope === 'seasonal') {
-          return lane === 0 ? 7.3 : 4.9;
-        }
-
-        return 0.8 + lane * 2.8;
-      case 'star-appearance':
-      case 'star-invisibility':
-        return 13 + lane * 1.8;
-      case 'solar-season':
-        return 14.9;
-      case 'new-moon':
-      case 'full-moon':
-        return 21.2 + lane * 1.25;
-      case 'public-holiday':
-        return 25.1;
-      case 'month-start':
-        return 29.2;
-    }
-  }
-
-  protected yearEventSymbol(event: MaramatakaYearEvent): string {
-    switch (event.type) {
-      case 'star-marker':
-        return '★';
-      case 'star-appearance':
-        return '◉';
-      case 'star-invisibility':
-        return '◌';
-      case 'new-moon':
-        return '○';
-      case 'full-moon':
-        return '●';
-      case 'public-holiday':
-        return '✦';
-      case 'solar-season':
-        return '☼';
-      case 'month-start':
-        return '◇';
-    }
-  }
-
-  protected yearEventTypeLabel(event: MaramatakaYearEvent): string {
-    switch (event.type) {
-      case 'star-marker':
-        return event.starMarkerScope === 'seasonal'
-          ? 'Seasonal'
-          : 'Star';
-      case 'star-appearance':
-        return 'Appears';
-      case 'star-invisibility':
-        return 'Disappears';
-      case 'new-moon':
-        return 'New Moon';
-      case 'full-moon':
-        return 'Full Moon';
-      case 'public-holiday':
-        return 'Holiday';
-      case 'solar-season':
-        return 'Solar';
-      case 'month-start':
-        return 'Month start';
-    }
-  }
-
-  protected yearEventDateLabel(event: MaramatakaYearEvent): string {
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
-      day: 'numeric',
-      month: 'short',
-      ...(event.type === 'public-holiday'
-        ? { year: 'numeric' }
-        : event.type === 'star-invisibility'
-        ? { year: 'numeric' }
-        : { hour: 'numeric', minute: '2-digit' }),
-    }).format(event.occursAt);
-  }
-
-  protected yearMonthOffsetPercent(month: MaramatakaYearMonth): number {
-    const year = this.year();
-    if (!year) {
-      return 0;
-    }
-
-    const duration = year.endsAt.getTime() - year.startsAt.getTime();
-    if (duration <= 0) {
-      return 0;
-    }
-
-    const rawOffset =
-      ((month.startsAt.getTime() - year.startsAt.getTime()) / duration) *
-      100;
-    const offset = this.yearTimelineOffsetPercent(rawOffset);
-
-    return Math.min(100, Math.max(0, offset));
-  }
-
-  private yearEventLane(event: MaramatakaYearEvent): number {
-    return this.yearEventLayout().get(this.yearEventLayoutKey(event))?.lane ?? 0;
-  }
-
-  private computeYearEventLayout(): Map<string, { offset: number; lane: number }> {
-    const layout = new Map<string, { offset: number; lane: number }>();
-    const year = this.year();
-
-    if (!year) {
-      return layout;
-    }
-
-    const duration = year.endsAt.getTime() - year.startsAt.getTime();
-    if (duration <= 0) {
-      return layout;
-    }
-
-    const layoutGroups: Array<
-      {
-        key: YearEventLayoutGroup;
-        types: MaramatakaYearEvent['type'][];
-      }
-    > = [
-      {
-        key: 'star-marker',
-        types: ['star-marker'],
-      },
-      {
-        key: 'seasonal-marker',
-        types: ['star-marker'],
-      },
-      {
-        key: 'star-invisibility',
-        types: ['star-appearance', 'star-invisibility'],
-      },
-      {
-        key: 'public-holiday',
-        types: ['public-holiday'],
-      },
-      {
-        key: 'solar-season',
-        types: ['solar-season'],
-      },
-      {
-        key: 'lunar-phase',
-        types: ['new-moon', 'full-moon'],
-      },
-    ];
-
-    for (const group of layoutGroups) {
-      const events = year.events
-        .filter(
-          (event) =>
-            group.types.includes(event.type) &&
-            this.yearEventLayoutGroupForEvent(event) === group.key,
-        )
-        .slice()
-        .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
-
-      const laneCount = this.yearEventLaneCount(group.key);
-      const minGapPercent = this.yearEventMinLaneGapPercent(group.key);
-      const laneLastOffsets = Array.from({ length: laneCount }, () => -Infinity);
-
-      for (const event of events) {
-        const rawOffset =
-          ((event.occursAt.getTime() - year.startsAt.getTime()) / duration) *
-          100;
-        const offset = Math.min(
-          100,
-          Math.max(0, this.yearTimelineOffsetPercent(rawOffset)),
-        );
-
-        let lane = 0;
-        if (laneCount > 1) {
-          const openLane = laneLastOffsets.findIndex(
-            (lastOffset) => offset - lastOffset >= minGapPercent,
-          );
-          if (openLane >= 0) {
-            lane = openLane;
-          } else {
-            lane = laneLastOffsets.indexOf(Math.min(...laneLastOffsets));
-          }
-        }
-
-        laneLastOffsets[lane] = offset;
-        layout.set(this.yearEventLayoutKey(event), { offset, lane });
+    for (const offset of candidateOffsets) {
+      const candidate = new Date(localDateTimeAsUtcMs - offset);
+      if (this.matchesNzLocalDateTime(candidate, parts)) {
+        return candidate;
       }
     }
 
-    return layout;
+    return new Date(localDateTimeAsUtcMs);
   }
 
-  private yearEventLayoutKey(event: MaramatakaYearEvent): string {
-    return `${event.type}|${event.name}|${event.occursAt.toISOString()}`;
-  }
-
-  private yearEventLayoutGroupForEvent(
-    event: MaramatakaYearEvent,
-  ): YearEventLayoutGroup | null {
-    switch (event.type) {
-      case 'star-marker':
-        return event.starMarkerScope === 'seasonal'
-          ? 'seasonal-marker'
-          : 'star-marker';
-      case 'star-appearance':
-      case 'star-invisibility':
-        return 'star-invisibility';
-      case 'public-holiday':
-        return 'public-holiday';
-      case 'solar-season':
-        return 'solar-season';
-      case 'new-moon':
-      case 'full-moon':
-        return 'lunar-phase';
-      case 'month-start':
-        return null;
-    }
-  }
-
-  private yearEventLaneCount(group: YearEventLayoutGroup): number {
-    switch (group) {
-      case 'star-marker':
-        return 2;
-      case 'seasonal-marker':
-        return 2;
-      case 'star-invisibility':
-        return 2;
-      case 'public-holiday':
-      case 'solar-season':
-        return 1;
-      case 'lunar-phase':
-        return 3;
-    }
-  }
-
-  private yearEventMinLaneGapPercent(group: YearEventLayoutGroup): number {
-    switch (group) {
-      case 'star-marker':
-      case 'seasonal-marker':
-        return 4;
-      case 'star-invisibility':
-        return 4;
-      case 'public-holiday':
-      case 'solar-season':
-        return 0;
-      case 'lunar-phase':
-        return 2.8;
-    }
-  }
-
-  private yearTimelineOffsetPercent(rawOffset: number): number {
-    const startInsetPercent = 6.5;
-
-    return startInsetPercent + rawOffset * (1 - startInsetPercent / 100);
-  }
-
-  protected yearEventAriaLabel(event: MaramatakaYearEvent): string {
-    const parts = [
-      event.name,
-      this.formatShortDate(event.occursAt),
-      event.monthName,
-      event.description,
-    ].filter(Boolean);
-
-    return parts.join(', ');
-  }
-
-  protected yearMaramaAriaLabel(month: MaramatakaYearMonth): string {
-    const parts = [
-      month.name,
-      `Whiro ${this.formatShortDate(month.anchors.whiro.occursAt)}`,
-    ];
-
-    if (month.anchors.fullMoon) {
-      parts.push(
-        `Full Moon ${this.formatShortDate(month.anchors.fullMoon.occursAt)}`,
-      );
-    }
-
-    parts.push(
-      `next Whiro ${this.formatShortDate(month.anchors.nextWhiro.occursAt)}`,
+  private nzTimezoneOffsetMs(date: Date): number {
+    const parts = this.nzDateTimeParts(date);
+    const localAsUtcMs = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
     );
 
-    return parts.join(', ');
+    return localAsUtcMs - date.getTime();
   }
 
-  private formatShortDate(date: Date): string {
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
-      day: 'numeric',
-      month: 'short',
-    }).format(date);
-  }
+  private matchesNzLocalDateTime(
+    date: Date,
+    expected: {
+      year: number;
+      month: number;
+      day: number;
+      hour: number;
+      minute: number;
+      second: number;
+    },
+  ): boolean {
+    const actual = this.nzDateTimeParts(date);
 
-  private relevantStarMarkers(markers: StarMarker[]): StarMarker[] {
-    const markerIds = this.starMonth()?.note?.markerIds;
-    if (markerIds?.length) {
-      return markers.filter((marker) => markerIds.includes(marker.id));
-    }
-
-    const visibleMarkers = markers.filter(
-      (marker) => marker.visibility !== 'below-horizon',
+    return (
+      actual.year === expected.year &&
+      actual.month === expected.month &&
+      actual.day === expected.day &&
+      actual.hour === expected.hour &&
+      actual.minute === expected.minute &&
+      actual.second === expected.second
     );
-    const starMonthMarkerId = this.starMonth()?.marker?.id;
-    if (starMonthMarkerId) {
-      return visibleMarkers.filter((marker) => marker.id === starMonthMarkerId);
-    }
+  }
 
-    return visibleMarkers;
+  private nzDateTimeParts(date: Date): {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+  } {
+    const formatter = new Intl.DateTimeFormat('en-NZ', {
+      timeZone: NZ_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
+    const parts = Object.fromEntries(
+      formatter.formatToParts(date).map((part) => [part.type, part.value]),
+    );
+
+    return {
+      year: Number(parts['year']),
+      month: Number(parts['month']),
+      day: Number(parts['day']),
+      hour: Number(parts['hour']),
+      minute: Number(parts['minute']),
+      second: Number(parts['second']),
+    };
   }
 
   private formatRequestError(error: unknown): string {

@@ -86,6 +86,28 @@ fully production accurate across years.
 Official reference:
 https://www.legislation.govt.nz/act/public/2022/0014/latest/whole.html
 
+### Review Diagnostics
+
+The repo now includes terminal diagnostics for rule review:
+
+- `npm run compare:matariki-holiday` generates the official holiday and
+  Tangaroa-period calibration report.
+- `npm run compare:matariki-holiday -- --focus=matariki-visibility` focuses on
+  Pipiri, Matariki, Ruhanui, New Moon, and Full Moon anchors around the
+  official schedule.
+- `npm run diagnose:maramataka -- <command>` inspects specific sky positions,
+  dawn visibility windows, first appearances, marama boundaries, year traces,
+  holiday candidates, and event placement.
+
+These tools are intentionally diagnostic. They do not feed official dates back
+into the calculation. Recent checks found that the 2036, 2041, and 2047
+one-marama-early years cluster near the cycle after the second Full Moon and
+before the third New Moon after Matariki first visibility, but that same
+pattern appears in several non-failing years. Sky-position checks for
+configured stars, Venus, Mars, and the Moon also did not identify a stable
+extra discriminator. For now, this evidence should stay in the review tooling
+rather than changing the active Ruhanui rule.
+
 ### Matariki Public Holiday Rule
 
 The current implementation creates a `public-holiday` year event from the
@@ -165,8 +187,8 @@ Status: nearly ready.
 Before this, add a calibration page or report that compares generated outputs
 against known anchors:
 
-- Official Matariki public holiday dates, extending the current comparison
-  script into a review-facing report.
+- Official Matariki public holiday dates, using the current comparison script
+  as the review-facing report.
 - Golden moonrise / moonset / Full Moon cases already represented in tests.
 - Known local observations for selected locations.
 - Years governed by the provisional Pipiri / Ruhanui early-return rule.
@@ -186,17 +208,16 @@ Production readiness requires:
 
 ## Suggested Next Work
 
-1. Turn the Matariki holiday comparison script into a review-facing calibration
-   report.
-2. For each official date, identify which generated marama and mata contain the
+1. For each official date, identify which generated marama and mata contain the
    official Tangaroa period.
-3. Use the remaining holiday and Tangaroa-period differences to review the
+2. Use the remaining holiday and Tangaroa-period differences to review the
    Tangaroa-period boundary rule.
-4. Review Matariki heliacal rising and first-quarter style boundaries as
-   calibration clues for the Pipiri and Ruhanui rules.
-5. Decide whether the provisional Pipiri/Ruhanui rule is sufficient or
+3. Use the new diagnostics to test source-derived Pipiri/Ruhanui hypotheses
+   against Matariki visibility, lunar anchors, and dawn sky positions before
+   changing the rule set.
+4. Decide whether the provisional Pipiri/Ruhanui rule is sufficient or
    whether a curated named-year table is still needed.
-6. Add UI wording that distinguishes astronomical events, observed maramataka
+5. Add UI wording that distinguishes astronomical events, observed maramataka
    model outputs, and legally scheduled holidays.
 
 ## Current Decision

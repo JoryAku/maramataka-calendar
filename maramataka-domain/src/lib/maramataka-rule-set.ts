@@ -45,6 +45,16 @@ export interface YearStartRuleSet {
   sourceQuote?: string;
 }
 
+export interface MatarikiHolidayRuleSet {
+  monthSelection:
+    | 'year-start-or-ruhanui'
+    | 'after-te-tahi-tangaroa-use-next-marama';
+  targetMataNames: string[];
+  calibrationMarker?: StarMarkerDefinition;
+  description: string;
+  source: string;
+}
+
 export interface MaramatakaRuleSetSummary {
   id: string;
   name: string;
@@ -58,6 +68,17 @@ export interface MaramatakaRuleSetSummary {
   balancing: string;
   yearStartRule?: Omit<YearStartRuleSet, 'marker'> & {
     marker: Pick<
+      StarMarkerDefinition,
+      | 'id'
+      | 'name'
+      | 'type'
+      | 'englishName'
+      | 'seasonalAssociation'
+      | 'confidence'
+    >;
+  };
+  matarikiHoliday?: Omit<MatarikiHolidayRuleSet, 'calibrationMarker'> & {
+    calibrationMarker?: Pick<
       StarMarkerDefinition,
       | 'id'
       | 'name'
@@ -84,6 +105,7 @@ export interface MaramatakaRuleSetSummary {
 
 export interface MaramatakaRuleSet extends MaramatakaRuleSetSummary {
   yearStartRule?: YearStartRuleSet;
+  matarikiHoliday?: MatarikiHolidayRuleSet;
   starMonthNaming?: StarMonthNamingRuleSet;
   mata: Mata[];
   mataVersion: MaramatakaVersion;
@@ -119,6 +141,27 @@ export function summarizeRuleSet(
           source: ruleSet.yearStartRule.source,
           sourceUrl: ruleSet.yearStartRule.sourceUrl,
           sourceQuote: ruleSet.yearStartRule.sourceQuote,
+        }
+      : undefined,
+    matarikiHoliday: ruleSet.matarikiHoliday
+      ? {
+          monthSelection: ruleSet.matarikiHoliday.monthSelection,
+          targetMataNames: ruleSet.matarikiHoliday.targetMataNames,
+          calibrationMarker: ruleSet.matarikiHoliday.calibrationMarker
+            ? {
+                id: ruleSet.matarikiHoliday.calibrationMarker.id,
+                name: ruleSet.matarikiHoliday.calibrationMarker.name,
+                type: ruleSet.matarikiHoliday.calibrationMarker.type,
+                englishName:
+                  ruleSet.matarikiHoliday.calibrationMarker.englishName,
+                seasonalAssociation:
+                  ruleSet.matarikiHoliday.calibrationMarker.seasonalAssociation,
+                confidence:
+                  ruleSet.matarikiHoliday.calibrationMarker.confidence,
+              }
+            : undefined,
+          description: ruleSet.matarikiHoliday.description,
+          source: ruleSet.matarikiHoliday.source,
         }
       : undefined,
     starMonthNaming: ruleSet.starMonthNaming

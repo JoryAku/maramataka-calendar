@@ -1,4 +1,4 @@
-export type MaramatakaVersion = 'mita-te-tai-best';
+export type MaramatakaVersion = 'mita-te-tai-best' | 'living-by-the-star';
 
 export type MataPhaseGroupName =
   | 'Te Marama i te rā'

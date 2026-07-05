@@ -533,7 +533,7 @@ describe('MaramatakaPage', () => {
         altitudeDegrees: 24,
         azimuthDegrees: 74,
         direction: 'E',
-        visibility: 'prominent',
+        visibility: 'visible',
         calculation:
           'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
       },
@@ -551,6 +551,24 @@ describe('MaramatakaPage', () => {
         altitudeDegrees: 18,
         azimuthDegrees: 80,
         direction: 'E',
+        visibility: 'prominent',
+        calculation:
+          'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
+      },
+      {
+        id: 'poututerangi',
+        name: 'Poutūterangi',
+        type: 'star',
+        englishName: 'Altair',
+        description:
+          'A dawn marker outside the north-to-south field of view.',
+        seasonalAssociation: 'Western dawn marker',
+        source: 'Living by the Stars',
+        confidence: 'working',
+        observedAt: '2026-01-10T17:00:00.000Z',
+        altitudeDegrees: 16,
+        azimuthDegrees: 278,
+        direction: 'W',
         visibility: 'visible',
         calculation:
           'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
@@ -668,11 +686,40 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('Full Moon');
     expect(content).toContain('June solstice');
     expect(content).toContain('Te Tahi o Pipiri');
-    expect(content).toContain('Dawn sky markers');
+    expect(content).toContain('Dawn sky');
+    expect(content).toContain(
+      'Dawn is sampled while the Sun is 12° to 18° below the horizon',
+    );
+    expect(content).toContain('2 visible');
+    expect(content).toContain(
+      '1 visible body is outside the north-to-south dawn field',
+    );
+    const dawnPanelText =
+      fixture.nativeElement.querySelector('[data-testid="dawn-sky-panel"]')
+        ?.textContent ?? '';
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="dawn-horizon"]'),
+    ).not.toBeNull();
     expect(content).toContain('Matariki');
     expect(content).toContain('Pleiades');
-    expect(content).not.toContain('Rigel');
+    expect(content).toContain('Whakaahu');
+    expect(content).toContain('Castor');
+    const dawnCardNames = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.dawn-sky-list strong',
+      ) as NodeListOf<HTMLElement>,
+    ).map((element) => element.textContent?.trim());
+    expect(dawnCardNames).toEqual(['Matariki', 'Whakaahu']);
+    expect(dawnPanelText).not.toContain('Poutūterangi');
+    expect(dawnPanelText).not.toContain('Star month rule');
+    expect(dawnPanelText).not.toContain('Source note');
+    expect(content).toContain('Moon phase');
+    const cycleStarLayerText =
+      fixture.nativeElement.querySelector(
+        '[data-testid="cycle-star-marker-layer"]',
+      )?.textContent ?? '';
     expect(content).toContain('Star month: Te Tahi o Pipiri');
+    expect(cycleStarLayerText).toContain('Star month rule');
     expect(content).toContain('Himiona Tikitu');
     expect(content).toContain('The First of Pipiri');
     expect(content).toContain('Matariki (Pleiades) on the horizon at dawn');
@@ -746,6 +793,14 @@ describe('MaramatakaPage', () => {
     ) as HTMLElement | null;
     expect(lunarTimelineEvent?.style.top).toBe('21.2rem');
     expect(holidayTimelineEvent?.style.top).toBe('25.1rem');
+    const selectedYearMarker = fixture.nativeElement.querySelector(
+      '[data-testid="year-selected-date-marker"]',
+    ) as HTMLElement | null;
+    expect(selectedYearMarker).not.toBeNull();
+    expect(selectedYearMarker?.textContent).toContain('Selected');
+    expect(
+      Number.parseFloat(selectedYearMarker?.style.left ?? '0'),
+    ).toBeGreaterThan(0);
     expect(
       seasonalTimelineEvents.every((element) =>
         element.classList.contains('seasonal-marker'),
@@ -901,7 +956,7 @@ describe('MaramatakaPage', () => {
       '2026-01-11',
     );
     expect(mataRequests.todayRequest.request.params.get('dateTime')).toBe(
-      '2026-01-11T19:45:00',
+      '2026-01-11T19:46:00',
     );
     flushSuccessfulMaramatakaRequests(mataRequests);
     fixture.detectChanges();
@@ -1045,6 +1100,29 @@ describe('MaramatakaPage', () => {
         ) as HTMLInputElement | null
       )?.value,
     ).toBe('2026-06-26');
+  });
+
+  it('uses local NZ midday during daylight saving for selected dates', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-05T00:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests());
+
+    const page = fixture.componentInstance as unknown as {
+      onDateChange(date: string): void;
+    };
+    page.onDateChange('2026-01-10');
+
+    const requests = flushMaramatakaRequests();
+    expect(requests.todayRequest.request.params.get('dateTime')).toBe(
+      '2026-01-10T12:00:00',
+    );
+
+    flushSuccessfulMaramatakaRequests(requests);
   });
 
   it('reloads data when the NZ calendar date changes on focus', () => {
