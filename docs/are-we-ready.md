@@ -1,6 +1,6 @@
 # Are We Ready?
 
-Last reviewed: 2026-07-03
+Last reviewed: 2026-07-04
 
 ## Short Answer
 
@@ -24,8 +24,8 @@ interpretation.
   event timestamp.
 - Clicking a mata moves the selected day to that mata.
 - Year view shows marama boundaries, month-scoped star markers, seasonal star
-  markers, Matariki disappearance, astronomical New Moon and Full Moon markers,
-  and the Matariki public holiday event.
+  markers, year-level Matariki appearance/disappearance, astronomical New Moon
+  and Full Moon markers, and the Matariki public holiday event.
 - Clicking a year-view marama moves the selected day to the first mata of that
   marama.
 - The year timeline has separated visual lanes for event types, reducing
@@ -65,14 +65,20 @@ This is ready for close review against known dates and local observations.
 
 ### Named Year And Intercalation
 
-The year rhythm now has a provisional astronomy-only intercalation rule, but it
-still needs cultural/source review before we can treat it as settled.
+The year rhythm now has a provisional astronomy-only named-year rule, but it
+still needs cultural/source review before we can treat it as settled. The
+active Living by the Stars model uses Pipiri / Hamal to find the candidate
+Whiro for Te Tahi o Pipiri, then uses Matariki's return timing to decide
+whether that candidate is accepted, followed by Ruhanui, or skipped.
 
 The official Matariki public holiday schedule is a useful calibration dataset.
 When checked against Schedule 1 of the Te Kāhui o Matariki Public Holiday Act
-2022, the current generated holiday event matches most years but still misses
-two years by 7 days. These remaining misses likely point to Tangaroa-period
-width or boundary interpretation rather than the Ruhanui/intercalation layer.
+2022, the current generated holiday event matches 20 of 31 years. The
+selected holiday marama's generated Tangaroa period overlaps the official
+Tangaroa period in 28 of 31 years, which is the best calibration result from
+the rules tried so far. The remaining misses are still useful evidence that the
+source-specific year-start, Ruhanui, and mata-boundary rules need review before
+we treat the year sequence as settled.
 
 Until this is solved, the app should not claim that the named marama sequence is
 fully production accurate across years.
@@ -80,27 +86,57 @@ fully production accurate across years.
 Official reference:
 https://www.legislation.govt.nz/act/public/2022/0014/latest/whole.html
 
+### Review Diagnostics
+
+The repo now includes terminal diagnostics for rule review:
+
+- `npm run compare:matariki-holiday` generates the official holiday and
+  Tangaroa-period calibration report.
+- `npm run compare:matariki-holiday -- --focus=matariki-visibility` focuses on
+  Pipiri, Matariki, Ruhanui, New Moon, and Full Moon anchors around the
+  official schedule.
+- `npm run diagnose:maramataka -- <command>` inspects specific sky positions,
+  dawn visibility windows, first appearances, marama boundaries, year traces,
+  holiday candidates, and event placement.
+
+These tools are intentionally diagnostic. They do not feed official dates back
+into the calculation. Recent checks found that the 2036, 2041, and 2047
+one-marama-early years cluster near the cycle after the second Full Moon and
+before the third New Moon after Matariki first visibility, but that same
+pattern appears in several non-failing years. Sky-position checks for
+configured stars, Venus, Mars, and the Moon also did not identify a stable
+extra discriminator. For now, this evidence should stay in the review tooling
+rather than changing the active Ruhanui rule.
+
 ### Matariki Public Holiday Rule
 
 The current implementation creates a `public-holiday` year event from the
-astronomy-derived maramataka model by finding the Friday within Te Tahi o
-Pipiri that is closest to a provisional four-night Tangaroa boundary window
-from `Korekore-te-rawea` through `Tangaroa-kiokio`.
+astronomy-derived maramataka model by finding the Friday within the selected
+holiday marama that is closest to the four-night Tangaroa period from
+`Tangaroa-ā-mua` through `Tangaroa whāriki kio-kio`. The selected marama is Te
+Tahi o Pipiri by default, or Ruhanui when Matariki returns within the calibrated
+early-return window after the candidate Pipiri Whiro. The Friday is treated as a
+local civil-day interval and compared to the exact generated start/end instants
+of that Tangaroa period.
 Against the official 2022-2052 schedule, the current event marker matches
-28/31 years.
+20/31 years.
 
 Known limitations:
 
-- It uses the generated first named marama, so it inherits any year-start or
-  intercalation drift.
-- The implementation currently treats the holiday target as:
-  `Korekore-te-rawea`, `Korekore-piri-ki-ngā-Tangaroa`, `Tangaroa-ā-mua`,
-  `Tangaroa-ā-roto`, and `Tangaroa-kiokio`. This is intentionally provisional
-  while we look for a stronger source for the mata names that make up the
-  official Tangaroa period.
+- It uses the generated selected holiday marama, so it inherits any year-start,
+  Ruhanui, or mata-boundary drift.
+- The implementation currently treats the holiday target as the named Tangaroa
+  period in the Living by the Stars sequence: `Tangaroa-ā-mua`,
+  `Tangaroa-ā-roto`, `Tangaroa-whakapau`, and
+  `Tangaroa whāriki kio-kio`.
 - The estimate is still imperfect and should keep being calibrated against the
-  official schedule. The remaining differences are 2027 and 2030 estimating
-  one Friday late, and 2044 estimating one Friday early.
+  official schedule. The current date differences are 2024, 2027, 2028, 2030,
+  2031, 2034, 2048, and 2051 one Friday late; 2036, 2041, and 2047 one marama
+  early.
+- The selected holiday marama's generated Tangaroa period overlaps the official
+  Tangaroa period in 28/31 comparison years, but the exact generated period
+  currently matches 3/31 years. That points to mata-boundary calibration rather
+  than the Friday picker alone.
 - The public holiday schedule should remain a calibration target for refining
   the astronomy-only rule; it should not be used as an input to the event
   calculation.
@@ -127,6 +163,8 @@ Before public release, the rule set needs review for:
 
 - Mata naming and orthography.
 - Month naming and star associations.
+- The source split between the active Living by the Stars config and the
+  retained Mita Te Tai / Best config.
 - How to represent Puanga and Matariki without implying one universal year
   marker.
 - Intercalation and thirteenth-month handling.
@@ -149,11 +187,11 @@ Status: nearly ready.
 Before this, add a calibration page or report that compares generated outputs
 against known anchors:
 
-- Official Matariki public holiday dates, extending the current comparison
-  script into a review-facing report.
+- Official Matariki public holiday dates, using the current comparison script
+  as the review-facing report.
 - Golden moonrise / moonset / Full Moon cases already represented in tests.
 - Known local observations for selected locations.
-- Years governed by the provisional Ruhanui / thirteenth-month rule.
+- Years governed by the provisional Pipiri / Ruhanui early-return rule.
 
 ### Public Production
 
@@ -170,21 +208,20 @@ Production readiness requires:
 
 ## Suggested Next Work
 
-1. Turn the Matariki holiday comparison script into a review-facing calibration
-   report.
-2. For each official date, identify which generated marama and mata contain the
+1. For each official date, identify which generated marama and mata contain the
    official Tangaroa period.
-3. Use the remaining 2027, 2030, and 2044 differences to review the
+2. Use the remaining holiday and Tangaroa-period differences to review the
    Tangaroa-period boundary rule.
-4. Review Matariki heliacal rising as a calibration clue for the Pipiri and
-   Ruhanui boundary rules.
-5. Decide whether the provisional Ruhanui/intercalation rule is sufficient or
+3. Use the new diagnostics to test source-derived Pipiri/Ruhanui hypotheses
+   against Matariki visibility, lunar anchors, and dawn sky positions before
+   changing the rule set.
+4. Decide whether the provisional Pipiri/Ruhanui rule is sufficient or
    whether a curated named-year table is still needed.
-6. Add UI wording that distinguishes astronomical events, observed maramataka
+5. Add UI wording that distinguishes astronomical events, observed maramataka
    model outputs, and legally scheduled holidays.
 
 ## Current Decision
 
 Keep the app moving as an accurate moon tracker and review tool. Do not market
 the year rhythm or Matariki holiday calculation as settled until the
-intercalation rule has source review and the Tangaroa-period rule is resolved.
+named-year rule has source review and the Tangaroa-period rule is resolved.

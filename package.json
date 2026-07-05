@@ -19,6 +19,7 @@
     "build": "nx run-many -t build",
     "e2e": "nx run-many -t e2e",
     "compare:matariki-holiday": "TS_NODE_PROJECT=tsconfig.base.json TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node -r tsconfig-paths/register tools/compare-matariki-holiday.ts",
+    "diagnose:maramataka": "TS_NODE_PROJECT=tsconfig.base.json TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node -r tsconfig-paths/register tools/maramataka-diagnostics.ts",
     "check": "nx run-many -t lint test build",
     "ci": "MARAMATAKA_ASTRONOMY_MODE=stub nx run-many -t lint test build e2e"
   },

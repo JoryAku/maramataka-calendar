@@ -42,7 +42,7 @@ const PHASE_GROUPS: Record<PhaseGroupKey, MataPhaseGroup> = {
 };
 
 const MITA_TE_TAI_BEST_SOURCE =
-  'Living by the Stars (mata phase-group reference); Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference';
+  'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference';
 const MITA_TE_TAI_BEST_SOURCE_URL =
   'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html';
 const MITA_TE_TAI_BEST_STAR_MONTH_SOURCE =
@@ -51,7 +51,7 @@ const MITA_TE_TAI_BEST_DAWN_RISING_CONFIG = {
   startSunAltitudeDegrees: -18,
   endSunAltitudeDegrees: 0,
   minimumMarkerAltitudeDegrees: 0,
-  minimumAzimuthDegrees: 45,
+  minimumAzimuthDegrees: 0,
   maximumAzimuthDegrees: 135,
   sampleMinutes: 5,
 };
@@ -389,33 +389,29 @@ export const MITA_TE_TAI_BEST_MATA: Mata[] = [
   createMata(3, 'Hoata', PHASE_GROUPS.teHua),
   createMata(4, 'Ōuenuku', PHASE_GROUPS.teHua),
   createMata(5, 'Okoro', PHASE_GROUPS.teHua),
-  createMata(6, 'Tāmatea-ā-ngana', PHASE_GROUPS.tamatea),
-  createMata(7, 'Tāmatea-ā-hotu', PHASE_GROUPS.tamatea),
-  createMata(8, 'Tāmatea-āio', PHASE_GROUPS.tamatea),
-  createMata(9, 'Tāmatea-kai-ariki', PHASE_GROUPS.tamatea),
-  createMata(10, 'Huna', PHASE_GROUPS.teHua),
-  createMata(11, 'Ariroa', PHASE_GROUPS.teHua),
-  createMata(12, 'Mauri', PHASE_GROUPS.teHua),
-  createMata(13, 'Māwharu', PHASE_GROUPS.teHua),
-  createMata(14, 'Ōhua', PHASE_GROUPS.teHua),
-  createMata(15, 'Atua', PHASE_GROUPS.teRakau),
-  createMata(16, 'Ōturu', PHASE_GROUPS.teRakau),
-  createMata(17, 'Rākaunui', PHASE_GROUPS.teRakau),
-  createMata(18, 'Rākaumatohi', PHASE_GROUPS.teRakau),
-  createMata(19, 'Takirau', PHASE_GROUPS.teAtarau),
-  createMata(20, 'Oike', PHASE_GROUPS.teAtarau),
-  createMata(21, 'Korekore-te-whiwhia', PHASE_GROUPS.korekore),
-  createMata(22, 'Korekore-te-rawea', PHASE_GROUPS.korekore),
-  createMata(
-    23,
-    'Korekore-piri-ki-ngā-Tangaroa',
-    PHASE_GROUPS.korekore,
-  ),
-  createMata(24, 'Tangaroa-ā-mua', PHASE_GROUPS.tangaroa),
-  createMata(25, 'Tangaroa-ā-roto', PHASE_GROUPS.tangaroa),
-  createMata(26, 'Tangaroa-kiokio', PHASE_GROUPS.tangaroa),
-  createMata(27, 'Ōtāne', PHASE_GROUPS.tangaroa),
-  createMata(28, 'Ōrongonui', PHASE_GROUPS.tangaroa),
+  createMata(6, 'Tamatea-āio', PHASE_GROUPS.tamatea),
+  createMata(7, 'Tamatea-angana', PHASE_GROUPS.tamatea),
+  createMata(8, 'Tamatea-kai-ariki', PHASE_GROUPS.tamatea),
+  createMata(9, 'Tamatea Tūhāhā', PHASE_GROUPS.tamatea),
+  createMata(10, 'Aria', PHASE_GROUPS.teHua),
+  createMata(11, 'Huna', PHASE_GROUPS.teHua),
+  createMata(12, 'Māwharu', PHASE_GROUPS.teHua),
+  createMata(13, 'Ōhua', PHASE_GROUPS.teHua),
+  createMata(14, 'Atua Whakahaehae', PHASE_GROUPS.teHua),
+  createMata(15, 'Turu', PHASE_GROUPS.teRakau),
+  createMata(16, 'Rākaunui', PHASE_GROUPS.teRakau),
+  createMata(17, 'Rākaumatohi', PHASE_GROUPS.teRakau),
+  createMata(18, 'Takirau', PHASE_GROUPS.teRakau),
+  createMata(19, 'Oike', PHASE_GROUPS.teAtarau),
+  createMata(20, 'Korekore Tuatahi', PHASE_GROUPS.korekore),
+  createMata(21, 'Korekore Rawea', PHASE_GROUPS.korekore),
+  createMata(22, 'Korekore whakapiri', PHASE_GROUPS.korekore),
+  createMata(23, 'Tangaroa-ā-mua', PHASE_GROUPS.tangaroa),
+  createMata(24, 'Tangaroa-ā-roto', PHASE_GROUPS.tangaroa),
+  createMata(25, 'Tangaroa-whakapau', PHASE_GROUPS.tangaroa),
+  createMata(26, 'Tangaroa whāriki kio-kio', PHASE_GROUPS.tangaroa),
+  createMata(27, 'Ōtāne', PHASE_GROUPS.teAtarau),
+  createMata(28, 'Ōrongonui', PHASE_GROUPS.teAtarau),
   createMata(29, 'Ōmutu', PHASE_GROUPS.teMaramaIteRa),
   createMata(30, 'Mutuwhenua', PHASE_GROUPS.teMaramaIteRa),
 ];
@@ -431,13 +427,19 @@ export const MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   mataBoundary: 'moonrise-to-moonrise',
   calibration: 'full-moon-observation-window',
   balancing: 'fixed-sequence-drop-final-mata',
+  yearStartRule: {
+    strategy:
+      'Start Te Tahi o Pipiri at the first Whiro after the configured year-start marker rises at dawn.',
+    marker: MITA_TE_TAI_BEST_STAR_MONTH_MARKERS[0],
+    description:
+      'The year commences with Matariki appearing on the horizon at dawn.',
+    source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
+    sourceQuote: MITA_TE_TAI_BEST_STAR_MONTH_QUOTE,
+  },
   starMonthNaming: {
     strategy:
-      'Marama is named from a rule-set star or asterism rising in the eastern dawn sky around Whiro',
+      'Marama is named from a rule-set star or asterism rising in the north-through-east dawn sky around Whiro',
     sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
-    yearStartMarkerId: 'matariki',
-    yearStartDescription:
-      'The year commences with Matariki appearing on the horizon at dawn.',
     source: MITA_TE_TAI_BEST_STAR_MONTH_SOURCE,
     sourceQuote: MITA_TE_TAI_BEST_STAR_MONTH_QUOTE,
     markers: MITA_TE_TAI_BEST_STAR_MONTH_MARKERS,

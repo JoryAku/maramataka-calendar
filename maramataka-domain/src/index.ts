@@ -1,4 +1,5 @@
 export * from './lib/mata';
+export * from './lib/living-by-the-stars';
 export * from './lib/mita-te-tai-best';
 export * from './lib/maramataka';
 export * from './lib/maramataka-rule-set';

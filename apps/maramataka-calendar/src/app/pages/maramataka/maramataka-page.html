@@ -2,7 +2,7 @@
   <header class="page-header">
     <div>
       <p class="eyebrow">Maramataka</p>
-      <h1>Moon tracker</h1>
+      <h1>Maramataka</h1>
     </div>
 
     <div class="controls">
@@ -53,419 +53,38 @@
     </div>
   </header>
 
-  <section class="today-section" aria-labelledby="today-heading">
-    <div class="section-header">
-      <div>
-        <p class="eyebrow">1. Selected day</p>
-        <h2 id="today-heading">What is happening on this day?</h2>
-      </div>
-      <p>{{ selectedLocationName() }}</p>
-    </div>
+  <app-maramataka-today-view
+    [selectedLocationName]="selectedLocationName()"
+    [todayLoading]="todayLoading()"
+    [todayError]="todayError()"
+    [today]="today()"
+    [now]="now()"
+    [moonDetailsLoading]="moonDetailsLoading()"
+    [moonDetailsError]="moonDetailsError()"
+    [moonDetails]="moonDetails()"
+    [starMarkersLoading]="starMarkersLoading()"
+    [starMarkersError]="starMarkersError()"
+    [starMarkers]="starMarkers()"
+  ></app-maramataka-today-view>
 
-    @if (todayLoading()) {
-    <p class="state" data-testid="today-loading-state">
-      Loading maramataka for the selected day...
-    </p>
-    } @else if (todayError()) {
-    <p class="state error" data-testid="today-error-state">
-      {{ todayError() }}
-    </p>
-    } @else if (!today()) {
-    <p class="state" data-testid="today-empty-state">
-      No maramataka night is available for this day.
-    </p>
-    } @else {
-    <article class="moon-tracker" data-testid="today-card">
-      <div class="moon-visual">
-        @if (moonVisual()) {
-        <svg
-          class="moon-phase-art"
-          viewBox="0 0 100 100"
-          role="img"
-          [attr.aria-label]="moonVisual()!.ariaLabel"
-        >
-          <defs>
-            <filter id="moon-phase-soften" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="1.3"></feGaussianBlur>
-            </filter>
-            <clipPath id="moon-phase-clip">
-              <circle cx="50" cy="50" r="42"></circle>
-            </clipPath>
-          </defs>
-          <g clip-path="url(#moon-phase-clip)">
-            <circle class="moon-phase-base" cx="50" cy="50" r="42"></circle>
-            <circle
-              class="moon-phase-shadow"
-              cx="50"
-              cy="50"
-              r="42"
-              [attr.transform]="'translate(' + moonVisual()!.shadowOffset + ' 0)'"
-            ></circle>
-          </g>
-          <circle class="moon-phase-rim" cx="50" cy="50" r="42"></circle>
-          <circle class="moon-phase-glint" cx="37" cy="31" r="4.5"></circle>
-        </svg>
-        }
-      </div>
+  <app-maramataka-cycle-view
+    [selectedLocationName]="selectedLocationName()"
+    [monthLoading]="monthLoading()"
+    [monthError]="monthError()"
+    [month]="month()"
+    [cycleLoading]="cycleLoading()"
+    [cycleError]="cycleError()"
+    [cycle]="cycle()"
+    [yearEvents]="year()?.events ?? []"
+    [now]="now()"
+    (nightSelected)="selectNight($event)"
+  ></app-maramataka-cycle-view>
 
-      <div class="mata-panel">
-        <p class="eyebrow">Mata for this day</p>
-        <h3>{{ today()!.mata.name }}</h3>
-        @if (today()!.overlappingMata?.length) {
-        <p class="overlap-label" data-testid="today-overlap-state">
-          Also {{ today()!.overlappingMata![0].mata.name }} for the next cycle
-        </p>
-        }
-        <p class="countdown" data-testid="next-mata-countdown">
-          {{ countdownToNextMata() }} until next mata
-        </p>
-
-        @if (fishingGuidance()) {
-        <section class="guidance-layer" data-testid="fishing-guidance-layer">
-          <p class="guidance-title">{{ fishingGuidance()!.name }}</p>
-          <ul>
-            @for (recommendation of fishingGuidance()!.recommendations; track
-            recommendation) {
-            <li>{{ recommendation }}</li>
-            }
-          </ul>
-          <p class="guidance-source">
-            Source: @if (fishingGuidance()!.sourceUrl) {
-            <a
-              [href]="fishingGuidance()!.sourceUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {{ fishingGuidance()!.source }}
-            </a>
-            } @else {
-            <span>{{ fishingGuidance()!.source }}</span>
-            }
-          </p>
-        </section>
-        } @if (moonDetailsLoading()) {
-        <p class="state compact" data-testid="moon-details-loading-state">
-          Loading moon details...
-        </p>
-        } @else if (moonDetailsError()) {
-        <p class="state error compact" data-testid="moon-details-error-state">
-          {{ moonDetailsError() }}
-        </p>
-        } @else if (moonDetails()) {
-        <dl class="moon-facts" data-testid="moon-details-panel">
-          <div>
-            <dt>Phase</dt>
-            <dd>{{ moonDetails()!.phase }}</dd>
-          </div>
-          @if (illuminationPercent() !== null) {
-          <div>
-            <dt>Illumination</dt>
-            <dd>{{ illuminationPercent() }}%</dd>
-          </div>
-          } @if (!moonDetails()!.unavailable.includes('lunarAgeDays')) {
-          <div>
-            <dt>Age</dt>
-            <dd>{{ moonDetails()!.lunarAgeDays }} days</dd>
-          </div>
-          }
-        </dl>
-        }
-        @if (starMarkersLoading()) {
-        <p class="state compact" data-testid="star-markers-loading-state">
-          Loading dawn sky markers...
-        </p>
-        } @else if (starMarkersError()) {
-        <p class="state error compact" data-testid="star-markers-error-state">
-          {{ starMarkersError() }}
-        </p>
-        } @else if (visibleStarMarkers().length || starMonth()?.note) {
-        <section class="star-layer" data-testid="star-marker-layer">
-          <p class="guidance-title">Dawn sky markers</p>
-          @if (visibleStarMarkers().length) {
-          <ul>
-            @for (marker of visibleStarMarkers(); track marker.id) {
-            <li>
-              <strong>{{ marker.name }}</strong>
-              @if (marker.englishName) {
-              <span>{{ marker.englishName }}</span>
-              }
-              <em>
-                {{ marker.visibility }} -
-                @if (marker.visibility === 'below-horizon') {
-                {{ marker.altitudeDegrees }}° below horizon
-                } @else {
-                {{ marker.altitudeDegrees }}° above {{ marker.direction }}
-                }
-              </em>
-            </li>
-            }
-          </ul>
-          } @else {
-          <p class="state compact">
-            No specific dawn marker is configured for this named month yet.
-          </p>
-          }
-          <p class="guidance-source">
-            Star month rule:
-            {{ starMonthNaming()?.strategy ?? 'dawn sky marker visibility' }}.
-            Source:
-            {{
-              starMonthNaming()?.source ??
-                visibleStarMarkers()[0]?.source ??
-                'Star month rule set'
-            }}
-            @if (starMonthNaming()?.sourceUrl || visibleStarMarkers()[0]?.sourceUrl) {
-            <a
-              [href]="
-                starMonthNaming()?.sourceUrl ??
-                visibleStarMarkers()[0]?.sourceUrl
-              "
-              target="_blank"
-              rel="noreferrer"
-              >View source</a
-            >
-            }
-          </p>
-          @if (starMonth()?.note) {
-          <p class="star-month-note">
-            <strong>{{ starMonth()!.note!.name }}</strong>
-            {{ starMonth()!.note!.description }}
-          </p>
-          <p class="guidance-source">
-            Source note: {{ starMonth()!.note!.sourceText }}
-          </p>
-          }
-        </section>
-        }
-      </div>
-
-      <dl class="timing-panel" aria-label="Moon timings">
-        <div>
-          <dt>Moonrise</dt>
-          <dd>{{ today()!.startsAt | date: 'h:mm a' : nzTimeZone }}</dd>
-        </div>
-        @if (moonDetails()?.transit) {
-        <div>
-          <dt>Meridian</dt>
-          <dd>
-            {{ moonDetails()!.transit!.occursAt | date: 'h:mm a' : nzTimeZone }}
-          </dd>
-        </div>
-        } @if (moonDetails()?.moonset) {
-        <div>
-          <dt>Moonset</dt>
-          <dd>
-            {{ moonDetails()!.moonset!.occursAt | date: 'h:mm a' : nzTimeZone }}
-          </dd>
-        </div>
-        }
-        <div>
-          <dt>Next moonrise</dt>
-          <dd>{{ today()!.endsAt | date: 'h:mm a' : nzTimeZone }}</dd>
-        </div>
-      </dl>
-    </article>
-    }
-  </section>
-
-  <section class="month-section" aria-labelledby="cycle-heading">
-    <div class="section-header">
-      <div>
-        <p class="eyebrow">2. Cycle</p>
-        <h2 id="cycle-heading">Where am I in this lunar cycle?</h2>
-      </div>
-      <p>Based on {{ selectedLocationName() }}</p>
-    </div>
-
-    @if (monthLoading()) {
-    <p class="state" data-testid="month-loading-state">
-      Loading maramataka month...
-    </p>
-    } @else if (monthError()) {
-    <p class="state error" data-testid="month-error-state">
-      {{ monthError() }}
-    </p>
-    } @else if (!month() || !hasNights()) {
-    <p class="state" data-testid="month-empty-state">
-      No maramataka nights are available for this month.
-    </p>
-    } @else { @if (cycleLoading()) {
-    <p class="state compact" data-testid="cycle-loading-state">
-      Loading cycle anchors...
-    </p>
-    } @else if (cycleError()) {
-    <p class="state compact" data-testid="cycle-error-state">
-      Cycle anchors are unavailable. The generated marama is still shown.
-    </p>
-    }
-    <app-maramataka-month-view
-      [month]="month()!"
-      [cycle]="cycle()"
-      [yearEvents]="year()?.events ?? []"
-      [now]="now()"
-      (nightSelected)="selectNight($event)"
-    ></app-maramataka-month-view>
-    }
-  </section>
-
-  <section class="year-section" aria-labelledby="year-heading">
-    <div class="section-header">
-      <div>
-        <p class="eyebrow">3. Year rhythm</p>
-        <h2 id="year-heading">How does this lunar year unfold?</h2>
-      </div>
-      @if (year()) {
-      <p>{{ year()!.year }}</p>
-      }
-    </div>
-
-    @if (yearLoading()) {
-    <p class="state" data-testid="year-loading-state">
-      Loading maramataka year...
-    </p>
-    } @else if (yearError()) {
-    <p class="state error" data-testid="year-error-state">
-      {{ yearError() }}
-    </p>
-    } @else if (!year() || !year()!.months.length) {
-    <p class="state" data-testid="year-empty-state">
-      No maramataka year timeline is available for this date.
-    </p>
-    } @else {
-    <p class="state compact year-rule-note">
-      Year view starts at Te Tahi o Pipiri and uses actual dates across the
-      maramataka year. It marks marama boundaries, month and seasonal dawn
-      appearances, Matariki disappearance, astronomical New Moons,
-      astronomical Full Moons, equinoxes, solstices, and the Matariki public
-      holiday marker.
-    </p>
-    @if (year()!.diagnostics.length) {
-    <div class="year-diagnostics" data-testid="year-diagnostics">
-      <h3>Year timeline notes</h3>
-      <ul>
-        @for (diagnostic of year()!.diagnostics; track diagnostic.name + diagnostic.reason) {
-        <li>
-          <strong>{{ diagnostic.name }}</strong>
-          @if (diagnostic.anchorDate) {
-          <span>
-            {{ diagnostic.anchorDate | date: 'd MMM y, h:mm a' : nzTimeZone }}
-          </span>
-          }
-          <small>{{ diagnostic.reason }}</small>
-        </li>
-        }
-      </ul>
-    </div>
-    }
-    <div
-      class="year-timeline"
-      data-testid="year-rhythm-timeline"
-      role="list"
-      aria-label="Maramataka year rhythm timeline"
-    >
-      <div class="year-band-guide" aria-label="Timeline levels">
-        <span class="band-chip star">Star</span>
-        <span class="band-chip seasonal">Seasonal</span>
-        <span class="band-chip solar">Solar</span>
-        <span class="band-chip lunar">Lunar phase</span>
-        <span class="band-chip holiday">Holiday</span>
-      </div>
-      <div class="year-axis" aria-hidden="true">
-        <span>{{ year()!.startsAt | date: 'd MMM y' : nzTimeZone }}</span>
-        <span>{{ year()!.endsAt | date: 'd MMM y' : nzTimeZone }}</span>
-      </div>
-      <div class="year-event-track">
-        <div class="year-rail" aria-hidden="true"></div>
-        @for (month of year()!.months; track 'grid-' + month.startsAt.toISOString()) {
-        <span
-          class="year-month-grid-line"
-          [style.left.%]="yearMonthOffsetPercent(month)"
-          aria-hidden="true"
-        ></span>
-        }
-        @for (month of year()!.months; track month.startsAt.toISOString()) {
-        <span
-          class="year-month-tick"
-          [style.left.%]="yearMonthOffsetPercent(month)"
-          aria-hidden="true"
-        >
-          <span class="year-month-name">{{ month.name }}</span>
-          <span class="year-month-start">
-            {{ month.startsAt | date: 'd MMM' : nzTimeZone }}
-          </span>
-        </span>
-        }
-        @for (event of year()!.events; track event.type + event.name + event.occursAt.toISOString()) {
-        @if (event.type !== 'month-start') {
-        <article
-          role="listitem"
-          tabindex="0"
-          [class]="yearEventClass(event)"
-          [style.left.%]="yearEventOffsetPercent(event)"
-          [style.top.rem]="yearEventTopRem(event)"
-          [attr.aria-label]="yearEventAriaLabel(event)"
-        >
-          <div class="event-label">
-            <small>{{ yearEventTypeLabel(event) }}</small>
-            <strong>{{ event.name }}</strong>
-            <span>{{ yearEventDateLabel(event) }}</span>
-          </div>
-          <span class="event-stem" aria-hidden="true"></span>
-          <span class="event-symbol" aria-hidden="true">
-            {{ yearEventSymbol(event) }}
-          </span>
-        </article>
-        }
-        }
-      </div>
-    </div>
-
-    <div class="year-marama-list" aria-label="Maramataka months in this year">
-      @for (month of year()!.months; track month.startsAt.toISOString()) {
-      <article
-        role="button"
-        tabindex="0"
-        [attr.aria-label]="yearMaramaAriaLabel(month)"
-        (click)="selectYearMonth(month)"
-        (keydown.enter)="selectYearMonth(month)"
-        (keydown.space)="$event.preventDefault(); selectYearMonth(month)"
-      >
-        <strong>{{ month.name }}</strong>
-        <span>
-          {{ month.anchors.whiro.occursAt | date: 'd MMM' : nzTimeZone }}
-          -
-          {{ month.anchors.nextWhiro.occursAt | date: 'd MMM' : nzTimeZone }}
-        </span>
-        @if (month.starMarkers?.length) {
-        <small>{{ month.starMarkers![0].name }}</small>
-        }
-        @if (month.isEstimated) {
-        <small>Astronomy anchors only</small>
-        } @else {
-        <small>{{ month.nightsCount }} mata</small>
-        }
-      </article>
-      }
-    </div>
-
-    <dl class="year-legend" aria-label="Year timeline legend">
-      <div>
-        <dt>Marama boundaries</dt>
-        <dd>Whiro starts and month spans</dd>
-      </div>
-      <div>
-        <dt>Dawn stars</dt>
-        <dd>Month and seasonal first appearances</dd>
-      </div>
-      <div>
-        <dt>Moon events</dt>
-        <dd>Astronomical new and full moons</dd>
-      </div>
-      <div>
-        <dt>Holiday</dt>
-        <dd>Matariki public holiday marker</dd>
-      </div>
-    </dl>
-    }
-  </section>
+  <app-maramataka-year-view
+    [yearLoading]="yearLoading()"
+    [yearError]="yearError()"
+    [year]="year()"
+    [selectedDate]="now()"
+    (monthSelected)="selectYearMonth($event)"
+  ></app-maramataka-year-view>
 </section>

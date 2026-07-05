@@ -123,7 +123,7 @@ describe('MaramatakaService golden date fixtures', () => {
       new Date(fixture.fullMoons[0]),
     );
 
-    expect(currentNight?.night.mata.name).toBe('Ōturu');
+    expect(currentNight?.night.mata.name).toBe('Rākaunui');
     expect(currentNight?.night.startsAt.toISOString()).toBe(
       '2026-09-26T05:39:00.000Z',
     );
@@ -163,7 +163,7 @@ describe('MaramatakaService golden date fixtures', () => {
       timezone: 'Pacific/Auckland',
       currentMataIndex: 16,
       currentNight: {
-        mata: { name: 'Ōturu' },
+        mata: { name: 'Rākaunui' },
       },
       anchors: {
         whiro: {
@@ -185,7 +185,7 @@ describe('MaramatakaService golden date fixtures', () => {
           localTime: '17:39:00',
           timezone: 'Pacific/Auckland',
           source: 'astronomy-engine observation moonrise',
-          mata: { name: 'Ōturu' },
+          mata: { name: 'Rākaunui' },
         },
         nextWhiro: {
           type: 'next-whiro',

@@ -85,6 +85,7 @@ export interface MaramatakaYearEvent {
   type:
     | 'month-start'
     | 'star-marker'
+    | 'star-appearance'
     | 'star-invisibility'
     | 'solar-season'
     | 'new-moon'

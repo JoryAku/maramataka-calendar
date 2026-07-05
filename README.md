@@ -66,6 +66,32 @@ Run the CI-equivalent command with stub astronomy data:
 npm run ci
 ```
 
+## Calibration And Diagnostics
+
+Generate the official Matariki holiday and Tangaroa-period calibration report:
+
+```sh
+npm run compare:matariki-holiday
+```
+
+Focus that report on Pipiri, Matariki, Ruhanui, New Moon, and Full Moon
+visibility anchors:
+
+```sh
+npm run compare:matariki-holiday -- --focus=matariki-visibility
+```
+
+Inspect a specific maramataka or sky condition:
+
+```sh
+npm run diagnose:maramataka -- year-trace --year 2041
+npm run diagnose:maramataka -- holiday-explorer --year 2041
+npm run diagnose:maramataka -- sky-position --at 2041-07-21T06:00 --marker all
+```
+
+The diagnostic commands are for rule review. They do not use official holiday
+dates as inputs to the maramataka calculation.
+
 ## CI
 
 GitHub Actions runs CI for pull requests targeting `main`, pushes to `main`, and manual workflow dispatch. CI uses stub astronomy data so checks do not depend on live astronomy provider availability.

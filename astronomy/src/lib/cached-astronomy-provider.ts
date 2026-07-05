@@ -275,6 +275,15 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   }
 
   private starMarkerCacheKey(markers?: StarMarkerDefinition[]): string {
-    return markers?.map((marker) => marker.id).join(',') ?? 'default';
+    return markers
+      ? JSON.stringify(
+          markers.map((marker) => ({
+            id: marker.id,
+            type: marker.type,
+            representative: marker.representative,
+            dawnRising: marker.dawnRising,
+          })),
+        )
+      : 'default';
   }
 }
