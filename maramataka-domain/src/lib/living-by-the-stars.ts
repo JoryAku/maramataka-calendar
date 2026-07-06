@@ -55,8 +55,8 @@ const LIVING_BY_THE_STARS_MATARIKI_CALIBRATION_MARKER = {
   type: 'asterism',
   englishName: 'Pleiades',
   description:
-    'Pleiades; retained as the Ruhanui and public holiday calibration marker for the current astronomy-only rule.',
-  seasonalAssociation: 'Ruhanui and public holiday calibration marker',
+    'Pleiades; retained as the public holiday calibration marker for the current astronomy-only rule.',
+  seasonalAssociation: 'Matariki public holiday calibration marker',
   source: 'Project Matariki / Ruhanui calibration notes',
   confidence: 'working',
   dawnRising: LIVING_BY_THE_STARS_DAWN_RISING_CONFIG,

@@ -1,10 +1,13 @@
 import {
+  AstronomyProvider,
   AstronomyEngineProvider,
   CachedAstronomyProvider,
   FileAstronomyCacheStore,
+  Location,
   MoonPhase,
   PersistentCachedAstronomyProvider,
   StarMarker,
+  StarMarkerDefinition,
 } from '@maramataka-calendar/astronomy';
 import {
   LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
@@ -299,6 +302,27 @@ const sourceCalendarFixtures = [
   },
 ];
 
+type OfficialDate = {
+  tangaroaStartsOn: string;
+  tangaroaEndsOn: string;
+  holiday: string;
+};
+
+type DetailedMonthEntry = {
+  yearMonth: MaramatakaYearMonth;
+  month: MaramatakaMonth;
+};
+
+type OfficialYearContext = {
+  year: number;
+  official: OfficialDate;
+  maramatakaYear: Awaited<ReturnType<MaramatakaService['getYear']>>;
+  detailedMonths: DetailedMonthEntry[];
+  calculatedHoliday: string;
+  holidayYearMonth: MaramatakaYearMonth | undefined;
+  bestCandidate: ReturnType<typeof bestTangaroaCandidate>;
+};
+
 const holidayTangaroaTargetMata = new Set([
   'Tangaroa-ā-mua',
   'Tangaroa-ā-roto',
@@ -358,6 +382,12 @@ function localDateOrdinal(date: string): number {
     .map((part) => Number.parseInt(part, 10));
 
   return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000);
+}
+
+function addLocalDateDays(date: string, days: number): string {
+  return new Date((localDateOrdinal(date) + days) * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 function dateRange(start: string, end: string): string {
@@ -427,32 +457,49 @@ function sunAltitudeAt(
   return horizon.altitude;
 }
 
-function ruhanuiRuleSignal(
-  firstAppearance: StarMarker | undefined,
-  pipiriWhiroStartsOn: string,
-): string {
-  if (!firstAppearance) {
-    return 'no Matariki appearance';
-  }
-
-  const daysAfterPipiri = dateDelta(
-    localDate(firstAppearance.observedAt),
-    pipiriWhiroStartsOn,
-  );
-
-  if (daysAfterPipiri <= 0) {
-    return 'no Ruhanui: Matariki before/at Pipiri Whiro';
-  }
-
-  if (daysAfterPipiri <= 11) {
-    return 'insert Ruhanui: Matariki within 11 days after Pipiri Whiro';
-  }
-
-  return 'skip Pipiri: Matariki more than 11 days after Pipiri Whiro';
+function ruhanuiRuleSignal(hamalYearNewMoonCount: number): string {
+  return hamalYearNewMoonCount > 12
+    ? `insert Ruhanui: ${hamalYearNewMoonCount} Hamal-year New Moons`
+    : `no Ruhanui: ${hamalYearNewMoonCount} Hamal-year New Moons`;
 }
 
 function markerFirstAppearanceDate(marker: StarMarker | undefined): string {
   return marker ? localDate(marker.observedAt) : 'missing';
+}
+
+async function sampledDawnFirstAppearance(
+  provider: AstronomyProvider,
+  startDate: string,
+  endDate: string,
+  location: Location,
+  marker: StarMarkerDefinition,
+): Promise<StarMarker | undefined> {
+  const [firstDawnWindowAppearance] =
+    (await provider.getStarFirstAppearances?.(startDate, endDate, location, [
+      marker,
+    ])) ?? [];
+  let date = firstDawnWindowAppearance
+    ? localDate(firstDawnWindowAppearance.observedAt)
+    : startDate;
+
+  while (date < endDate) {
+    const sampledMarkers =
+      (await provider.getStarMarkers?.(date, location, [marker])) ?? [];
+    const sampledMarker = sampledMarkers.find(
+      (candidate) =>
+        candidate.id === marker.id &&
+        candidate.visibility !== 'below-horizon' &&
+        candidate.altitudeDegrees >= 0,
+    );
+
+    if (sampledMarker) {
+      return sampledMarker;
+    }
+
+    date = addLocalDateDays(date, 1);
+  }
+
+  return undefined;
 }
 
 function phaseLocalDate(phase: MoonPhase | undefined): string {
@@ -725,18 +772,58 @@ function monthFromCycle(cycle: MaramatakaCycleDetails): MaramatakaMonth {
 async function detailedMonthsForYear(
   service: MaramatakaService,
   months: MaramatakaYearMonth[],
-): Promise<
-  Array<{
-    yearMonth: MaramatakaYearMonth;
-    month: MaramatakaMonth;
-  }>
-> {
+): Promise<DetailedMonthEntry[]> {
   return Promise.all(
     months.map(async (yearMonth) => ({
       yearMonth,
       month: await detailedMonthForYearMonth(service, yearMonth),
     })),
   );
+}
+
+async function officialYearContexts(
+  service: MaramatakaService,
+): Promise<OfficialYearContext[]> {
+  const contexts = [];
+
+  for (const [year, official] of officialDates) {
+    const maramatakaYear = await service.getYear(
+      location,
+      new Date(`${year}-07-01T12:00:00+12:00`),
+    );
+    const detailedMonths = await detailedMonthsForYear(
+      service,
+      maramatakaYear.months,
+    );
+    const holiday = maramatakaYear.events.find(
+      (event) =>
+        event.type === 'public-holiday' &&
+        event.name === 'Matariki public holiday',
+    );
+    const calculatedHoliday = holiday ? localDate(holiday.occursAt) : 'missing';
+    const holidayYearMonth = holiday?.monthSequence
+      ? maramatakaYear.months.find(
+          (month) => month.sequence === holiday.monthSequence,
+        )
+      : undefined;
+    const bestCandidate = bestTangaroaCandidate(
+      detailedMonths,
+      official.tangaroaStartsOn,
+      official.tangaroaEndsOn,
+    );
+
+    contexts.push({
+      year,
+      official,
+      maramatakaYear,
+      detailedMonths,
+      calculatedHoliday,
+      holidayYearMonth,
+      bestCandidate,
+    });
+  }
+
+  return contexts;
 }
 
 function tangaroaPeriod(month: MaramatakaMonth):
@@ -926,7 +1013,7 @@ function generatedCoverageForOfficialTangaroa(
   };
 }
 
-async function officialComparisonRows(service: MaramatakaService): Promise<{
+function officialComparisonRows(contexts: OfficialYearContext[]): {
   rows: Array<{
     year: number;
     officialHoliday: string;
@@ -957,44 +1044,27 @@ async function officialComparisonRows(service: MaramatakaService): Promise<{
     generatedMata: string;
     isTangaroaTarget: boolean;
   }>;
-}> {
+} {
   const rows = [];
   const details = [];
 
-  for (const [year, official] of officialDates) {
-    const maramatakaYear = await service.getYear(
-      location,
-      new Date(`${year}-07-01T12:00:00+12:00`),
-    );
-    const detailedMonths = await detailedMonthsForYear(
-      service,
-      maramatakaYear.months,
-    );
-    const holiday = maramatakaYear.events.find(
-      (event) =>
-        event.type === 'public-holiday' &&
-        event.name === 'Matariki public holiday',
-    );
-    const calculatedHoliday = holiday ? localDate(holiday.occursAt) : 'missing';
-    const holidayYearMonth = holiday?.monthSequence
-      ? maramatakaYear.months.find(
-          (month) => month.sequence === holiday.monthSequence,
-        )
-      : undefined;
-    const holidayMonth = holidayYearMonth
-      ? await detailedMonthForYearMonth(service, holidayYearMonth)
-      : undefined;
+  for (const {
+    year,
+    official,
+    detailedMonths,
+    calculatedHoliday,
+    holidayYearMonth,
+    bestCandidate,
+  } of contexts) {
+    const holidayMonth = detailedMonths.find(
+      ({ yearMonth }) => yearMonth.sequence === holidayYearMonth?.sequence,
+    )?.month;
     const holidayTangaroa = holidayMonth
       ? tangaroaPeriod(holidayMonth)
       : undefined;
     const holidayTangaroaStart = holidayTangaroa?.startsOn ?? 'missing';
     const holidayTangaroaEnd = holidayTangaroa?.endsOn ?? 'missing';
     const officialCoverage = generatedCoverageForOfficialTangaroa(
-      detailedMonths,
-      official.tangaroaStartsOn,
-      official.tangaroaEndsOn,
-    );
-    const bestCandidate = bestTangaroaCandidate(
       detailedMonths,
       official.tangaroaStartsOn,
       official.tangaroaEndsOn,
@@ -1079,7 +1149,7 @@ async function officialComparisonRows(service: MaramatakaService): Promise<{
 }
 
 async function officialMatarikiBehaviourRows(
-  service: MaramatakaService,
+  contexts: OfficialYearContext[],
   provider: CachedAstronomyProvider,
 ): Promise<
   Array<{
@@ -1135,7 +1205,8 @@ async function officialMatarikiBehaviourRows(
   const rows = [];
   const engine = await import('astronomy-engine');
   const matarikiMarker =
-    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.yearStartRule?.marker;
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday
+      ?.calibrationMarker;
   const pipiriMarkerId =
     LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.months.find(
       (month) => month.sequence === 1,
@@ -1157,15 +1228,15 @@ async function officialMatarikiBehaviourRows(
     return [];
   }
 
-  for (const [year, official] of officialDates) {
-    const maramatakaYear = await service.getYear(
-      location,
-      new Date(`${year}-07-01T12:00:00+12:00`),
-    );
-    const detailedMonths = await detailedMonthsForYear(
-      service,
-      maramatakaYear.months,
-    );
+  for (const {
+    year,
+    official,
+    maramatakaYear,
+    detailedMonths,
+    calculatedHoliday,
+    holidayYearMonth,
+    bestCandidate,
+  } of contexts) {
     const pipiri = maramatakaYear.months.find(
       (month) =>
         month.name === 'Te Tahi o Pipiri' ||
@@ -1185,47 +1256,40 @@ async function officialMatarikiBehaviourRows(
     const teTahiTangaroa = pipiriMonth
       ? tangaroaPeriod(pipiriMonth)
       : undefined;
-    const holiday = maramatakaYear.events.find(
-      (event) =>
-        event.type === 'public-holiday' &&
-        event.name === 'Matariki public holiday',
-    );
-    const holidayYearMonth = holiday?.monthSequence
-      ? maramatakaYear.months.find(
-          (month) => month.sequence === holiday.monthSequence,
-        )
-      : undefined;
-    const calculatedHoliday = holiday ? localDate(holiday.occursAt) : 'missing';
-    const bestCandidate = bestTangaroaCandidate(
-      detailedMonths,
-      official.tangaroaStartsOn,
-      official.tangaroaEndsOn,
-    );
-    const [firstAppearance] =
-      (await provider.getStarFirstAppearances?.(
-        `${year}-01-01`,
-        `${year + 1}-01-01`,
+    const searchStart = `${year}-01-01`;
+    const searchEnd = `${year + 1}-01-01`;
+    const [
+      firstAppearance,
+      pipiriAppearance,
+      ruhanuiAppearance,
+      moonPhases,
+    ] = await Promise.all([
+      sampledDawnFirstAppearance(
+        provider,
+        searchStart,
+        searchEnd,
         location,
-        [matarikiMarker],
-      )) ?? [];
-    const [pipiriAppearance] =
-      (await provider.getStarFirstAppearances?.(
-        `${year}-01-01`,
-        `${year + 1}-01-01`,
+        matarikiMarker,
+      ),
+      sampledDawnFirstAppearance(
+        provider,
+        searchStart,
+        searchEnd,
         location,
-        [pipiriMarker],
-      )) ?? [];
-    const [ruhanuiAppearance] =
-      (await provider.getStarFirstAppearances?.(
-        `${year}-01-01`,
-        `${year + 1}-01-01`,
+        pipiriMarker,
+      ),
+      sampledDawnFirstAppearance(
+        provider,
+        searchStart,
+        searchEnd,
         location,
-        [ruhanuiMarker],
-      )) ?? [];
+        ruhanuiMarker,
+      ),
+      provider.getMoonPhases(year),
+    ]);
     const firstAppearanceDate = markerFirstAppearanceDate(firstAppearance);
     const pipiriAppearanceDate = markerFirstAppearanceDate(pipiriAppearance);
     const ruhanuiAppearanceDate = markerFirstAppearanceDate(ruhanuiAppearance);
-    const moonPhases = await provider.getMoonPhases(year);
     const newMoons = moonPhases.filter((phase) => phase.phase === 'New Moon');
     const fullMoons = moonPhases.filter((phase) => phase.phase === 'Full Moon');
     const newMoonsAfterMatariki = phasesOnOrAfter(
@@ -1261,6 +1325,7 @@ async function officialMatarikiBehaviourRows(
       ? localDate(secondMonth.startsAt)
       : 'missing';
     const teTahiTangaroaEnd = teTahiTangaroa?.endsOn ?? 'missing';
+    const hamalYearNewMoonCount = maramatakaYear.months.length;
 
     rows.push({
       year,
@@ -1374,7 +1439,7 @@ async function officialMatarikiBehaviourRows(
         official.tangaroaStartsOn,
         thirdFullMoonAfterMatariki,
       ),
-      currentRuhanuiSignal: ruhanuiRuleSignal(firstAppearance, pipiriWhiro),
+      currentRuhanuiSignal: ruhanuiRuleSignal(hamalYearNewMoonCount),
     });
   }
 
@@ -1446,10 +1511,9 @@ async function main(): Promise<void> {
     ),
   );
   const service = new MaramatakaService({ astronomyProvider: provider });
-  const officialReport = await officialComparisonRows(service);
-  const officialRows = officialReport.rows;
+  const yearContexts = await officialYearContexts(service);
   const matarikiBehaviourRows = await officialMatarikiBehaviourRows(
-    service,
+    yearContexts,
     provider,
   );
 
@@ -1582,6 +1646,8 @@ async function main(): Promise<void> {
     return;
   }
 
+  const officialReport = officialComparisonRows(yearContexts);
+  const officialRows = officialReport.rows;
   const sourceRows = await sourceCalendarRows(service);
 
   console.log('Official Matariki calibration report');

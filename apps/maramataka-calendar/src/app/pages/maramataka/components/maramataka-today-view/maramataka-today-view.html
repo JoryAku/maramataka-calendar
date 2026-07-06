@@ -52,8 +52,16 @@
     @if (dawnVisibleMarkers().length) {
     <div class="dawn-horizon" data-testid="dawn-horizon">
       <div class="horizon-sky" aria-label="Schematic dawn horizon">
-        <span class="horizon-arc" aria-hidden="true"></span>
         <span class="horizon-line" aria-hidden="true"></span>
+        @for (altitude of horizonAltitudeGuideLines; track altitude) {
+        <span
+          class="horizon-altitude-line"
+          [style.bottom.%]="horizonAltitudeBottom(altitude)"
+          aria-hidden="true"
+        >
+          <span>{{ altitude }}°</span>
+        </span>
+        }
         @for (marker of dawnVisibleMarkers(); track marker.id) {
         <span
           [class]="horizonMarkerClass(marker)"
@@ -66,6 +74,9 @@
         >
           <span class="horizon-dot" aria-hidden="true"></span>
           <span class="horizon-label">{{ marker.name }}</span>
+          @if (isHorizonMarkerClamped(marker)) {
+          <span class="horizon-high-label">high</span>
+          }
         </span>
         }
       </div>

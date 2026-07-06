@@ -17,8 +17,11 @@ export class MaramatakaTodayView {
   protected readonly nzTimeZone = NZ_TIMEZONE;
   private readonly moonVisualRadius = 42;
   private readonly moonVisualCenter = 50;
-  private readonly horizonAltitudeMin = -8;
-  private readonly horizonAltitudeMax = 32;
+  protected readonly horizonAltitudeGuideLines = [45, 30, 15, 0];
+  private readonly horizonAltitudeMin = 0;
+  private readonly horizonAltitudeMax = 45;
+  private readonly horizonPlotBottom = 12;
+  private readonly horizonPlotHeight = 76;
   private readonly dawnFieldMinAzimuth = 0;
   private readonly dawnFieldMaxAzimuth = 180;
 
@@ -152,16 +155,25 @@ export class MaramatakaTodayView {
   }
 
   protected horizonMarkerBottom(marker: StarMarker): number {
+    return this.horizonAltitudeBottom(marker.altitudeDegrees);
+  }
+
+  protected horizonAltitudeBottom(altitudeDegrees: number): number {
     const altitude = Math.max(
       this.horizonAltitudeMin,
-      Math.min(this.horizonAltitudeMax, marker.altitudeDegrees),
+      Math.min(this.horizonAltitudeMax, altitudeDegrees),
     );
 
     return (
+      this.horizonPlotBottom +
       ((altitude - this.horizonAltitudeMin) /
         (this.horizonAltitudeMax - this.horizonAltitudeMin)) *
-      72
+        this.horizonPlotHeight
     );
+  }
+
+  protected isHorizonMarkerClamped(marker: StarMarker): boolean {
+    return marker.altitudeDegrees > this.horizonAltitudeMax;
   }
 
   protected horizonMarkerClass(marker: StarMarker): string {

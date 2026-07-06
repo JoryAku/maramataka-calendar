@@ -51,12 +51,11 @@ assumptions explicit:
 - Full Moon is retained as an observed astronomical anchor.
 - Mata names follow the fixed 1-30 sequence; if the next Whiro arrives before
   all 30 intervals are used, trailing mata names are dropped.
-- Pipiri / Hamal provides the candidate Whiro for Te Tahi o Pipiri; Matariki's
-  return timing decides whether that candidate is accepted, followed by
-  Ruhanui, or skipped.
+- Pipiri / Hamal provides the candidate Whiro for Te Tahi o Pipiri; Ruhanui is
+  inserted when the Hamal-defined year contains 13 New Moon anchors.
 - `yearStartRule` carries Pipiri / Hamal as the source-linked year-start
   marker, while `matarikiHoliday.calibrationMarker` keeps Matariki available
-  for Ruhanui and public holiday calibration.
+  for public holiday calibration.
 
 The exact source passage used for this balancing rule is:
 
@@ -135,57 +134,47 @@ The active _Living by the Stars_ model separates the named year-start marker
 from the Matariki calibration marker:
 
 - Pipiri / Hamal is the named-month marker for Te Tahi o Pipiri.
-- The year begins at the first New Moon / Whiro after Pipiri first reappears in
-  the north-through-east dawn sky, unless Matariki returns too late in that candidate
-  marama.
-- Matariki remains the absence check for deciding whether that year stays with
-  the first marama or defers the celebration to the following regulating
-  marama.
+- The year begins at the first New Moon / Whiro on or after Pipiri first
+  reappears in the north-through-east dawn sky.
+- Matariki remains the calibration marker for the public holiday report, but it
+  no longer controls whether Ruhanui is inserted.
 
-The current source-calendar calibration distinguishes an early Matariki return
-from a late return. In implementation terms, the service compares the first
-dawn appearance of the configured Matariki marker with the calculated Whiro
-start for the Pipiri New Moon:
+The current source-calendar calibration treats Ruhanui as an intercalary marama
+derived from the relationship between the Hamal/Pipiri star year and New Moon
+anchors:
 
-- If Matariki has already appeared by that Whiro, the candidate Whiro is
-  labelled `Te Tahi o Pipiri`.
-- If Matariki appears after that Whiro but within the calibrated early-return
-  window (currently 11 local days), the candidate Whiro remains
-  `Te Tahi o Pipiri`, the next Whiro is labelled `Ruhanui`, and Takurua follows
-  after Ruhanui.
-- If Matariki appears later than that early-return window, the candidate Whiro
-  is skipped and the next Whiro becomes `Te Tahi o Pipiri` rather than
-  `Ruhanui`.
+- Find the first sampled-dawn appearance of Hamal/Pipiri for the year.
+- Label the first Whiro/New Moon on or after that local date as
+  `Te Tahi o Pipiri`.
+- Find the next year's Hamal/Pipiri Whiro.
+- Count New Moon anchors from this `Te Tahi o Pipiri` up to, but not including,
+  the next year's `Te Tahi o Pipiri`.
+- If the Hamal-defined year contains 13 New Moon anchors, insert `Ruhanui` as
+  the second marama, between `Te Tahi o Pipiri` and `Te Rua o Takurua`.
+- If it contains 12 New Moon anchors, keep the regular month sequence.
 
-This is not a requirement that Matariki appear during Pipiri. The rule only
-uses Matariki's timing relative to the candidate Pipiri Whiro: already-returned
-keeps Te Tahi o Pipiri, early-return inserts Ruhanui, and late-return shifts Te
-Tahi o Pipiri to the next Whiro. The 11-day threshold is a working
-source-calendar calibration from the 2021/2022, 2022/2023, and 2023/2024
-_Living by the Stars_ examples: it preserves the explicit Ruhanui in 2023/2024
-while treating 10 June 2021 as Te Tahi o Pipiri rather than Ruhanui.
-
-This rule is intentionally astronomy-only. Official holiday dates are used as a
+This is intentionally astronomy-only. Official holiday dates are used as a
 calibration report, not as an input to the calculation. Among the rules tested
-so far, this Hamal/Pipiri plus Matariki early-return rule gives the closest
-Tangaroa-period calibration while keeping the source indicators explicit.
+so far, the Hamal/Pipiri New Moon count rule preserves the explicit 2023/2024
+Ruhanui example while keeping the 2021/2022 and 2022/2023 examples as regular
+12-marama years.
 
 The Matariki public holiday event is calculated from the Friday closest to the
 four-night Tangaroa period in the selected holiday marama. That marama is Te
-Tahi o Pipiri by default, or Ruhanui when Matariki returns within the
-calibrated early-return window after the candidate Pipiri Whiro. Candidate
-Fridays are local dates within the selected marama, but the comparison uses
-exact instants: each Friday is treated as a local civil-day interval and
-compared to the exact start/end instants of the generated Tangaroa period. For
-this rule set, the current Tangaroa target is `Tangaroa-ā-mua`,
+Tahi o Pipiri by default, or Ruhanui when the Hamal/Pipiri New Moon count rule
+inserts the regulating marama. Candidate Fridays are local dates within the
+selected marama, but the comparison uses exact instants: each Friday is treated
+as a local civil-day interval and compared to the exact start/end instants of
+the generated Tangaroa period. For this rule set, the current Tangaroa target
+is `Tangaroa-ā-mua`,
 `Tangaroa-ā-roto`, `Tangaroa-whakapau`, and
 `Tangaroa whāriki kio-kio`.
 
-Against the official 2022-2052 public holiday schedule this astronomy-only
-model currently matches 20 of 31 holiday dates. The selected holiday marama's
-generated Tangaroa period overlaps the official Tangaroa period in 28 of 31
-comparison years. The remaining differences are useful calibration clues for
-refining mata boundaries and the source-specific Matariki/Ruhanui rule.
+Against the official 2022-2052 public holiday schedule this source-led
+astronomy-only model currently matches 18 of 31 holiday dates. The remaining
+differences are useful calibration clues for refining mata boundaries and the
+public holiday marama selection rule, but official dates are not fed back into
+the calculation.
 
 ### Calibration And Diagnostic Tools
 

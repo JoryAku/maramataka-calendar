@@ -173,7 +173,10 @@ When to reset:
 - The `Location` or timezone contract changes in a way that affects cache keys.
 
 Future cache hardening should add explicit invalidation tooling and migration
-handling.
+handling. The production backlog also tracks layered cache fingerprints so raw
+astronomy results, observational dawn/star results, and maramataka rule outputs
+can invalidate independently when new rule sets or marker configs are
+introduced.
 
 ## Frontend Hosting
 

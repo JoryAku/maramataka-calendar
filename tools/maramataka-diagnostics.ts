@@ -23,6 +23,8 @@ interface CliOptions {
   [key: string]: string | boolean | undefined;
 }
 
+type DawnMode = 'sampled-dawn' | 'dawn-rising';
+
 const DEFAULT_LOCATION = {
   name: 'Wellington',
   latitude: -41.2865,
@@ -376,6 +378,13 @@ function markerDefinitions(): StarMarkerDefinition[] {
       : []),
     ...(LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers ??
       []),
+    ...(LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday
+      ?.calibrationMarker
+      ? [
+          LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday
+            .calibrationMarker,
+        ]
+      : []),
   ];
   const seen = new Set<string>();
 
@@ -511,6 +520,15 @@ function visibilityFromAltitude(altitude: number): string {
     return 'low';
   }
   return 'below-horizon';
+}
+
+function dawnModeFromOptions(options: CliOptions): DawnMode {
+  const mode = stringOption(options, 'mode', 'sampled-dawn');
+  if (mode === 'sampled-dawn' || mode === 'dawn-rising') {
+    return mode;
+  }
+
+  throw new Error('Invalid --mode. Use sampled-dawn or dawn-rising.');
 }
 
 function observer(engine: AstronomyEngineModule, location: Location) {
@@ -652,7 +670,69 @@ function localDayBounds(
   };
 }
 
-function dawnWindowRows(
+function dawnObservationWindow(
+  engine: AstronomyEngineModule,
+  date: string,
+  location: Location,
+): { astronomicalDawn: Date; nauticalDawn: Date; sunrise: Date } {
+  const obs = observer(engine, location);
+  const startsAt = localDayBounds(date, location).startsAt;
+  const astronomicalDawn = engine.SearchAltitude(
+    engine.Body.Sun,
+    obs,
+    1,
+    startsAt,
+    1,
+    -18,
+  )?.date;
+  const nauticalDawn = astronomicalDawn
+    ? engine.SearchAltitude(engine.Body.Sun, obs, 1, astronomicalDawn, 1, -12)
+        ?.date
+    : null;
+  const sunrise = astronomicalDawn
+    ? engine.SearchAltitude(engine.Body.Sun, obs, 1, astronomicalDawn, 1, 0)
+        ?.date
+    : null;
+
+  if (!astronomicalDawn || !nauticalDawn || !sunrise) {
+    throw new Error(`No dawn data found for ${date}`);
+  }
+
+  return { astronomicalDawn, nauticalDawn, sunrise };
+}
+
+function sampledDawnRows(
+  engine: AstronomyEngineModule,
+  date: string,
+  location: Location,
+  marker: StarMarkerDefinition,
+) {
+  const window = dawnObservationWindow(engine, date, location);
+  const at = new Date(
+    (window.astronomicalDawn.getTime() + window.nauticalDawn.getTime()) / 2,
+  );
+  const sun = sunAltitude(engine, at, location);
+  const markerAt = markerPosition(engine, marker, at, location);
+  const inNorthToSouthField = markerAt.azimuth >= 0 && markerAt.azimuth <= 180;
+  const passes = markerAt.altitude >= 0;
+
+  return [
+    {
+      mode: 'sampled-dawn',
+      rule: 'Sun halfway between -18° and -12°',
+      localTime: formatLocal(at, location.timezone),
+      sunAltitude: sun,
+      markerAltitude: markerAt.altitude,
+      markerAzimuth: markerAt.azimuth,
+      direction: markerAt.direction,
+      inNorthToSouthField,
+      passes,
+      reason: passes ? 'passes' : 'below altitude threshold',
+    },
+  ];
+}
+
+function dawnRisingRows(
   engine: AstronomyEngineModule,
   date: string,
   location: Location,
@@ -684,20 +764,35 @@ function dawnWindowRows(
         markerAt.azimuth <= config.maximumAzimuthDegrees;
 
       rows.push({
+        mode: 'dawn-rising',
+        rule: `Sun ${config.startSunAltitudeDegrees}° to ${config.endSunAltitudeDegrees}°`,
         localTime: formatLocal(at, location.timezone),
         sunAltitude: sun,
         markerAltitude: markerAt.altitude,
         markerAzimuth: markerAt.azimuth,
         direction: markerAt.direction,
+        inNorthToSouthField: markerAt.azimuth >= 0 && markerAt.azimuth <= 180,
         passes,
         reason: passes ? 'passes' : failureReason(markerAt, sun, config),
       });
     }
 
-    at = addMinutes(at, Math.min(config.sampleMinutes, 1));
+    at = addMinutes(at, config.sampleMinutes);
   }
 
   return rows;
+}
+
+function dawnRows(
+  engine: AstronomyEngineModule,
+  date: string,
+  location: Location,
+  marker: StarMarkerDefinition,
+  mode: DawnMode,
+) {
+  return mode === 'sampled-dawn'
+    ? sampledDawnRows(engine, date, location, marker)
+    : dawnRisingRows(engine, date, location, marker);
 }
 
 function failureReason(
@@ -832,20 +927,23 @@ async function inspectSky(options: CliOptions) {
 async function inspectDawn(options: CliOptions) {
   const location = locationFromOptions(options);
   const date = localDateFromOptions(options, location);
+  const mode = dawnModeFromOptions(options);
   const engine = await import('astronomy-engine');
   const markers = selectMarkers(options);
 
   for (const marker of markers) {
-    const rows = dawnWindowRows(engine, date, location, marker);
+    const rows = dawnRows(engine, date, location, marker, mode);
     const firstPass = rows.find((row) => row.passes);
-    console.log(`Dawn visibility: ${marker.name} on ${date}`);
+    console.log(`Dawn visibility: ${marker.name} on ${date} (${mode})`);
     console.table([
       {
+        rule: rows[0]?.rule ?? 'missing',
         samples: rows.length,
         firstPass: firstPass?.localTime ?? 'none',
         firstPassSunAltitude: firstPass?.sunAltitude ?? 'n/a',
         firstPassMarkerAltitude: firstPass?.markerAltitude ?? 'n/a',
         firstPassMarkerAzimuth: firstPass?.markerAzimuth ?? 'n/a',
+        firstPassInNorthToSouthField: firstPass?.inNorthToSouthField ?? 'n/a',
       },
     ]);
     console.table(rows.filter((row) => row.passes).slice(0, 10));
@@ -855,6 +953,7 @@ async function inspectDawn(options: CliOptions) {
 async function debugFirstAppearance(options: CliOptions) {
   const location = locationFromOptions(options);
   const year = numberOption(options, 'year');
+  const mode = dawnModeFromOptions(options);
   const engine = await import('astronomy-engine');
   const markers = selectMarkers(options);
   const start = stringOption(options, 'start', `${year}-01-01`);
@@ -865,7 +964,7 @@ async function debugFirstAppearance(options: CliOptions) {
     let firstDate = 'missing';
     let date = start;
     while (date < end) {
-      const firstPass = dawnWindowRows(engine, date, location, marker).find(
+      const firstPass = dawnRows(engine, date, location, marker, mode).find(
         (row) => row.passes,
       );
       if (firstPass) {
@@ -882,7 +981,7 @@ async function debugFirstAppearance(options: CliOptions) {
       firstDate === 'missing' ? addDays(start, 7) : addDays(firstDate, 4);
     date = windowStart;
     while (date < windowEnd) {
-      const rows = dawnWindowRows(engine, date, location, marker);
+      const rows = dawnRows(engine, date, location, marker, mode);
       const first = rows[0];
       const pass = rows.find((row) => row.passes);
       const closest =
@@ -893,12 +992,16 @@ async function debugFirstAppearance(options: CliOptions) {
 
       rangeRows.push({
         marker: marker.name,
+        mode,
+        rule: closest?.rule ?? first?.rule ?? 'missing',
         date,
         firstAppearanceDate: firstDate,
         sample: closest?.localTime ?? first?.localTime ?? 'missing',
         sunAltitude: closest?.sunAltitude ?? 'missing',
         markerAltitude: closest?.markerAltitude ?? 'missing',
         markerAzimuth: closest?.markerAzimuth ?? 'missing',
+        inNorthToSouthField:
+          closest?.inNorthToSouthField ?? first?.inNorthToSouthField ?? '',
         passes: Boolean(pass),
         reason: pass ? 'passes' : (closest?.reason ?? 'no dawn samples'),
       });
@@ -1119,8 +1222,8 @@ function usage() {
 
 Commands:
   sky-position       --at YYYY-MM-DDTHH:mm [--marker matariki|all] [--body Sun|Moon|Venus]
-  dawn-visibility    --date YYYY-MM-DD --marker matariki|all
-  first-appearance   --year 2026 --marker matariki [--start YYYY-MM-DD --end YYYY-MM-DD]
+  dawn-visibility    --date YYYY-MM-DD --marker matariki|all [--mode sampled-dawn|dawn-rising]
+  first-appearance   --year 2026 --marker matariki [--start YYYY-MM-DD --end YYYY-MM-DD] [--mode sampled-dawn|dawn-rising]
   marama-boundary    --date YYYY-MM-DD | --at YYYY-MM-DDTHH:mm
   year-trace         --year 2026
   holiday-explorer   --year 2026

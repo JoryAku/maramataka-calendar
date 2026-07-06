@@ -5,6 +5,33 @@ visible without being treated as an implemented rule.
 
 ## Future Accuracy
 
+### Add Layered Cache Fingerprints
+
+The current cache has schema-version protection, but it does not yet know when
+rule inputs have changed. Add cache fingerprints before introducing more
+source-specific rule sets.
+
+To do:
+
+- define readable metadata payloads for each cache layer:
+  - raw astronomy facts, for stable provider results such as phases, rises,
+    sets, transits, equinoxes, and solstices
+  - observational astronomy, for dawn windows, configured star markers, field
+    of view, and visibility thresholds
+  - maramataka rules, for rule set id/version, `mataVersion`, year-start logic,
+    Ruhanui logic, and Matariki public holiday logic
+- generate deterministic fingerprints from canonical metadata payloads
+- include the relevant fingerprint in cache keys or cache namespaces
+- treat fingerprint mismatches as cache misses instead of serving stale derived
+  data
+- preserve raw astronomy cache data when only maramataka rules change
+- add stale namespace cleanup tooling after namespace invalidation is in place
+- log the active readable cache metadata and short fingerprint during startup
+  or diagnostics so cache invalidation can be reviewed
+
+This should be implemented outside the current branch because it changes cache
+contracts and deployment behaviour.
+
 ### Refine Dawn Star Marker Sampling
 
 Star marker sampling now uses solar-altitude dawn boundaries for the selected
