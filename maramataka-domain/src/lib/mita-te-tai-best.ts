@@ -52,7 +52,7 @@ const MITA_TE_TAI_BEST_DAWN_RISING_CONFIG = {
   endSunAltitudeDegrees: 0,
   minimumMarkerAltitudeDegrees: 0,
   minimumAzimuthDegrees: 0,
-  maximumAzimuthDegrees: 135,
+  maximumAzimuthDegrees: 180,
   sampleMinutes: 5,
 };
 

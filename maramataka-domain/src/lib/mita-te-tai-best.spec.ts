@@ -249,7 +249,7 @@ describe('LIVING_BY_THE_STARS_MATA', () => {
           marker.dawnRising.endSunAltitudeDegrees === 0 &&
           marker.dawnRising.minimumMarkerAltitudeDegrees === 0 &&
           marker.dawnRising.minimumAzimuthDegrees === 0 &&
-          marker.dawnRising.maximumAzimuthDegrees === 135 &&
+          marker.dawnRising.maximumAzimuthDegrees === 180 &&
           marker.dawnRising.sampleMinutes === 5,
       ),
     ).toBe(true);

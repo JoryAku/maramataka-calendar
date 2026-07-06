@@ -12,7 +12,7 @@ const LIVING_BY_THE_STARS_DAWN_RISING_CONFIG = {
   endSunAltitudeDegrees: 0,
   minimumMarkerAltitudeDegrees: 0,
   minimumAzimuthDegrees: 0,
-  maximumAzimuthDegrees: 135,
+  maximumAzimuthDegrees: 180,
   sampleMinutes: 5,
 };
 

@@ -743,7 +743,7 @@ function dawnRisingRows(
     endSunAltitudeDegrees: 0,
     minimumMarkerAltitudeDegrees: 0,
     minimumAzimuthDegrees: 0,
-    maximumAzimuthDegrees: 135,
+    maximumAzimuthDegrees: 180,
     sampleMinutes: 5,
   };
   const bounds = localDayBounds(date, location);

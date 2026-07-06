@@ -88,6 +88,10 @@ export interface MaramatakaServiceDependencies {
   version?: MaramatakaVersion;
 }
 
+export interface MaramatakaYearOptions {
+  includeTimelineEvents?: boolean;
+}
+
 export class MaramatakaService {
   private readonly astronomyProvider: AstronomyProvider;
   private readonly calculateWhiroStartFn: WhiroCalculatorFn;
@@ -96,10 +100,6 @@ export class MaramatakaService {
   private readonly matarikiHolidayNewMoonCache = new Map<
     string,
     NewMoon | undefined
-  >();
-  private readonly sampledDawnFirstAppearanceCache = new Map<
-    string,
-    Promise<StarMarker | undefined>
   >();
   private readonly monthCache = new Map<string, Promise<MaramatakaMonth>>();
   private readonly yearCache = new Map<string, Promise<MaramatakaYear>>();
@@ -257,7 +257,12 @@ export class MaramatakaService {
     return this.astronomyProvider.getMoonDetails(localDate, location);
   }
 
-  async getYear(location: Location, date: Date): Promise<MaramatakaYear> {
+  async getYear(
+    location: Location,
+    date: Date,
+    options: MaramatakaYearOptions = {},
+  ): Promise<MaramatakaYear> {
+    const includeTimelineEvents = options.includeTimelineEvents ?? true;
     const requestedLocalDate = this.formatIsoDateForLocation(date, location);
     const localYear = Number(requestedLocalDate.slice(0, 4));
     const localMonth = Number(requestedLocalDate.slice(5, 7));
@@ -304,7 +309,11 @@ export class MaramatakaService {
         starYear += 1;
       }
     }
-    const yearCacheKey = this.yearCacheKey(location, starYear);
+    const yearCacheKey = this.yearCacheKey(
+      location,
+      starYear,
+      includeTimelineEvents,
+    );
     const cachedYear = this.yearCache.get(yearCacheKey);
     if (cachedYear) {
       return cachedYear;
@@ -401,11 +410,11 @@ export class MaramatakaService {
         months[months.length - 1]?.anchors.nextWhiro.occursAt ??
         this.localYearBoundary(starYear + 1, location, 5);
       const monthScopedStarFirstAppearances =
-        months.length > 0
+        includeTimelineEvents && months.length > 0
           ? await this.getMonthScopedStarFirstAppearances(location, months)
           : [];
       const seasonalStarFirstAppearances =
-        months.length > 0
+        includeTimelineEvents && months.length > 0
           ? await this.getSeasonalStarFirstAppearances(
               location,
               this.formatIsoDateForLocation(timelineStartsAt, location),
@@ -418,7 +427,7 @@ export class MaramatakaService {
         ...seasonalStarFirstAppearances,
       ];
       const matarikiCalibrationMarkerAppearanceEvents =
-        months.length > 0
+        includeTimelineEvents && months.length > 0
           ? await this.createMatarikiCalibrationMarkerAppearanceEvents(
               location,
               this.formatIsoDateForLocation(timelineStartsAt, location),
@@ -426,18 +435,20 @@ export class MaramatakaService {
             )
           : [];
       const starInvisibilityEvents =
-        months.length > 0
+        includeTimelineEvents && months.length > 0
           ? await this.createStarInvisibilityEvents(
               location,
               this.formatIsoDateForLocation(timelineStartsAt, location),
               this.formatIsoDateForLocation(timelineEndsAt, location),
             )
           : [];
-      const solarSeasonEvents = await this.createSolarSeasonEvents(
-        starYear,
-        timelineStartsAt,
-        timelineEndsAt,
-      );
+      const solarSeasonEvents = includeTimelineEvents
+        ? await this.createSolarSeasonEvents(
+            starYear,
+            timelineStartsAt,
+            timelineEndsAt,
+          )
+        : [];
 
       return {
         version: this.version,
@@ -487,7 +498,11 @@ export class MaramatakaService {
     this.yearCache.set(key, yearPromise);
   }
 
-  private yearCacheKey(location: Location, starYear: number): string {
+  private yearCacheKey(
+    location: Location,
+    starYear: number,
+    includeTimelineEvents: boolean,
+  ): string {
     return [
       this.ruleSet.id,
       this.ruleSet.version,
@@ -495,6 +510,7 @@ export class MaramatakaService {
       location.longitude,
       location.timezone,
       starYear,
+      includeTimelineEvents ? 'full' : 'light',
     ].join(':');
   }
 
@@ -949,11 +965,11 @@ export class MaramatakaService {
       return [];
     }
 
-    const appearance = await this.getOptionalSampledDawnStarFirstAppearance(
+    const [appearance] = await this.getOptionalStarFirstAppearances(
       location,
       startDate,
       endDate,
-      calibrationMarker,
+      [calibrationMarker],
     );
     if (!appearance) {
       return [];
@@ -1829,105 +1845,14 @@ export class MaramatakaService {
       return undefined;
     }
 
-    const appearance = await this.getOptionalSampledDawnStarFirstAppearance(
+    const [appearance] = await this.getOptionalStarFirstAppearances(
       location,
       `${year}-01-01`,
       `${year + 1}-01-01`,
-      marker,
+      [marker],
     );
 
     return appearance;
-  }
-
-  private async getOptionalSampledDawnStarFirstAppearance(
-    location: Location,
-    startDate: string,
-    endDate: string,
-    marker: StarMarkerDefinition,
-  ): Promise<StarMarker | undefined> {
-    const cacheKey = [
-      marker.id,
-      startDate,
-      endDate,
-      location.latitude,
-      location.longitude,
-      location.timezone,
-    ].join(':');
-    const cachedAppearance = this.sampledDawnFirstAppearanceCache.get(cacheKey);
-    if (cachedAppearance) {
-      return cachedAppearance;
-    }
-
-    const appearancePromise = this.findSampledDawnStarFirstAppearance(
-      location,
-      startDate,
-      endDate,
-      marker,
-    );
-    this.sampledDawnFirstAppearanceCache.set(cacheKey, appearancePromise);
-
-    try {
-      return await appearancePromise;
-    } catch (error) {
-      this.sampledDawnFirstAppearanceCache.delete(cacheKey);
-      throw error;
-    }
-  }
-
-  private async findSampledDawnStarFirstAppearance(
-    location: Location,
-    startDate: string,
-    endDate: string,
-    marker: StarMarkerDefinition,
-  ): Promise<StarMarker | undefined> {
-    const [firstDawnWindowAppearance] =
-      await this.getOptionalStarFirstAppearances(location, startDate, endDate, [
-        marker,
-      ]);
-    let date = firstDawnWindowAppearance
-      ? this.formatIsoDateForLocation(
-          firstDawnWindowAppearance.observedAt,
-          location,
-        )
-      : startDate;
-
-    while (date < endDate) {
-      const sampledMarker = await this.getOptionalSampledDawnStarMarker(
-        location,
-        date,
-        marker,
-      );
-
-      if (sampledMarker) {
-        return sampledMarker;
-      }
-
-      date = this.addIsoDateDays(date, 1);
-    }
-
-    return undefined;
-  }
-
-  private async getOptionalSampledDawnStarMarker(
-    location: Location,
-    date: string,
-    marker: StarMarkerDefinition,
-  ): Promise<StarMarker | undefined> {
-    try {
-      const sampledMarkers =
-        (await this.astronomyProvider.getStarMarkers?.(date, location, [
-          marker,
-        ])) ?? [];
-
-      return sampledMarkers.find(
-        (sampledMarker) =>
-          sampledMarker.id === marker.id &&
-          sampledMarker.visibility !== 'below-horizon' &&
-          sampledMarker.altitudeDegrees >= 0,
-      );
-    } catch {
-      return undefined;
-    }
   }
 
   private async getPipiriMarkerFirstAppearance(
@@ -1939,11 +1864,11 @@ export class MaramatakaService {
       return undefined;
     }
 
-    const appearance = await this.getOptionalSampledDawnStarFirstAppearance(
+    const [appearance] = await this.getOptionalStarFirstAppearances(
       location,
       `${year}-01-01`,
       `${year + 1}-01-01`,
-      marker,
+      [marker],
     );
 
     return appearance;
