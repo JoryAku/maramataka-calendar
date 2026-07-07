@@ -17,8 +17,14 @@ import {
   StarMarker,
   StarMarkerDefinition,
 } from '@maramataka-calendar/astronomy';
-import { MaramatakaService } from '@maramataka-calendar/maramataka-domain';
+import {
+  LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
+  MaramatakaService,
+} from '@maramataka-calendar/maramataka-domain';
 import { join } from 'node:path';
+
+export const ACTIVE_MARAMATAKA_RULE_SET =
+  LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET;
 
 export class StubAstronomyProvider implements AstronomyProvider {
   async getMoonPhases(year: number): Promise<MoonPhase[]> {
@@ -279,5 +285,6 @@ export const maramatakaServiceProvider: Provider = {
   useFactory: () =>
     new MaramatakaService({
       astronomyProvider: new CachedAstronomyProvider(createAstronomyProvider()),
+      ruleSet: ACTIVE_MARAMATAKA_RULE_SET,
     }),
 };

@@ -2,6 +2,12 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { randomUUID } from 'node:crypto';
 import {
+  createCacheFingerprint,
+  RAW_ASTRONOMY_CACHE_METADATA,
+  OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+} from '@maramataka-calendar/astronomy';
+import { createMaramatakaRuleSetCacheMetadata } from '@maramataka-calendar/maramataka-domain';
+import {
   json,
   NextFunction,
   Request,
@@ -11,6 +17,7 @@ import {
 } from 'express';
 import { AppModule } from './app/app.module';
 import { ApiExceptionFilter } from './app/api-exception.filter';
+import { ACTIVE_MARAMATAKA_RULE_SET } from './app/maramataka.service-provider';
 
 const DEFAULT_BODY_LIMIT = '100kb';
 const ONE_DAY_IN_SECONDS = 86400;
@@ -37,10 +44,65 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);
 
+  logCacheFingerprints();
+
   Logger.log(
     `API listening on port ${port} with global prefix /${globalPrefix}`,
     'Bootstrap',
   );
+}
+
+function logCacheFingerprints(): void {
+  const maramatakaRuleSetMetadata = createMaramatakaRuleSetCacheMetadata(
+    ACTIVE_MARAMATAKA_RULE_SET,
+  );
+  const context = {
+    event: 'cache_fingerprints',
+    fingerprints: {
+      rawAstronomy: createCacheFingerprint(RAW_ASTRONOMY_CACHE_METADATA),
+      observationalAstronomy: createCacheFingerprint(
+        OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+      ),
+      maramatakaRules: createCacheFingerprint(maramatakaRuleSetMetadata),
+    },
+    metadataSummary: createCacheMetadataSummary(),
+    fullMetadataCommand: 'npm run diagnose:maramataka -- cache-fingerprints',
+  };
+
+  Logger.log(JSON.stringify(context), 'CacheFingerprint');
+}
+
+function createCacheMetadataSummary() {
+  return {
+    rawAstronomy: {
+      layer: RAW_ASTRONOMY_CACHE_METADATA.layer,
+      version: RAW_ASTRONOMY_CACHE_METADATA.version,
+      operations: RAW_ASTRONOMY_CACHE_METADATA.operations,
+    },
+    observationalAstronomy: {
+      layer: OBSERVATIONAL_ASTRONOMY_CACHE_METADATA.layer,
+      version: OBSERVATIONAL_ASTRONOMY_CACHE_METADATA.version,
+      operations: OBSERVATIONAL_ASTRONOMY_CACHE_METADATA.operations,
+      dawnMarkerSampling:
+        OBSERVATIONAL_ASTRONOMY_CACHE_METADATA.dawnMarkerSampling,
+    },
+    maramatakaRules: {
+      layer: 'maramataka-rules',
+      ruleSet: {
+        id: ACTIVE_MARAMATAKA_RULE_SET.id,
+        version: ACTIVE_MARAMATAKA_RULE_SET.version,
+        source: ACTIVE_MARAMATAKA_RULE_SET.source,
+        tradition: ACTIVE_MARAMATAKA_RULE_SET.tradition,
+        mataVersion: ACTIVE_MARAMATAKA_RULE_SET.mataVersion,
+      },
+      mataCount: ACTIVE_MARAMATAKA_RULE_SET.mata.length,
+      yearStartMarker: ACTIVE_MARAMATAKA_RULE_SET.yearStartRule?.marker.id,
+      starMonthMarkerCount:
+        ACTIVE_MARAMATAKA_RULE_SET.starMonthNaming?.markers.length ?? 0,
+      targetMataNames:
+        ACTIVE_MARAMATAKA_RULE_SET.matarikiHoliday?.targetMataNames ?? [],
+    },
+  };
 }
 
 function configureTrustProxy(server: {

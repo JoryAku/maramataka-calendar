@@ -129,7 +129,30 @@ MARAMATAKA_ASTRONOMY_CACHE_PATH=/var/cache/maramataka/astronomy.json
 
 The cache stores normalized astronomy results, not raw provider responses. The
 cache file currently uses schema version `2`, and each cache entry also carries
-entry schema version `2`.
+entry schema version `2`. Persistent cache keys also include a short
+fingerprint namespace derived from readable cache metadata.
+
+Current persistent namespaces:
+
+- raw astronomy facts: moon phases, New Moons, Full Moons, solar seasons,
+  moonrise, moonrise/set, moon transit, and moon details
+- observational astronomy: dawn star markers, dawn-window first appearances,
+  and night-invisibility periods
+
+The maramataka rule set also exposes readable fingerprint metadata for mata
+names, year-start logic, Ruhanui logic, named-month markers, and Matariki
+holiday marker logic. That fingerprint is currently used by in-memory
+month/year caches. It is not yet a persistent cache namespace because generated
+maramataka year/month outputs are not written to disk.
+
+The API logs the active raw astronomy, observational astronomy, and maramataka
+rule-set fingerprints with compact metadata summaries at startup under the
+`CacheFingerprint` logger. The full readable metadata can be inspected locally
+without starting the API:
+
+```sh
+npm run diagnose:maramataka -- cache-fingerprints
+```
 
 Recommended production behaviour:
 
@@ -148,6 +171,9 @@ Stale-cache behaviour:
 
 - A cache hit is treated as authoritative and does not call the wrapped
   provider.
+- If cache metadata changes, for example a dawn visibility definition changes,
+  the derived fingerprint namespace changes and old entries become cache
+  misses.
 - If the astronomy provider is unavailable and a matching cache entry exists,
   the cached value is returned.
 - If the astronomy provider is unavailable and no matching cache entry exists,
@@ -172,11 +198,9 @@ When to reset:
 - A bad provider response was cached.
 - The `Location` or timezone contract changes in a way that affects cache keys.
 
-Future cache hardening should add explicit invalidation tooling and migration
-handling. The production backlog also tracks layered cache fingerprints so raw
-astronomy results, observational dawn/star results, and maramataka rule outputs
-can invalidate independently when new rule sets or marker configs are
-introduced.
+Future cache hardening should add explicit invalidation tooling, stale
+namespace cleanup, startup logging for active fingerprints, and a persistent
+derived maramataka-rules namespace if year/month outputs become persistent.
 
 ## Frontend Hosting
 

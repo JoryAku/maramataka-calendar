@@ -1,4 +1,9 @@
-import { StarMarkerDefinition } from '@maramataka-calendar/astronomy';
+import {
+  CacheFingerprintMetadata,
+  createCacheFingerprint,
+  StarMarkerDefinition,
+  StarMarkerDawnRisingConfig,
+} from '@maramataka-calendar/astronomy';
 import { Mata, MaramatakaVersion } from './mata';
 
 export interface StarMonthNote {
@@ -111,6 +116,8 @@ export interface MaramatakaRuleSet extends MaramatakaRuleSetSummary {
   mataVersion: MaramatakaVersion;
 }
 
+export const MARAMATAKA_RULE_SET_CACHE_METADATA_VERSION = 1;
+
 export function summarizeRuleSet(
   ruleSet: MaramatakaRuleSet,
 ): MaramatakaRuleSetSummary {
@@ -182,5 +189,116 @@ export function summarizeRuleSet(
           })),
         }
       : undefined,
+  };
+}
+
+export function createMaramatakaRuleSetCacheMetadata(
+  ruleSet: MaramatakaRuleSet,
+): CacheFingerprintMetadata {
+  return {
+    layer: 'maramataka-rules',
+    metadataVersion: MARAMATAKA_RULE_SET_CACHE_METADATA_VERSION,
+    ruleSet: {
+      id: ruleSet.id,
+      version: ruleSet.version,
+      source: ruleSet.source,
+      tradition: ruleSet.tradition,
+      maramaStart: ruleSet.maramaStart,
+      mataBoundary: ruleSet.mataBoundary,
+      calibration: ruleSet.calibration,
+      balancing: ruleSet.balancing,
+      mataVersion: ruleSet.mataVersion,
+    },
+    mata: ruleSet.mata.map((mata) => ({
+      index: mata.index,
+      name: mata.name,
+      version: mata.version,
+      phaseGroup: mata.phaseGroup?.name,
+    })),
+    yearStartRule: ruleSet.yearStartRule
+      ? {
+          strategy: ruleSet.yearStartRule.strategy,
+          marker: starMarkerCacheMetadata(ruleSet.yearStartRule.marker),
+        }
+      : undefined,
+    matarikiHoliday: ruleSet.matarikiHoliday
+      ? {
+          monthSelection: ruleSet.matarikiHoliday.monthSelection,
+          targetMataNames: ruleSet.matarikiHoliday.targetMataNames,
+          calibrationMarker: ruleSet.matarikiHoliday.calibrationMarker
+            ? starMarkerCacheMetadata(
+                ruleSet.matarikiHoliday.calibrationMarker,
+              )
+            : undefined,
+        }
+      : undefined,
+    starMonthNaming: ruleSet.starMonthNaming
+      ? {
+          strategy: ruleSet.starMonthNaming.strategy,
+          sampleTimeLocal: ruleSet.starMonthNaming.sampleTimeLocal,
+          markerIds: ruleSet.starMonthNaming.markers.map((marker) => marker.id),
+          markers: ruleSet.starMonthNaming.markers.map(starMarkerCacheMetadata),
+          months: ruleSet.starMonthNaming.months.map((month) => ({
+            sequence: month.sequence,
+            name: month.name,
+            markerIds: month.markerIds,
+          })),
+        }
+      : undefined,
+  };
+}
+
+export function createMaramatakaRuleSetFingerprint(
+  ruleSet: MaramatakaRuleSet,
+): string {
+  return createCacheFingerprint(createMaramatakaRuleSetCacheMetadata(ruleSet));
+}
+
+function starMarkerCacheMetadata(
+  marker: StarMarkerDefinition,
+): CacheFingerprintMetadata {
+  return {
+    id: marker.id,
+    name: marker.name,
+    type: marker.type,
+    englishName: marker.englishName,
+    seasonalAssociation: marker.seasonalAssociation,
+    confidence: marker.confidence,
+    representative: starRepresentativeCacheMetadata(marker.representative),
+    dawnRising: dawnRisingCacheMetadata(marker.dawnRising),
+  };
+}
+
+function starRepresentativeCacheMetadata(
+  representative: StarMarkerDefinition['representative'],
+): CacheFingerprintMetadata {
+  if (representative.kind === 'fixed-equatorial') {
+    return {
+      kind: representative.kind,
+      rightAscensionHours: representative.rightAscensionHours,
+      declinationDegrees: representative.declinationDegrees,
+    };
+  }
+
+  return {
+    kind: representative.kind,
+    body: representative.body,
+  };
+}
+
+function dawnRisingCacheMetadata(
+  dawnRising?: StarMarkerDawnRisingConfig,
+): CacheFingerprintMetadata | undefined {
+  if (!dawnRising) {
+    return undefined;
+  }
+
+  return {
+    startSunAltitudeDegrees: dawnRising.startSunAltitudeDegrees,
+    endSunAltitudeDegrees: dawnRising.endSunAltitudeDegrees,
+    minimumMarkerAltitudeDegrees: dawnRising.minimumMarkerAltitudeDegrees,
+    minimumAzimuthDegrees: dawnRising.minimumAzimuthDegrees,
+    maximumAzimuthDegrees: dawnRising.maximumAzimuthDegrees,
+    sampleMinutes: dawnRising.sampleMinutes,
   };
 }

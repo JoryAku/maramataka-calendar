@@ -5,35 +5,50 @@ visible without being treated as an implemented rule. The active calendar frame
 is astronomy-backed and grounded in the Living by the Stars 2021-2024 calendar
 material.
 
+## Recent Infrastructure
+
+### Cache Fingerprint Observability
+
+Cache fingerprint observability is now read-only and available without adding a
+database or persistent maramataka year/month output cache.
+
+Implemented:
+
+- log the active raw astronomy, observational astronomy, and maramataka rule-set
+  fingerprints with compact metadata summaries at API startup
+- include short fingerprints in the startup log line so cache namespace changes
+  are obvious during deploys
+- provide `npm run diagnose:maramataka -- cache-fingerprints` to print readable
+  metadata and fingerprints without requiring the API server to run
+- keep observability read-only; it does not clear, rewrite, or migrate cache
+  data
+
 ## Future Accuracy
 
-### Add Layered Cache Fingerprints
+### Extend Layered Cache Fingerprints
 
-The current cache has schema-version protection, but it does not yet know when
-rule inputs have changed. Add cache fingerprints before introducing more
-source-specific rule sets.
+The cache work now has three layers defined:
 
-To do:
+- raw astronomy facts, for stable provider results such as phases, rises, sets,
+  transits, equinoxes, and solstices
+- observational astronomy, for dawn windows, configured star markers, field of
+  view, and visibility thresholds
+- maramataka rules, with readable metadata for rule set id/version,
+  `mataVersion`, mata names, year-start logic, Pipiri / Hamal candidate
+  selection, Matariki visibility checks, Ruhanui insertion/shift logic, named
+  month markers, and Matariki public holiday logic
 
-- define readable metadata payloads for each cache layer:
-  - raw astronomy facts, for stable provider results such as phases, rises,
-    sets, transits, equinoxes, and solstices
-  - observational astronomy, for dawn windows, configured star markers, field
-    of view, and visibility thresholds
-  - maramataka rules, for rule set id/version, `mataVersion`, year-start logic,
-    Pipiri / Hamal candidate selection, Matariki visibility checks, Ruhanui
-    insertion/shift logic, and Matariki public holiday logic
-- generate deterministic fingerprints from canonical metadata payloads
-- include the relevant fingerprint in cache keys or cache namespaces
-- treat fingerprint mismatches as cache misses instead of serving stale derived
-  data
-- preserve raw astronomy cache data when only maramataka rules change
+Fingerprint mismatches are treated as cache misses. Old entries can remain in
+the file until cleanup tooling exists, but they will not be served through the
+new namespace. Raw and observational astronomy fingerprints are persistent
+cache namespaces; the maramataka rule-set fingerprint is currently used for
+in-memory cache keys and future persistence metadata.
+
+Remaining work:
+
+- add a persistent derived maramataka-rules namespace if/when year or month
+  results become persistent rather than in-memory only
 - add stale namespace cleanup tooling after namespace invalidation is in place
-- log the active readable cache metadata and short fingerprint during startup
-  or diagnostics so cache invalidation can be reviewed
-
-This should be implemented outside the current branch because it changes cache
-contracts and deployment behaviour.
 
 ### Refine Dawn Star Marker Sampling
 
