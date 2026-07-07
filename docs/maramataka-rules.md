@@ -232,6 +232,9 @@ slice is file-backed and dependency-free:
 - Cached values are normalized astronomy results, not raw provider responses.
 - Cache files and entries carry schema versions so incompatible data can be
   ignored predictably.
+- Cache keys include fingerprint namespaces for raw astronomy facts and
+  observational dawn/star calculations, so changing visibility metadata creates
+  cache misses instead of serving stale derived values.
 - Cached date strings are revived as `Date` values before reaching domain code.
 
 This file-backed cache is the current persistence boundary. It can later be

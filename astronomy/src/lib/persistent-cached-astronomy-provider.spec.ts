@@ -1,6 +1,11 @@
 import { AstronomyProvider, Location } from './astronomy-provider';
+import { createFingerprintNamespace } from './cache-fingerprint';
 import { AstronomyCacheStore } from './persistent-astronomy-cache';
-import { PersistentCachedAstronomyProvider } from './persistent-cached-astronomy-provider';
+import {
+  OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+  PersistentCachedAstronomyProvider,
+  RAW_ASTRONOMY_CACHE_METADATA,
+} from './persistent-cached-astronomy-provider';
 
 describe('PersistentCachedAstronomyProvider', () => {
   const location: Location = {
@@ -45,13 +50,20 @@ describe('PersistentCachedAstronomyProvider', () => {
   const createStore = (
     initialEntries: Record<string, unknown> = {},
   ): MemoryAstronomyCacheStore => new MemoryAstronomyCacheStore(initialEntries);
+  const rawKey = (key: string): string =>
+    `${createFingerprintNamespace('raw', RAW_ASTRONOMY_CACHE_METADATA)}:${key}`;
+  const observationalKey = (key: string): string =>
+    `${createFingerprintNamespace(
+      'observational',
+      OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+    )}:${key}`;
 
   it('returns cached moon phases without calling the wrapped provider', async () => {
     const provider = createProvider({
       getMoonPhases: jest.fn().mockRejectedValue(new Error('should not call')),
     });
     const store = createStore({
-      'moon-phases:2026': [
+      [rawKey('moon-phases:2026')]: [
         {
           phase: 'New Moon',
           occursAt: '2026-01-09T04:05:00.000Z',
@@ -84,7 +96,7 @@ describe('PersistentCachedAstronomyProvider', () => {
     expect(provider.getMoonRise).toHaveBeenCalledTimes(1);
     expect(moonrise.risesAt).toBeInstanceOf(Date);
     expect(store.setMock).toHaveBeenCalledWith(
-      'moonrise:2026-01-01:-41.2865:174.7762:Pacific/Auckland',
+      rawKey('moonrise:2026-01-01:-41.2865:174.7762:Pacific/Auckland'),
       expect.objectContaining({
         date: '2026-01-01',
         risesAt: new Date('2026-01-01T05:31:00.000Z'),
@@ -99,7 +111,7 @@ describe('PersistentCachedAstronomyProvider', () => {
         .mockRejectedValue(new Error('should not call')),
     });
     const store = createStore({
-      'solar-seasons:2026': [
+      [rawKey('solar-seasons:2026')]: [
         {
           name: 'June solstice',
           occursAt: '2026-06-21T08:24:00.000Z',
@@ -146,10 +158,12 @@ describe('PersistentCachedAstronomyProvider', () => {
 
   it('uses cached values when the wrapped provider is unavailable', async () => {
     const provider = createProvider({
-      getNewMoons: jest.fn().mockRejectedValue(new Error('Astronomy Engine unavailable')),
+      getNewMoons: jest
+        .fn()
+        .mockRejectedValue(new Error('Astronomy Engine unavailable')),
     });
     const store = createStore({
-      'new-moons:2026': [
+      [rawKey('new-moons:2026')]: [
         {
           occursAt: '2026-01-18T19:52:00.000Z',
           source: 'astronomy-engine',
@@ -171,13 +185,17 @@ describe('PersistentCachedAstronomyProvider', () => {
 
   it('surfaces provider errors when the provider is unavailable on a cache miss', async () => {
     const provider = createProvider({
-      getNewMoons: jest.fn().mockRejectedValue(new Error('Astronomy Engine unavailable')),
+      getNewMoons: jest
+        .fn()
+        .mockRejectedValue(new Error('Astronomy Engine unavailable')),
     });
     const store = createStore();
 
     const cached = new PersistentCachedAstronomyProvider(provider, store);
 
-    await expect(cached.getNewMoons(2026)).rejects.toThrow('Astronomy Engine unavailable');
+    await expect(cached.getNewMoons(2026)).rejects.toThrow(
+      'Astronomy Engine unavailable',
+    );
   });
 
   it('does not fail provider reads when cache writes fail', async () => {
@@ -208,7 +226,7 @@ describe('PersistentCachedAstronomyProvider', () => {
   it('revives nested moon details date fields from the cache', async () => {
     const provider = createProvider();
     const store = createStore({
-      'moon-details:2026-01-01:-41.2865:174.7762:Pacific/Auckland': {
+      [rawKey('moon-details:2026-01-01:-41.2865:174.7762:Pacific/Auckland')]: {
         date: '2026-01-01',
         phase: 'Waxing Gibbous',
         fractionIlluminated: 0.91,
@@ -296,5 +314,96 @@ describe('PersistentCachedAstronomyProvider', () => {
     ]);
 
     expect(provider.getStarFirstAppearances).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores raw astronomy cache entries from a different fingerprint namespace', async () => {
+    const provider = createProvider({
+      getNewMoons: jest.fn().mockResolvedValue([
+        {
+          occursAt: new Date('2026-01-18T19:52:00.000Z'),
+          source: 'astronomy-engine',
+        },
+      ]),
+    });
+    const store = createStore({
+      'new-moons:2026': [
+        {
+          occursAt: '1999-01-01T00:00:00.000Z',
+          source: 'stale-cache',
+        },
+      ],
+      [`${createFingerprintNamespace('raw', {
+        ...RAW_ASTRONOMY_CACHE_METADATA,
+        version: 0,
+      })}:new-moons:2026`]: [
+        {
+          occursAt: '2000-01-01T00:00:00.000Z',
+          source: 'stale-fingerprint',
+        },
+      ],
+    });
+
+    const cached = new PersistentCachedAstronomyProvider(provider, store);
+    const newMoons = await cached.getNewMoons(2026);
+
+    expect(provider.getNewMoons).toHaveBeenCalledTimes(1);
+    expect(newMoons).toEqual([
+      {
+        occursAt: new Date('2026-01-18T19:52:00.000Z'),
+        source: 'astronomy-engine',
+      },
+    ]);
+    expect(store.setMock).toHaveBeenCalledWith(
+      rawKey('new-moons:2026'),
+      expect.any(Array),
+    );
+  });
+
+  it('changes observational cache namespaces when dawn metadata changes', async () => {
+    const provider = createProvider({
+      getStarMarkers: jest.fn().mockResolvedValue([]),
+    });
+    const store = createStore({
+      [observationalKey(
+        'star-markers:2026-07-01:-41.2865:174.7762:Pacific/Auckland:default',
+      )]: [
+        {
+          id: 'stale',
+          name: 'Stale',
+          type: 'star',
+          description: 'Old cache entry',
+          seasonalAssociation: 'test',
+          source: 'test',
+          confidence: 'working',
+          observedAt: '2026-07-01T18:00:00.000Z',
+          altitudeDegrees: 10,
+          azimuthDegrees: 90,
+          direction: 'E',
+          visibility: 'visible',
+          calculation: 'old',
+        },
+      ],
+    });
+
+    const cached = new PersistentCachedAstronomyProvider(provider, store, {
+      observationalAstronomyMetadata: {
+        ...OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+        dawnMarkerSampling: {
+          dailyMarkerSample: 'start-of-astronomical-dawn',
+        },
+      },
+    });
+
+    await cached.getStarMarkers('2026-07-01', location);
+
+    expect(provider.getStarMarkers).toHaveBeenCalledTimes(1);
+    expect(store.setMock.mock.calls[0]?.[0]).toContain(
+      'star-markers:2026-07-01:-41.2865:174.7762:Pacific/Auckland:default',
+    );
+    expect(store.setMock.mock.calls[0]?.[0]).not.toBe(
+      observationalKey(
+        'star-markers:2026-07-01:-41.2865:174.7762:Pacific/Auckland:default',
+      ),
+    );
   });
 });

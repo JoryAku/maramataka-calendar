@@ -10,25 +10,85 @@ import {
   NewMoon,
   SolarSeasonEvent,
   StarMarker,
+  StarMarkerDawnRisingConfig,
   StarMarkerDefinition,
   StarMarkerNightInvisibilityPeriod,
 } from './astronomy-provider';
+import {
+  CacheFingerprintMetadata,
+  createCacheFingerprint,
+  createFingerprintNamespace,
+} from './cache-fingerprint';
 import { AstronomyCacheStore } from './persistent-astronomy-cache';
 
 type Reviver<T> = (value: T) => T;
 
-const STAR_DAWN_SAMPLING_CACHE_VERSION = 'dawn-window-first-appearance-v1';
-const STAR_NIGHT_INVISIBILITY_CACHE_VERSION = 'night-invisibility-v1';
+export const RAW_ASTRONOMY_CACHE_METADATA = {
+  layer: 'raw-astronomy',
+  version: 1,
+  providerContract: 'astronomy-provider-v1',
+  operations: [
+    'moon-phases',
+    'new-moons',
+    'full-moons',
+    'solar-seasons',
+    'moonrise',
+    'moonrise-set',
+    'moon-transit',
+    'moon-details',
+  ],
+  locationKeyFields: ['date', 'latitude', 'longitude', 'timezone'],
+  valueDateEncoding: 'iso-string-on-disk-revived-to-date',
+} as const satisfies CacheFingerprintMetadata;
+
+export const OBSERVATIONAL_ASTRONOMY_CACHE_METADATA = {
+  layer: 'observational-astronomy',
+  version: 1,
+  providerContract: 'astronomy-provider-v1',
+  operations: [
+    'star-markers',
+    'star-first-appearances',
+    'star-night-invisibility-periods',
+  ],
+  dawnMarkerSampling: {
+    dailyMarkerSample: 'midpoint-between-sun-altitude--18-and--12',
+    firstAppearanceWindow: 'sun-altitude--18-through-sunrise',
+    nightInvisibilityCondition:
+      'marker-never-above-horizon-while-sun-at-or-below-threshold',
+  },
+  markerDefinitionFields: ['id', 'type', 'representative', 'dawnRising'],
+  locationKeyFields: ['date', 'latitude', 'longitude', 'timezone'],
+  valueDateEncoding: 'iso-string-on-disk-revived-to-date',
+} as const satisfies CacheFingerprintMetadata;
+
+export interface PersistentCachedAstronomyProviderOptions {
+  rawAstronomyMetadata?: CacheFingerprintMetadata;
+  observationalAstronomyMetadata?: CacheFingerprintMetadata;
+}
 
 export class PersistentCachedAstronomyProvider implements AstronomyProvider {
+  private readonly rawAstronomyNamespace: string;
+  private readonly observationalAstronomyNamespace: string;
+
   constructor(
     private readonly provider: AstronomyProvider,
     private readonly store: AstronomyCacheStore,
-  ) {}
+    options: PersistentCachedAstronomyProviderOptions = {},
+  ) {
+    this.rawAstronomyNamespace = createFingerprintNamespace(
+      'raw',
+      options.rawAstronomyMetadata ?? RAW_ASTRONOMY_CACHE_METADATA,
+    );
+    this.observationalAstronomyNamespace = createFingerprintNamespace(
+      'observational',
+      options.observationalAstronomyMetadata ??
+        OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+    );
+  }
 
   async getMoonPhases(year: number): Promise<MoonPhase[]> {
     return this.getOrSet(
-      `moon-phases:${year}`,
+      this.rawCacheKey(`moon-phases:${year}`),
       () => this.provider.getMoonPhases(year),
       (phases) =>
         phases.map((phase) => ({
@@ -40,7 +100,7 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
 
   async getNewMoons(year: number): Promise<NewMoon[]> {
     return this.getOrSet(
-      `new-moons:${year}`,
+      this.rawCacheKey(`new-moons:${year}`),
       () => this.provider.getNewMoons(year),
       (newMoons) =>
         newMoons.map((newMoon) => ({
@@ -52,7 +112,7 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
 
   async getFullMoons(year: number): Promise<FullMoon[]> {
     return this.getOrSet(
-      `full-moons:${year}`,
+      this.rawCacheKey(`full-moons:${year}`),
       () => this.provider.getFullMoons(year),
       (fullMoons) =>
         fullMoons.map((fullMoon) => ({
@@ -64,7 +124,7 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
 
   async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
     return this.getOrSet(
-      `solar-seasons:${year}`,
+      this.rawCacheKey(`solar-seasons:${year}`),
       () => this.provider.getSolarSeasons?.(year) ?? Promise.resolve([]),
       (events) =>
         events.map((event) => ({
@@ -76,7 +136,7 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
 
   async getMoonRise(date: string, location: Location): Promise<MoonRise> {
     return this.getOrSet(
-      `moonrise:${this.locationCacheKey(date, location)}`,
+      this.rawCacheKey(`moonrise:${this.locationCacheKey(date, location)}`),
       () => this.provider.getMoonRise(date, location),
       (moonRise) => ({
         ...moonRise,
@@ -87,7 +147,9 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
 
   async getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet> {
     return this.getOrSet(
-      `moonrise-set:${this.locationCacheKey(date, location)}`,
+      this.rawCacheKey(
+        `moonrise-set:${this.locationCacheKey(date, location)}`,
+      ),
       () => this.provider.getMoonRiseSet(date, location),
       (moonRiseSet) => ({
         ...moonRiseSet,
@@ -99,7 +161,9 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
 
   async getMoonTransit(date: string, location: Location): Promise<MoonTransit> {
     return this.getOrSet(
-      `moon-transit:${this.locationCacheKey(date, location)}`,
+      this.rawCacheKey(
+        `moon-transit:${this.locationCacheKey(date, location)}`,
+      ),
       () => this.provider.getMoonTransit(date, location),
       (transit) => ({
         ...transit,
@@ -110,7 +174,9 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
 
   async getMoonDetails(date: string, location: Location): Promise<MoonDetails> {
     return this.getOrSet(
-      `moon-details:${this.locationCacheKey(date, location)}`,
+      this.rawCacheKey(
+        `moon-details:${this.locationCacheKey(date, location)}`,
+      ),
       () => this.provider.getMoonDetails(date, location),
       (details) => ({
         ...details,
@@ -148,12 +214,13 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
     return this.getOrSet(
-      [
-        'star-markers',
-        STAR_DAWN_SAMPLING_CACHE_VERSION,
-        this.locationCacheKey(date, location),
-        this.starMarkerCacheKey(markers),
-      ].join(':'),
+      this.observationalCacheKey(
+        [
+          'star-markers',
+          this.locationCacheKey(date, location),
+          this.starMarkerCacheKey(markers),
+        ].join(':'),
+      ),
       () =>
         this.provider.getStarMarkers?.(date, location, markers) ??
         Promise.resolve([]),
@@ -172,13 +239,14 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
     return this.getOrSet(
-      [
-        'star-first-appearances',
-        STAR_DAWN_SAMPLING_CACHE_VERSION,
-        this.locationCacheKey(startDate, location),
-        endDate,
-        this.starMarkerCacheKey(markers),
-      ].join(':'),
+      this.observationalCacheKey(
+        [
+          'star-first-appearances',
+          this.locationCacheKey(startDate, location),
+          endDate,
+          this.starMarkerCacheKey(markers),
+        ].join(':'),
+      ),
       () =>
         this.provider.getStarFirstAppearances?.(
           startDate,
@@ -202,14 +270,15 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     sunAltitudeThresholdDegrees?: number,
   ): Promise<StarMarkerNightInvisibilityPeriod[]> {
     return this.getOrSet(
-      [
-        'star-night-invisibility-periods',
-        STAR_NIGHT_INVISIBILITY_CACHE_VERSION,
-        this.locationCacheKey(startDate, location),
-        endDate,
-        this.starMarkerCacheKey(markers),
-        sunAltitudeThresholdDegrees ?? 'default',
-      ].join(':'),
+      this.observationalCacheKey(
+        [
+          'star-night-invisibility-periods',
+          this.locationCacheKey(startDate, location),
+          endDate,
+          this.starMarkerCacheKey(markers),
+          sunAltitudeThresholdDegrees ?? 'default',
+        ].join(':'),
+      ),
       () =>
         this.provider.getStarNightInvisibilityPeriods?.(
           startDate,
@@ -264,14 +333,60 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
 
   private starMarkerCacheKey(markers?: StarMarkerDefinition[]): string {
     return markers
-      ? JSON.stringify(
-          markers.map((marker) => ({
-            id: marker.id,
-            type: marker.type,
-            representative: marker.representative,
-            dawnRising: marker.dawnRising,
-          })),
-        )
+      ? createCacheFingerprint(this.starMarkerMetadata(markers))
       : 'default';
+  }
+
+  private starMarkerMetadata(
+    markers: StarMarkerDefinition[],
+  ): CacheFingerprintMetadata {
+    return markers.map((marker) => ({
+      id: marker.id,
+      type: marker.type,
+      representative: this.starRepresentativeMetadata(marker.representative),
+      dawnRising: this.dawnRisingMetadata(marker.dawnRising),
+    }));
+  }
+
+  private starRepresentativeMetadata(
+    representative: StarMarkerDefinition['representative'],
+  ): CacheFingerprintMetadata {
+    if (representative.kind === 'fixed-equatorial') {
+      return {
+        kind: representative.kind,
+        rightAscensionHours: representative.rightAscensionHours,
+        declinationDegrees: representative.declinationDegrees,
+      };
+    }
+
+    return {
+      kind: representative.kind,
+      body: representative.body,
+    };
+  }
+
+  private dawnRisingMetadata(
+    dawnRising?: StarMarkerDawnRisingConfig,
+  ): CacheFingerprintMetadata | undefined {
+    if (!dawnRising) {
+      return undefined;
+    }
+
+    return {
+      startSunAltitudeDegrees: dawnRising.startSunAltitudeDegrees,
+      endSunAltitudeDegrees: dawnRising.endSunAltitudeDegrees,
+      minimumMarkerAltitudeDegrees: dawnRising.minimumMarkerAltitudeDegrees,
+      minimumAzimuthDegrees: dawnRising.minimumAzimuthDegrees,
+      maximumAzimuthDegrees: dawnRising.maximumAzimuthDegrees,
+      sampleMinutes: dawnRising.sampleMinutes,
+    };
+  }
+
+  private rawCacheKey(key: string): string {
+    return `${this.rawAstronomyNamespace}:${key}`;
+  }
+
+  private observationalCacheKey(key: string): string {
+    return `${this.observationalAstronomyNamespace}:${key}`;
   }
 }
