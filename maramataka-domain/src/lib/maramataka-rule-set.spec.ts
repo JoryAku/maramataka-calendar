@@ -38,13 +38,21 @@ describe('maramataka rule set fingerprint metadata', () => {
   });
 
   it('changes fingerprint when a rule input changes', () => {
+    const matarikiHoliday =
+      LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday;
+    if (!matarikiHoliday) {
+      throw new Error(
+        'Expected Living by the Stars rule set to define Matariki holiday settings',
+      );
+    }
+
     const baseFingerprint = createMaramatakaRuleSetFingerprint(
       LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
     );
     const changedFingerprint = createMaramatakaRuleSetFingerprint({
       ...LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
       matarikiHoliday: {
-        ...LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday!,
+        ...matarikiHoliday,
         targetMataNames: ['Tangaroa-ā-mua'],
       },
     });

@@ -65,6 +65,24 @@ Run lint, tests, and builds together:
 npm run check
 ```
 
+Run the fast developer verification loop:
+
+```sh
+npm run verify:fast
+```
+
+Run the broader local verification loop:
+
+```sh
+npm run verify
+```
+
+Start the API and frontend together:
+
+```sh
+npm run dev:all
+```
+
 Run the CI-equivalent command with stub astronomy data:
 
 ```sh
@@ -75,6 +93,8 @@ npm run ci
 
 The current year calculation is documented in
 [docs/maramataka-rules.md](docs/maramataka-rules.md).
+The calculation flow is summarized in [docs/architecture.md](docs/architecture.md),
+and diagnostic command examples live in [docs/diagnostics.md](docs/diagnostics.md).
 
 Compare generated dates with the official Matariki holiday schedule:
 
