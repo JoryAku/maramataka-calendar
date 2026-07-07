@@ -1,3 +1,7 @@
+@import './app/pages/maramataka/components/maramataka-month-view/maramataka-month-view.feature.css';
+@import './app/pages/maramataka/components/maramataka-today-view/maramataka-today-view.feature.css';
+@import './app/pages/maramataka/components/maramataka-year-view/maramataka-year-view.feature.css';
+
 html,
 body,
 app-root {
@@ -11,4 +15,195 @@ app-root {
 
 body {
   margin: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-header > div,
+.section-header > p {
+  min-width: 0;
+}
+
+.section-header p:last-child {
+  margin-bottom: 0;
+  color: #9fb5ac;
+  overflow-wrap: anywhere;
+}
+
+.eyebrow {
+  margin-bottom: 0.25rem;
+  color: #69d8c5;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.state {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  background: #102821;
+  color: #d2e8df;
+}
+
+.state.compact {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.state.error {
+  border-color: #7e423d;
+  background: #2b1715;
+  color: #ffd9d3;
+}
+
+.year-event:focus-visible {
+  outline: 2px solid #7ce0c9;
+  outline-offset: 6px;
+}
+
+.event-label {
+  display: grid;
+  justify-items: center;
+  gap: 0.12rem;
+  width: 5.2rem;
+  min-height: 2.7rem;
+  overflow: hidden;
+  text-align: center;
+}
+
+.event-stem {
+  width: 1px;
+  align-self: stretch;
+  background: #8db6aa;
+  opacity: 0.74;
+}
+
+.event-symbol {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  aspect-ratio: 1;
+  border: 1px solid #27493f;
+  border-radius: 50%;
+  background: #071613;
+  color: #e7f6ef;
+  font-size: 1.1rem;
+  line-height: 1;
+  transform: translateY(-0.45rem);
+}
+
+.year-event.new-moon .event-label,
+.year-event.full-moon .event-label {
+  position: absolute;
+  bottom: calc(100% + 0.35rem);
+  left: 50%;
+  z-index: 2;
+  width: 8rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  background: #102821;
+  box-shadow: 0 10px 30px #00000052;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 0.25rem);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.year-event.new-moon:hover .event-label,
+.year-event.full-moon:hover .event-label,
+.year-event.new-moon:focus-visible .event-label,
+.year-event.full-moon:focus-visible .event-label {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.year-event.month-start .event-symbol {
+  color: #e7f6ef;
+}
+
+.year-event.star-marker .event-symbol,
+.year-event.star-marker .event-label strong {
+  color: #f0c66b;
+}
+
+.year-event.star-appearance .event-symbol,
+.year-event.star-appearance .event-label strong,
+.year-event.star-invisibility .event-symbol,
+.year-event.star-invisibility .event-label strong {
+  color: #9fb5ac;
+}
+
+.year-event.star-appearance .event-symbol,
+.year-event.star-invisibility .event-symbol {
+  border-color: #31534a;
+  background: #0a1f1a;
+}
+
+.year-event.new-moon .event-symbol,
+.year-event.new-moon .event-label strong {
+  color: #aebcff;
+}
+
+.year-event.full-moon .event-symbol,
+.year-event.full-moon .event-label strong {
+  color: #fff4d0;
+}
+
+.year-event.public-holiday .event-symbol,
+.year-event.public-holiday .event-label strong {
+  color: #7ce0c9;
+}
+
+.year-event.solar-season .event-symbol,
+.year-event.solar-season .event-label strong {
+  color: #e8d494;
+}
+
+.year-event.public-holiday .event-symbol {
+  border-color: #3a6f62;
+  background: #0d2c25;
+}
+
+.year-event.solar-season .event-symbol {
+  border-color: #6b5b32;
+  background: #1f1a0a;
+}
+
+.event-label strong {
+  color: #fff9df;
+  font-size: 0.76rem;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-label small,
+.event-label span {
+  color: #9fb5ac;
+  font-size: 0.64rem;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 900px) {
+  .section-header {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
 }

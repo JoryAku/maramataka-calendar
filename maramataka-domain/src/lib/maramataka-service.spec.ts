@@ -36,6 +36,32 @@ describe('MaramatakaService', () => {
 
     return createMoonRise(date.toISOString().slice(0, 10));
   };
+  const requireStarMonthNaming = () => {
+    const starMonthNaming =
+      LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming;
+    if (!starMonthNaming) {
+      throw new Error(
+        'Expected Living by the Stars rule set to define star month naming',
+      );
+    }
+
+    return starMonthNaming;
+  };
+  const requireNewMoon = <
+    TNewMoon extends { occursAt: Date; source: string },
+  >(
+    newMoons: TNewMoon[],
+    isoDate: string,
+  ): TNewMoon => {
+    const newMoon = newMoons.find(
+      (candidate) => candidate.occursAt.toISOString() === isoDate,
+    );
+    if (!newMoon) {
+      throw new Error(`Expected New Moon fixture at ${isoDate}`);
+    }
+
+    return newMoon;
+  };
 
   it('orchestrates astronomy, Whiro calculation, and month generation', async () => {
     const mata = [
@@ -403,7 +429,7 @@ describe('MaramatakaService', () => {
       ruleSet: {
         ...LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
         starMonthNaming: {
-          ...LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming!,
+          ...requireStarMonthNaming(),
           markers: [...LIVING_BY_THE_STARS_STAR_MONTH_MARKERS, seasonalMarker],
           months: LIVING_BY_THE_STARS_STAR_MONTH_NOTES,
         },
@@ -791,18 +817,18 @@ describe('MaramatakaService', () => {
         ): Promise<number | undefined>;
       }
     ).calculateStarMonthSequence.bind(service);
-    const pipiriNewMoon = newMoons.find(
-      (newMoon) =>
-        newMoon.occursAt.toISOString() === '2027-05-27T00:00:00.000Z',
-    )!;
-    const ruhanuiNewMoon = newMoons.find(
-      (newMoon) =>
-        newMoon.occursAt.toISOString() === '2027-06-25T00:00:00.000Z',
-    )!;
-    const takuruaNewMoon = newMoons.find(
-      (newMoon) =>
-        newMoon.occursAt.toISOString() === '2027-07-24T00:00:00.000Z',
-    )!;
+    const pipiriNewMoon = requireNewMoon(
+      newMoons,
+      '2027-05-27T00:00:00.000Z',
+    );
+    const ruhanuiNewMoon = requireNewMoon(
+      newMoons,
+      '2027-06-25T00:00:00.000Z',
+    );
+    const takuruaNewMoon = requireNewMoon(
+      newMoons,
+      '2027-07-24T00:00:00.000Z',
+    );
 
     await expect(
       calculateStarMonthSequence(newMoons, pipiriNewMoon, location),
@@ -914,18 +940,18 @@ describe('MaramatakaService', () => {
         ): Promise<number | undefined>;
       }
     ).calculateStarMonthSequence.bind(service);
-    const pipiriNewMoon = newMoons.find(
-      (newMoon) =>
-        newMoon.occursAt.toISOString() === '2027-05-27T00:00:00.000Z',
-    )!;
-    const ruhanuiNewMoon = newMoons.find(
-      (newMoon) =>
-        newMoon.occursAt.toISOString() === '2027-06-25T00:00:00.000Z',
-    )!;
-    const takuruaNewMoon = newMoons.find(
-      (newMoon) =>
-        newMoon.occursAt.toISOString() === '2027-07-24T00:00:00.000Z',
-    )!;
+    const pipiriNewMoon = requireNewMoon(
+      newMoons,
+      '2027-05-27T00:00:00.000Z',
+    );
+    const ruhanuiNewMoon = requireNewMoon(
+      newMoons,
+      '2027-06-25T00:00:00.000Z',
+    );
+    const takuruaNewMoon = requireNewMoon(
+      newMoons,
+      '2027-07-24T00:00:00.000Z',
+    );
 
     await expect(
       calculateStarMonthSequence(newMoons, pipiriNewMoon, location),

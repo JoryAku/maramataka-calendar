@@ -280,12 +280,17 @@ export class MaramatakaService {
     );
     diagnostics.push(
       ...newMoonResults
-        .filter((result) => result.error)
-        .map((result) => ({
-          type: 'phase-provider' as const,
-          name: `${result.year} New Moon anchors`,
-          reason: result.error!,
-        })),
+        .flatMap((result) =>
+          result.error
+            ? [
+                {
+                  type: 'phase-provider' as const,
+                  name: `${result.year} New Moon anchors`,
+                  reason: result.error,
+                },
+              ]
+            : [],
+        ),
     );
     const newMoons = newMoonResults
       .flatMap((result) => result.values)
@@ -332,12 +337,17 @@ export class MaramatakaService {
       );
       diagnostics.push(
         ...fullMoonResults
-          .filter((result) => result.error)
-          .map((result) => ({
-            type: 'phase-provider' as const,
-            name: `${result.year} Full Moon anchors`,
-            reason: result.error!,
-          })),
+          .flatMap((result) =>
+            result.error
+              ? [
+                  {
+                    type: 'phase-provider' as const,
+                    name: `${result.year} Full Moon anchors`,
+                    reason: result.error,
+                  },
+                ]
+              : [],
+          ),
       );
       const fullMoons = fullMoonResults
         .flatMap((result) => result.values)
@@ -598,12 +608,12 @@ export class MaramatakaService {
           source: 'astronomy-engine moonrise',
           mata: month.nights[0]?.mata,
         }),
-        ...(fullMoon
+        ...(fullMoon && fullMoonAnchorAt
           ? {
               fullMoon: this.createCycleAnchor({
                 type: 'full-moon',
                 label: 'Rākaunui / Full Moon',
-                occursAt: fullMoonAnchorAt!,
+                occursAt: fullMoonAnchorAt,
                 location,
                 source: `${fullMoon.source} observation moonrise`,
                 mata: fullMoonNight?.mata,
@@ -668,12 +678,13 @@ export class MaramatakaService {
     const marker = note
       ? starMarkers.find((candidate) => note.markerIds.includes(candidate.id))
       : visibleEasternMarkers[0];
-    if (!note && !marker) {
+    const name = note?.name ?? marker?.name;
+    if (!name) {
       return undefined;
     }
 
     return {
-      name: note?.name ?? marker!.name,
+      name,
       marker,
       rule: starMonthNaming.strategy,
       source: starMonthNaming.source,
@@ -843,12 +854,12 @@ export class MaramatakaService {
           mata: month.nights[0]?.mata,
           astronomicalOccursAt: newMoon.occursAt,
         }),
-        ...(fullMoon
+        ...(fullMoon && fullMoonAnchorAt
           ? {
               fullMoon: this.createCycleAnchor({
                 type: 'full-moon',
                 label: 'Rākaunui / Full Moon',
-                occursAt: fullMoonAnchorAt!,
+                occursAt: fullMoonAnchorAt,
                 location,
                 source: `${fullMoon.source} observation moonrise`,
                 mata: fullMoonNight?.mata,
