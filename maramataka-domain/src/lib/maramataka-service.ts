@@ -1751,6 +1751,50 @@ export class MaramatakaService {
     year: number,
     location: Location,
   ): Promise<NewMoon | undefined> {
+    const pipiriStart = await this.findPipiriCandidateStartNewMoon(
+      newMoons,
+      year,
+      location,
+    );
+    if (!pipiriStart) {
+      return undefined;
+    }
+
+    const matarikiAppearance =
+      await this.getMatarikiCalibrationMarkerFirstAppearance(year, location);
+    if (
+      !matarikiAppearance ||
+      matarikiAppearance.observedAt.getTime() <= pipiriStart.occursAt.getTime()
+    ) {
+      return pipiriStart;
+    }
+
+    const nextPipiriCandidateStart = await this.findPipiriCandidateStartNewMoon(
+      newMoons,
+      year + 1,
+      location,
+    );
+    if (!nextPipiriCandidateStart) {
+      return pipiriStart;
+    }
+
+    const newMoonsInCandidateYear = this.countNewMoonsInRange(
+      newMoons,
+      pipiriStart,
+      nextPipiriCandidateStart,
+    );
+    if (newMoonsInCandidateYear > this.regularStarMonthCount()) {
+      return this.findNextNewMoon(newMoons, pipiriStart.occursAt.getTime());
+    }
+
+    return pipiriStart;
+  }
+
+  private async findPipiriCandidateStartNewMoon(
+    newMoons: NewMoon[],
+    year: number,
+    location: Location,
+  ): Promise<NewMoon | undefined> {
     const pipiriMarker = await this.getPipiriMarkerFirstAppearance(
       year,
       location,
@@ -1786,7 +1830,28 @@ export class MaramatakaService {
     pipiriStart: NewMoon,
     location: Location,
   ): Promise<NewMoon | undefined> {
-    const nextPipiriStart = await this.findPipiriStartNewMoon(
+    const pipiriCandidateStart = await this.findPipiriCandidateStartNewMoon(
+      newMoons,
+      year,
+      location,
+    );
+    if (
+      !pipiriCandidateStart ||
+      pipiriCandidateStart.occursAt.getTime() !== pipiriStart.occursAt.getTime()
+    ) {
+      return undefined;
+    }
+
+    const matarikiAppearance =
+      await this.getMatarikiCalibrationMarkerFirstAppearance(year, location);
+    if (
+      !matarikiAppearance ||
+      matarikiAppearance.observedAt.getTime() <= pipiriStart.occursAt.getTime()
+    ) {
+      return undefined;
+    }
+
+    const nextPipiriStart = await this.findPipiriCandidateStartNewMoon(
       newMoons,
       year + 1,
       location,
@@ -1795,17 +1860,29 @@ export class MaramatakaService {
       return undefined;
     }
 
-    const newMoonsInHamalYear = newMoons.filter(
-      (newMoon) =>
-        newMoon.occursAt.getTime() >= pipiriStart.occursAt.getTime() &&
-        newMoon.occursAt.getTime() < nextPipiriStart.occursAt.getTime(),
+    const newMoonsInHamalYear = this.countNewMoonsInRange(
+      newMoons,
+      pipiriStart,
+      nextPipiriStart,
     );
 
-    if (newMoonsInHamalYear.length <= this.regularStarMonthCount()) {
+    if (newMoonsInHamalYear > this.regularStarMonthCount()) {
       return undefined;
     }
 
     return this.findNextNewMoon(newMoons, pipiriStart.occursAt.getTime());
+  }
+
+  private countNewMoonsInRange(
+    newMoons: NewMoon[],
+    start: NewMoon,
+    end: NewMoon,
+  ): number {
+    return newMoons.filter(
+      (newMoon) =>
+        newMoon.occursAt.getTime() >= start.occursAt.getTime() &&
+        newMoon.occursAt.getTime() < end.occursAt.getTime(),
+    ).length;
   }
 
   private regularStarMonthCount(): number {

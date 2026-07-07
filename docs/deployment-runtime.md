@@ -137,7 +137,7 @@ Recommended production behaviour:
 - If the platform filesystem is ephemeral, the app will still work, but
   astronomy calculations will be repeated after restarts.
 - Treat the cache as rebuildable operational data, not as source-of-truth data.
-- Backups are optional for MVP because the cache can be regenerated.
+- Backups are optional for the current cache because it can be regenerated.
 
 ## Cache Reset And Invalidation
 
@@ -224,8 +224,8 @@ must include the `/api` prefix when the API is exposed under that path.
 
 ### Frontend Error Reporting
 
-The MVP frontend uses a small global Angular error handler. In local, staging,
-and production it reports uncaught frontend errors to `console.error` with a
+The frontend uses a small global Angular error handler. In local, staging, and
+production it reports uncaught frontend errors to `console.error` with a
 sanitized message and stack. User-facing API failures are still handled in the
 page with calm loading and error states.
 
@@ -285,8 +285,8 @@ Use a supported location id from the API locations endpoint.
 - Decide whether production cache storage is persistent volume, object storage,
   or a future database-backed cache.
 - Replace placeholder staging API URL with the real staging domain.
-- Decide whether frontend error reporting should stay console-only for MVP or
-  report to a hosted error sink.
+- Decide whether frontend error reporting should stay console-only or report to
+  a hosted error sink.
 - Add first-class cache invalidation/migration tooling.
 - Decide whether to add package-based middleware such as `helmet` and
   `compression`, or keep the current manual header/request-limit setup.

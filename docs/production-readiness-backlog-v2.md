@@ -1,7 +1,9 @@
-# Production Readiness Backlog V2
+# Matariki Calendar Production Readiness Backlog
 
 This backlog tracks production-readiness and future-state work that should stay
-visible without being treated as an implemented rule.
+visible without being treated as an implemented rule. The active calendar frame
+is astronomy-backed and grounded in the Living by the Stars 2021-2024 calendar
+material.
 
 ## Future Accuracy
 
@@ -19,7 +21,8 @@ To do:
   - observational astronomy, for dawn windows, configured star markers, field
     of view, and visibility thresholds
   - maramataka rules, for rule set id/version, `mataVersion`, year-start logic,
-    Ruhanui logic, and Matariki public holiday logic
+    Pipiri / Hamal candidate selection, Matariki visibility checks, Ruhanui
+    insertion/shift logic, and Matariki public holiday logic
 - generate deterministic fingerprints from canonical metadata payloads
 - include the relevant fingerprint in cache keys or cache namespaces
 - treat fingerprint mismatches as cache misses instead of serving stale derived
@@ -37,7 +40,8 @@ contracts and deployment behaviour.
 Star marker sampling now uses solar-altitude dawn boundaries for the selected
 date and location. Single-day marker positions use the midpoint between the
 rising Sun crossing 18° and 12° below the horizon; first-appearance events scan
-from the Sun crossing 18° below the horizon through sunrise.
+from the Sun crossing 18° below the horizon through sunrise, using the
+configured north-to-south dawn field (`0°..180°`) unless a marker overrides it.
 
 Before the star layer is treated as production-ready:
 

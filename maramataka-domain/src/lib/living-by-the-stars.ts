@@ -2,7 +2,8 @@ import { StarMarkerDefinition } from '@maramataka-calendar/astronomy';
 import { Mata, MataPhaseGroup } from './mata';
 import { MaramatakaRuleSet } from './maramataka-rule-set';
 
-export const LIVING_BY_THE_STARS_SOURCE = 'Living by the Stars';
+export const LIVING_BY_THE_STARS_SOURCE =
+  'Living by the Stars 2021-2024 calendars';
 export const LIVING_BY_THE_STARS_SOURCE_QUOTE =
   'Tohua ai nga marama o te Maori e nga whetu ka rewa i te atapo, ka mutu ka tapaina nga marama e hangai ana ki nga ingoa o aua whetu ra.';
 export const LIVING_BY_THE_STARS_MATA_VERSION = 'living-by-the-star';
@@ -57,7 +58,7 @@ const LIVING_BY_THE_STARS_MATARIKI_CALIBRATION_MARKER = {
   description:
     'Pleiades; retained as the public holiday calibration marker for the current astronomy-only rule.',
   seasonalAssociation: 'Matariki public holiday calibration marker',
-  source: 'Project Matariki / Ruhanui calibration notes',
+  source: LIVING_BY_THE_STARS_SOURCE,
   confidence: 'working',
   dawnRising: LIVING_BY_THE_STARS_DAWN_RISING_CONFIG,
   representative: {
@@ -448,10 +449,10 @@ export const LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
   balancing: 'fixed-sequence-drop-final-mata',
   yearStartRule: {
     strategy:
-      'Use Pipiri / Hamal to set Te Tahi o Pipiri, then anchor the year to the next Whiro.',
+      'Use Pipiri / Hamal to find the candidate Te Tahi o Pipiri Whiro, then use Matariki first visibility and the candidate-year New Moon count to keep Pipiri, shift Pipiri, or insert Ruhanui.',
     marker: LIVING_BY_THE_STARS_YEAR_START_MARKER,
     description:
-      'The active Living by the Stars year starts from Pipiri / Hamal, matching the first named marama marker.',
+      'The active Living by the Stars year starts from a Pipiri / Hamal candidate Whiro, with Matariki first visibility used as the calendar-source check for whether that candidate is early.',
     source: LIVING_BY_THE_STARS_SOURCE,
   },
   matarikiHoliday: {
@@ -459,8 +460,8 @@ export const LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET: MaramatakaRuleSet = {
     targetMataNames: LIVING_BY_THE_STARS_MATARIKI_HOLIDAY_TARGET_MATA,
     calibrationMarker: LIVING_BY_THE_STARS_MATARIKI_CALIBRATION_MARKER,
     description:
-      'Select Ruhanui when the Ruhanui intercalation rule inserts it; otherwise select Te Tahi o Pipiri. A Tangaroa-calibrated next-marama mode is available for review, but current calibration performs worse.',
-    source: 'Project Matariki / Ruhanui calibration notes',
+      'Select Ruhanui when the Living by the Stars calendar Pipiri/Ruhanui rule inserts it; otherwise select Te Tahi o Pipiri. Official holiday dates remain diagnostics, not inputs to the calculation.',
+    source: LIVING_BY_THE_STARS_SOURCE,
   },
   starMonthNaming: {
     strategy:

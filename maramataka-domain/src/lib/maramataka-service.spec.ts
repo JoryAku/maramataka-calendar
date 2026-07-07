@@ -696,7 +696,7 @@ describe('MaramatakaService', () => {
     expect(yearStart?.occursAt).toEqual(new Date('2026-07-14T00:00:00Z'));
   });
 
-  it('keeps the regular month sequence when the Hamal year has 12 New Moon anchors', async () => {
+  it('keeps the regular month sequence when Matariki appears before Pipiri Whiro', async () => {
     const getStarFirstAppearances = jest
       .fn()
       .mockImplementation(
@@ -710,7 +710,7 @@ describe('MaramatakaService', () => {
             const visibleDate =
               marker.id === 'pipiri'
                 ? `${startDate.slice(0, 4)}-05-04`
-                : '2027-06-02';
+                : '2027-05-20';
 
             return {
               id: marker.id,
@@ -746,6 +746,7 @@ describe('MaramatakaService', () => {
         getMoonDetails: jest.fn(),
         getStarFirstAppearances,
       },
+      ruleSet: LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
       calculateWhiroStartFn: jest
         .fn()
         .mockReturnValue(new Date('2027-05-27T18:00:00Z')),
@@ -814,7 +815,7 @@ describe('MaramatakaService', () => {
     ).resolves.toBe(3);
   });
 
-  it('adds Ruhanui after Pipiri when the Hamal year has 13 New Moon anchors', async () => {
+  it('adds Ruhanui after Pipiri when Matariki appears after Pipiri Whiro in a 12-anchor candidate year', async () => {
     const getStarFirstAppearances = jest
       .fn()
       .mockImplementation(
@@ -828,7 +829,7 @@ describe('MaramatakaService', () => {
             const visibleDate =
               marker.id === 'pipiri'
                 ? startDate.startsWith('2028')
-                  ? '2028-05-25'
+                  ? '2028-05-01'
                   : `${startDate.slice(0, 4)}-05-04`
                 : '2027-06-11';
 
@@ -882,6 +883,7 @@ describe('MaramatakaService', () => {
         getMoonDetails: jest.fn(),
         getStarFirstAppearances,
       },
+      ruleSet: LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
       calculateWhiroStartFn: jest.fn(({ newMoonAt }) => newMoonAt),
     });
     const newMoons = [
@@ -936,7 +938,7 @@ describe('MaramatakaService', () => {
     ).resolves.toBe(2);
   });
 
-  it('places Ruhanui after Te Tahi o Pipiri when the Hamal year has 13 New Moon anchors', async () => {
+  it('shifts Pipiri to the next Whiro when Matariki appears after candidate Pipiri in a 13-anchor candidate year', async () => {
     const newMoons = [
       '2027-05-27T00:00:00Z',
       '2027-06-25T00:00:00Z',
@@ -982,7 +984,9 @@ describe('MaramatakaService', () => {
                 ? startDate.startsWith('2028')
                   ? '2028-05-25'
                   : `${startDate.slice(0, 4)}-05-04`
-                : '2027-06-11';
+                : startDate.startsWith('2027')
+                  ? '2027-06-11'
+                  : `${startDate.slice(0, 4)}-05-01`;
 
             return {
               id: marker.id,
@@ -1034,6 +1038,7 @@ describe('MaramatakaService', () => {
         getMoonDetails: jest.fn(),
         getStarFirstAppearances,
       },
+      ruleSet: LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
       calculateWhiroStartFn: jest.fn(({ newMoonAt }) => newMoonAt),
     });
     jest
@@ -1071,15 +1076,15 @@ describe('MaramatakaService', () => {
     );
 
     expect(year.year).toBe(2027);
-    expect(year.startsAt).toEqual(new Date('2027-05-27T00:00:00.000Z'));
+    expect(year.startsAt).toEqual(new Date('2027-06-25T00:00:00.000Z'));
     expect(year.endsAt).toEqual(new Date('2028-06-23T00:00:00.000Z'));
-    expect(year.months[1]).toMatchObject({
-      sequence: 2,
-      name: 'Ruhanui',
+    expect(year.months[0]).toMatchObject({
+      sequence: 1,
+      name: 'Te Tahi o Pipiri',
       startsAt: new Date('2027-06-25T00:00:00.000Z'),
     });
-    expect(year.months[2]).toMatchObject({
-      sequence: 3,
+    expect(year.months[1]).toMatchObject({
+      sequence: 2,
       name: 'Te Rua o Takurua',
       startsAt: new Date('2027-07-24T00:00:00.000Z'),
     });

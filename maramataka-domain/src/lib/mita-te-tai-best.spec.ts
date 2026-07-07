@@ -200,12 +200,12 @@ describe('LIVING_BY_THE_STARS_MATA', () => {
       LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.yearStartRule,
     ).toMatchObject({
       strategy:
-        'Use Pipiri / Hamal to set Te Tahi o Pipiri, then anchor the year to the next Whiro.',
+        'Use Pipiri / Hamal to find the candidate Te Tahi o Pipiri Whiro, then use Matariki first visibility and the candidate-year New Moon count to keep Pipiri, shift Pipiri, or insert Ruhanui.',
       marker: {
         id: 'pipiri',
         name: 'Pipiri',
       },
-      source: 'Living by the Stars',
+      source: 'Living by the Stars 2021-2024 calendars',
     });
     expect(
       LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday,
@@ -221,7 +221,7 @@ describe('LIVING_BY_THE_STARS_MATA', () => {
       strategy:
         'Marama are named from the stars that rise in the north-through-east dawn sky.',
       sampleTimeLocal: 'Dawn window from Sun 18° below horizon to sunrise',
-      source: 'Living by the Stars',
+      source: 'Living by the Stars 2021-2024 calendars',
     });
     expect(
       LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers.map(

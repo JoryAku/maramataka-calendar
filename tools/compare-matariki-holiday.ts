@@ -497,6 +497,15 @@ const localDateFormatter = new Intl.DateTimeFormat('en-CA', {
   month: '2-digit',
   day: '2-digit',
 });
+const localDateTimeFormatter = new Intl.DateTimeFormat('en-NZ', {
+  timeZone: location.timezone,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
 
 function localDate(date: Date): string {
   const parts = Object.fromEntries(
@@ -506,6 +515,20 @@ function localDate(date: Date): string {
   );
 
   return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function localDateTime(date: Date | undefined): string {
+  if (!date) {
+    return 'missing';
+  }
+
+  const parts = Object.fromEntries(
+    localDateTimeFormatter
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  );
+
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
 function localDateOrdinal(date: string): number {
@@ -597,6 +620,10 @@ function ruhanuiRuleSignal(hamalYearNewMoonCount: number): string {
 
 function markerFirstAppearanceDate(marker: StarMarker | undefined): string {
   return marker ? localDate(marker.observedAt) : 'missing';
+}
+
+function markerFirstAppearanceLocal(marker: StarMarker | undefined): string {
+  return localDateTime(marker?.observedAt);
 }
 
 async function providerFirstAppearance(
@@ -1605,6 +1632,164 @@ async function sourceCalendarRows(service: MaramatakaService): Promise<
   return rows;
 }
 
+async function sourceCalendarEvidenceRows(
+  service: MaramatakaService,
+  provider: AstronomyProvider,
+): Promise<
+  Array<{
+    sourceYear: string;
+    expectedPipiriWhiro: string;
+    calculatedPipiriWhiro: string;
+    pipiriDeltaDays: number | string;
+    expectedRuhanuiWhiro: string;
+    calculatedRuhanuiWhiro: string;
+    ruhanuiDeltaDays: number | string;
+    nextWhiroAfterPipiri: string;
+    sourceMatarikiPeriod: string;
+    pipiriFirstVisible: string;
+    pipiriVisibleVsExpectedWhiro: number | string;
+    ruhanuiFirstVisible: string;
+    ruhanuiVisibleVsExpectedRuhanui: number | string;
+    matarikiFirstVisible: string;
+    matarikiVisibleVsExpectedWhiro: number | string;
+    matarikiVisibleVsSourcePeriodStart: number | string;
+    generatedWhiroCount: number;
+    currentRuhanuiSignal: string;
+    placementMatchesSource: boolean;
+  }>
+> {
+  const matarikiMarker =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday
+      ?.calibrationMarker;
+  const pipiriMarkerId =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.months.find(
+      (month) => month.sequence === 1,
+    )?.markerIds[0];
+  const pipiriMarker =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers.find(
+      (marker) => marker.id === pipiriMarkerId,
+    );
+  const ruhanuiMarkerId =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.months.find(
+      (month) => month.sequence === 0,
+    )?.markerIds[0];
+  const ruhanuiMarker =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers.find(
+      (marker) => marker.id === ruhanuiMarkerId,
+    );
+
+  if (!matarikiMarker || !pipiriMarker || !ruhanuiMarker) {
+    return [];
+  }
+
+  const rows = [];
+
+  for (const fixture of sourceCalendarFixtures) {
+    const sourceYear = Number.parseInt(fixture.label.slice(0, 4), 10);
+    const maramatakaYear = await service.getYear(
+      location,
+      new Date(`${fixture.date}T12:00:00+12:00`),
+      { includeTimelineEvents: false },
+    );
+    const pipiri = maramatakaYear.months.find(
+      (month) =>
+        month.name === 'Te Tahi o Pipiri' ||
+        month.starMonth?.note?.sequence === 1,
+    );
+    const ruhanui = maramatakaYear.months.find(
+      (month) => month.name === 'Ruhanui',
+    );
+    const nextMonth = pipiri
+      ? maramatakaYear.months.find(
+          (month) => month.sequence === pipiri.sequence + 1,
+        )
+      : undefined;
+    const searchStart = `${sourceYear}-01-01`;
+    const searchEnd = `${sourceYear + 1}-01-01`;
+    const [pipiriAppearance, ruhanuiAppearance, matarikiAppearance] =
+      await Promise.all([
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          pipiriMarker,
+        ),
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          ruhanuiMarker,
+        ),
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          matarikiMarker,
+        ),
+      ]);
+    const calculatedPipiri = pipiri ? localDate(pipiri.startsAt) : 'missing';
+    const calculatedRuhanui = ruhanui ? localDate(ruhanui.startsAt) : 'none';
+    const expectedMatarikiPeriodStart = fixture.matarikiPeriod.split('..')[0];
+
+    rows.push({
+      sourceYear: fixture.label,
+      expectedPipiriWhiro: fixture.pipiriStartsOn,
+      calculatedPipiriWhiro: calculatedPipiri,
+      pipiriDeltaDays: dateMinusReferenceDays(
+        calculatedPipiri,
+        fixture.pipiriStartsOn,
+      ),
+      expectedRuhanuiWhiro: fixture.ruhanuiStartsOn,
+      calculatedRuhanuiWhiro: calculatedRuhanui,
+      ruhanuiDeltaDays:
+        fixture.ruhanuiStartsOn === 'none'
+          ? calculatedRuhanui === 'none'
+            ? 0
+            : 'unexpected'
+          : calculatedRuhanui === 'none'
+            ? 'missing'
+            : dateMinusReferenceDays(
+                calculatedRuhanui,
+                fixture.ruhanuiStartsOn,
+              ),
+      nextWhiroAfterPipiri: nextMonth ? localDate(nextMonth.startsAt) : 'none',
+      sourceMatarikiPeriod: fixture.matarikiPeriod,
+      pipiriFirstVisible: markerFirstAppearanceLocal(pipiriAppearance),
+      pipiriVisibleVsExpectedWhiro: markerMinusReferenceDays(
+        pipiriAppearance,
+        fixture.pipiriStartsOn,
+      ),
+      ruhanuiFirstVisible: markerFirstAppearanceLocal(ruhanuiAppearance),
+      ruhanuiVisibleVsExpectedRuhanui:
+        fixture.ruhanuiStartsOn === 'none'
+          ? 'n/a'
+          : markerMinusReferenceDays(
+              ruhanuiAppearance,
+              fixture.ruhanuiStartsOn,
+            ),
+      matarikiFirstVisible: markerFirstAppearanceLocal(matarikiAppearance),
+      matarikiVisibleVsExpectedWhiro: markerMinusReferenceDays(
+        matarikiAppearance,
+        fixture.pipiriStartsOn,
+      ),
+      matarikiVisibleVsSourcePeriodStart: markerMinusReferenceDays(
+        matarikiAppearance,
+        expectedMatarikiPeriodStart,
+      ),
+      generatedWhiroCount: maramatakaYear.months.length,
+      currentRuhanuiSignal: ruhanuiRuleSignal(maramatakaYear.months.length),
+      placementMatchesSource:
+        calculatedPipiri === fixture.pipiriStartsOn &&
+        calculatedRuhanui === fixture.ruhanuiStartsOn,
+    });
+  }
+
+  return rows;
+}
+
 async function main(): Promise<void> {
   const focus = process.argv
     .find((arg) => arg.startsWith('--focus='))
@@ -1620,6 +1805,22 @@ async function main(): Promise<void> {
   );
   try {
     const service = new MaramatakaService({ astronomyProvider: provider });
+
+    if (focus === 'source-calendar') {
+      const sourceRows = await timed('sourceCalendarEvidenceRows', () =>
+        sourceCalendarEvidenceRows(service, provider),
+      );
+      console.log('Living by the Stars 2021-2024 calendar source evidence');
+      console.table(sourceRows);
+      console.log(
+        `Living by the Stars calendar month placement matches ${
+          sourceRows.filter((row) => row.placementMatchesSource).length
+        }/${sourceRows.length}`,
+      );
+
+      return;
+    }
+
     const yearContexts = await timed('officialYearContexts', () =>
       officialYearContexts(service),
     );
@@ -1886,10 +2087,10 @@ async function main(): Promise<void> {
       ),
     );
 
-    console.log('Living by the Stars source-calendar fixture comparison');
+    console.log('Living by the Stars 2021-2024 calendar source comparison');
     console.table(sourceRows);
     console.log(
-      `source-calendar month placement matches ${
+      `Living by the Stars calendar month placement matches ${
         sourceRows.filter((row) => row.matchesSourceMonthPlacement).length
       }/${sourceRows.length}`,
     );
