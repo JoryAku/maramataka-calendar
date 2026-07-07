@@ -139,6 +139,12 @@ Current persistent namespaces:
 - observational astronomy: dawn star markers, dawn-window first appearances,
   and night-invisibility periods
 
+The maramataka rule set also exposes readable fingerprint metadata for mata
+names, year-start logic, Ruhanui logic, named-month markers, and Matariki
+holiday marker logic. That fingerprint is currently used by in-memory
+month/year caches. It is not yet a persistent cache namespace because generated
+maramataka year/month outputs are not written to disk.
+
 Recommended production behaviour:
 
 - Put the cache on persistent storage if the hosting platform supports it.
@@ -184,8 +190,8 @@ When to reset:
 - The `Location` or timezone contract changes in a way that affects cache keys.
 
 Future cache hardening should add explicit invalidation tooling, stale
-namespace cleanup, startup logging for active fingerprints, and a derived
-maramataka-rules namespace if year/month outputs become persistent.
+namespace cleanup, startup logging for active fingerprints, and a persistent
+derived maramataka-rules namespace if year/month outputs become persistent.
 
 ## Frontend Hosting
 

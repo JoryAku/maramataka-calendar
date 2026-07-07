@@ -27,7 +27,11 @@ import {
   MaramatakaYearMonth,
 } from './maramataka';
 import { Mata, MaramatakaVersion } from './mata';
-import { MaramatakaRuleSet, summarizeRuleSet } from './maramataka-rule-set';
+import {
+  createMaramatakaRuleSetFingerprint,
+  MaramatakaRuleSet,
+  summarizeRuleSet,
+} from './maramataka-rule-set';
 import { generateMaramatakaMonth } from './maramataka-month-generator';
 import {
   MITA_TE_TAI_BEST_MATA,
@@ -97,6 +101,7 @@ export class MaramatakaService {
   private readonly calculateWhiroStartFn: WhiroCalculatorFn;
   private readonly generateMaramatakaMonthFn: MonthGeneratorFn;
   private readonly ruleSet: MaramatakaRuleSet;
+  private readonly ruleSetFingerprint: string;
   private readonly matarikiHolidayNewMoonCache = new Map<
     string,
     NewMoon | undefined
@@ -113,6 +118,7 @@ export class MaramatakaService {
     this.ruleSet =
       dependencies.ruleSet ??
       this.createLegacyRuleSet(dependencies.mata, dependencies.version);
+    this.ruleSetFingerprint = createMaramatakaRuleSetFingerprint(this.ruleSet);
   }
 
   async getMonth(location: Location, date: Date): Promise<MaramatakaMonth> {
@@ -242,8 +248,7 @@ export class MaramatakaService {
 
   private monthCacheKey(location: Location, newMoonAt: Date): string {
     return [
-      this.ruleSet.id,
-      this.ruleSet.version,
+      this.ruleSetFingerprint,
       location.latitude,
       location.longitude,
       location.timezone,
@@ -504,8 +509,7 @@ export class MaramatakaService {
     includeTimelineEvents: boolean,
   ): string {
     return [
-      this.ruleSet.id,
-      this.ruleSet.version,
+      this.ruleSetFingerprint,
       location.latitude,
       location.longitude,
       location.timezone,
@@ -1514,6 +1518,7 @@ export class MaramatakaService {
       return undefined;
     }
     const cacheKey = [
+      this.ruleSetFingerprint,
       location.latitude,
       location.longitude,
       location.timezone,

@@ -9,24 +9,27 @@ material.
 
 ### Extend Layered Cache Fingerprints
 
-The astronomy cache now fingerprints two durable namespaces:
+The cache work now has three layers defined:
 
 - raw astronomy facts, for stable provider results such as phases, rises, sets,
   transits, equinoxes, and solstices
 - observational astronomy, for dawn windows, configured star markers, field of
   view, and visibility thresholds
+- maramataka rules, with readable metadata for rule set id/version,
+  `mataVersion`, mata names, year-start logic, Pipiri / Hamal candidate
+  selection, Matariki visibility checks, Ruhanui insertion/shift logic, named
+  month markers, and Matariki public holiday logic
 
 Fingerprint mismatches are treated as cache misses. Old entries can remain in
 the file until cleanup tooling exists, but they will not be served through the
-new namespace.
+new namespace. Raw and observational astronomy fingerprints are persistent
+cache namespaces; the maramataka rule-set fingerprint is currently used for
+in-memory cache keys and future persistence metadata.
 
 Remaining work:
 
-- add a derived maramataka-rules namespace if/when year or month results become
-  persistent rather than in-memory only
-- include rule set id/version, `mataVersion`, year-start logic, Pipiri / Hamal
-  candidate selection, Matariki visibility checks, Ruhanui insertion/shift
-  logic, and Matariki public holiday logic in that future namespace
+- add a persistent derived maramataka-rules namespace if/when year or month
+  results become persistent rather than in-memory only
 - add stale namespace cleanup tooling after namespace invalidation is in place
 - log the active readable cache metadata and short fingerprint during startup
   or diagnostics so cache invalidation can be reviewed

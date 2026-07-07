@@ -235,6 +235,9 @@ slice is file-backed and dependency-free:
 - Cache keys include fingerprint namespaces for raw astronomy facts and
   observational dawn/star calculations, so changing visibility metadata creates
   cache misses instead of serving stale derived values.
+- The maramataka rule set also has readable fingerprint metadata, currently
+  used by in-memory month/year cache keys, covering mata names, named-month
+  markers, year-start logic, Ruhanui logic, and the Matariki holiday marker.
 - Cached date strings are revived as `Date` values before reaching domain code.
 
 This file-backed cache is the current persistence boundary. It can later be
