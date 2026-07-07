@@ -52,8 +52,16 @@
     @if (dawnVisibleMarkers().length) {
     <div class="dawn-horizon" data-testid="dawn-horizon">
       <div class="horizon-sky" aria-label="Schematic dawn horizon">
-        <span class="horizon-arc" aria-hidden="true"></span>
         <span class="horizon-line" aria-hidden="true"></span>
+        @for (altitude of horizonAltitudeGuideLines; track altitude) {
+        <span
+          class="horizon-altitude-line"
+          [style.bottom.%]="horizonAltitudeBottom(altitude)"
+          aria-hidden="true"
+        >
+          <span>{{ altitude }}°</span>
+        </span>
+        }
         @for (marker of dawnVisibleMarkers(); track marker.id) {
         <span
           [class]="horizonMarkerClass(marker)"
@@ -66,6 +74,9 @@
         >
           <span class="horizon-dot" aria-hidden="true"></span>
           <span class="horizon-label">{{ marker.name }}</span>
+          @if (isHorizonMarkerClamped(marker)) {
+          <span class="horizon-high-label">high</span>
+          }
         </span>
         }
       </div>
@@ -133,17 +144,16 @@
           </clipPath>
         </defs>
         <g clip-path="url(#moon-phase-clip)">
-          <circle class="moon-phase-base" cx="50" cy="50" r="42"></circle>
-          <circle
-            class="moon-phase-shadow"
-            cx="50"
-            cy="50"
-            r="42"
-            [attr.transform]="'translate(' + moonVisual()!.shadowOffset + ' 0)'"
-          ></circle>
+          <circle class="moon-phase-shadow" cx="50" cy="50" r="42"></circle>
+          @if (moonVisual()!.litPath) {
+          <path
+            class="moon-phase-light"
+            [attr.d]="moonVisual()!.litPath"
+            [attr.data-phase-side]="moonVisual()!.litSide"
+          ></path>
+          }
         </g>
         <circle class="moon-phase-rim" cx="50" cy="50" r="42"></circle>
-        <circle class="moon-phase-glint" cx="37" cy="31" r="4.5"></circle>
       </svg>
       }
     </div>

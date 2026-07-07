@@ -9,7 +9,6 @@ import {
 import { findAstronomyProviderError } from '@maramataka-calendar/astronomy';
 import {
   MaramatakaCycleDetails,
-  MaramatakaMonth,
   MaramatakaService,
   MaramatakaYear,
 } from '@maramataka-calendar/maramataka-domain';
@@ -32,26 +31,13 @@ export class MaramatakaController {
 
   constructor(private readonly maramatakaService: MaramatakaService) {}
 
-  @Get('month')
-  async getMonth(
-    @Query() query: DateLocationQueryDto,
-  ): Promise<MaramatakaMonth> {
-    const { date, location } = this.validateDateLocationQuery(query);
-
-    return this.handleAstronomyErrors(
-      'maramataka.month',
-      () => this.maramatakaService.getMonth(location, date),
-    );
-  }
-
   @Get('cycle')
   async getCycle(
     @Query() query: DateLocationQueryDto,
   ): Promise<MaramatakaCycleDetails> {
     const { date, location } = this.validateDateLocationQuery(query);
-    const cycle = await this.handleAstronomyErrors(
-      'maramataka.cycle',
-      () => this.maramatakaService.getCycleDetails(location, date),
+    const cycle = await this.handleAstronomyErrors('maramataka.cycle', () =>
+      this.maramatakaService.getCycleDetails(location, date),
     );
 
     if (!cycle) {
@@ -64,14 +50,11 @@ export class MaramatakaController {
   }
 
   @Get('year')
-  async getYear(
-    @Query() query: DateLocationQueryDto,
-  ): Promise<MaramatakaYear> {
+  async getYear(@Query() query: DateLocationQueryDto): Promise<MaramatakaYear> {
     const { date, location } = this.validateDateLocationQuery(query);
 
-    return this.handleAstronomyErrors(
-      'maramataka.year',
-      () => this.maramatakaService.getYear(location, date),
+    return this.handleAstronomyErrors('maramataka.year', () =>
+      this.maramatakaService.getYear(location, date),
     );
   }
 
@@ -162,5 +145,4 @@ export class MaramatakaController {
       throw error;
     }
   }
-
 }

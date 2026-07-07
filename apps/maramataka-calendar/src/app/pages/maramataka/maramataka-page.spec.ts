@@ -85,11 +85,6 @@ describe('MaramatakaPage', () => {
   }
 
   function flushMaramatakaRequests(locationId = 'wellington') {
-    const monthRequest = httpTestingController.expectOne(
-      (req) =>
-        req.url === '/api/maramataka/month' &&
-        req.params.get('location') === locationId,
-    );
     const todayRequest = httpTestingController.expectOne(
       (req) =>
         req.url === '/api/maramataka/today' &&
@@ -117,7 +112,6 @@ describe('MaramatakaPage', () => {
     );
 
     return {
-      monthRequest,
       cycleRequest,
       todayRequest,
       moonDetailsRequest,
@@ -170,7 +164,7 @@ describe('MaramatakaPage', () => {
     };
   }
 
-  function cycleFixture() {
+  function cycleFixture(nights: unknown[] = []) {
     return {
       version: 'mita-te-tai-best',
       ruleSet,
@@ -243,7 +237,7 @@ describe('MaramatakaPage', () => {
         },
       },
       starMarkers: starMarkersFixture(),
-      nights: [],
+      nights,
     };
   }
 
@@ -580,12 +574,11 @@ describe('MaramatakaPage', () => {
     requests: ReturnType<typeof flushMaramatakaRequests>,
     month = monthFixture(),
     today = todayFixture(),
-    cycle = cycleFixture(),
+    cycle = cycleFixture(month.nights),
     moonDetails = moonDetailsFixture(),
     year = yearFixture(),
     starMarkers = starMarkersFixture(),
   ): void {
-    requests.monthRequest.flush(month);
     requests.cycleRequest.flush(cycle);
     requests.todayRequest.flush(today);
     requests.moonDetailsRequest.flush(moonDetails);
@@ -624,7 +617,6 @@ describe('MaramatakaPage', () => {
     locationsRequest.flush(locationsFixture());
     const requests = flushMaramatakaRequests();
     const {
-      monthRequest,
       cycleRequest,
       todayRequest,
       moonDetailsRequest,
@@ -632,12 +624,11 @@ describe('MaramatakaPage', () => {
       starMarkersRequest,
     } = requests;
 
-    expect(monthRequest.request.params.get('date')).toBe('2026-01-11');
-    expect(monthRequest.request.params.has('tz')).toBe(false);
     expect(todayRequest.request.params.get('dateTime')).toBe(
       '2026-01-11T01:00:00',
     );
     expect(cycleRequest.request.params.get('date')).toBe('2026-01-11');
+    expect(cycleRequest.request.params.has('tz')).toBe(false);
     expect(moonDetailsRequest.request.params.get('date')).toBe('2026-01-11');
     expect(yearRequest.request.params.get('date')).toBe('2026-01-11');
     expect(starMarkersRequest.request.params.get('date')).toBe('2026-01-11');
@@ -952,7 +943,7 @@ describe('MaramatakaPage', () => {
     mataButtons[1].click();
 
     const mataRequests = flushMaramatakaRequests();
-    expect(mataRequests.monthRequest.request.params.get('date')).toBe(
+    expect(mataRequests.cycleRequest.request.params.get('date')).toBe(
       '2026-01-11',
     );
     expect(mataRequests.todayRequest.request.params.get('dateTime')).toBe(
@@ -967,7 +958,7 @@ describe('MaramatakaPage', () => {
     yearMonthCard.click();
 
     const yearMonthRequests = flushMaramatakaRequests();
-    expect(yearMonthRequests.monthRequest.request.params.get('date')).toBe(
+    expect(yearMonthRequests.cycleRequest.request.params.get('date')).toBe(
       '2026-01-10',
     );
     expect(
@@ -1027,6 +1018,41 @@ describe('MaramatakaPage', () => {
       'Waxing Crescent',
     );
     expect(moonPhaseArt?.getAttribute('aria-label')).toContain('17%');
+
+    const litPhase = moonPhaseArt?.querySelector(
+      '.moon-phase-light',
+    ) as SVGPathElement | null;
+    expect(litPhase?.getAttribute('data-phase-side')).toBe('left');
+    expect(litPhase?.getAttribute('d')).toContain('A 42 42');
+  });
+
+  it('moves the moon shadow direction after the full-moon mata', () => {
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(
+      flushMaramatakaRequests(),
+      monthFixture(),
+      {
+        ...todayFixture(),
+        mata: { index: 24, name: 'Tangaroa-ā-roto' },
+      },
+      cycleFixture(),
+      {
+        ...moonDetailsFixture(),
+        phase: 'Waning Crescent',
+        fractionIlluminated: 0.17,
+      },
+    );
+    fixture.detectChanges();
+
+    const litPhase = fixture.nativeElement.querySelector(
+      '.moon-phase-light',
+    ) as SVGPathElement | null;
+
+    expect(litPhase?.getAttribute('data-phase-side')).toBe('right');
+    expect(litPhase?.getAttribute('d')).toContain('A 42 42');
   });
 
   it('uses the selected location for API requests', () => {
@@ -1073,7 +1099,6 @@ describe('MaramatakaPage', () => {
     page.onDateChange('2026-06-26');
 
     const requests = flushMaramatakaRequests();
-    expect(requests.monthRequest.request.params.get('date')).toBe('2026-06-26');
     expect(requests.cycleRequest.request.params.get('date')).toBe('2026-06-26');
     expect(requests.todayRequest.request.params.get('dateTime')).toBe(
       '2026-06-26T12:00:00',
@@ -1135,7 +1160,7 @@ describe('MaramatakaPage', () => {
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
     const firstRequests = flushMaramatakaRequests();
-    expect(firstRequests.monthRequest.request.params.get('date')).toBe(
+    expect(firstRequests.cycleRequest.request.params.get('date')).toBe(
       '2026-01-01',
     );
 
@@ -1145,9 +1170,6 @@ describe('MaramatakaPage', () => {
     window.dispatchEvent(new Event('focus'));
 
     const secondRequests = flushMaramatakaRequests();
-    expect(secondRequests.monthRequest.request.params.get('date')).toBe(
-      '2026-01-02',
-    );
     expect(secondRequests.todayRequest.request.params.get('dateTime')).toBe(
       '2026-01-02T02:30:00',
     );
@@ -1190,7 +1212,6 @@ describe('MaramatakaPage', () => {
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
     const {
-      monthRequest,
       cycleRequest,
       todayRequest,
       moonDetailsRequest,
@@ -1198,7 +1219,6 @@ describe('MaramatakaPage', () => {
       starMarkersRequest,
     } = flushMaramatakaRequests();
 
-    monthRequest.flush(monthFixture());
     cycleRequest.flush(cycleFixture());
     todayRequest.flush('Failure', { status: 500, statusText: 'Server Error' });
     moonDetailsRequest.flush('Failure', {

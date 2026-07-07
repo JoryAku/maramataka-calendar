@@ -1,18 +1,25 @@
 import {
+  ASTRONOMY_CACHE_ENTRY_VERSION,
+  ASTRONOMY_CACHE_FILE_VERSION,
+  AstronomyProvider,
   AstronomyEngineProvider,
+  AstronomyCacheStore,
   CachedAstronomyProvider,
-  FileAstronomyCacheStore,
+  Location,
   MoonPhase,
   PersistentCachedAstronomyProvider,
   StarMarker,
+  StarMarkerDefinition,
 } from '@maramataka-calendar/astronomy';
 import {
   LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
+  MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaService,
   MaramatakaYearMonth,
 } from '@maramataka-calendar/maramataka-domain';
-import { join } from 'node:path';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 
 type AstronomyEngineModule = typeof import('astronomy-engine');
 
@@ -298,6 +305,156 @@ const sourceCalendarFixtures = [
   },
 ];
 
+type OfficialDate = {
+  tangaroaStartsOn: string;
+  tangaroaEndsOn: string;
+  holiday: string;
+};
+
+type DetailedMonthEntry = {
+  yearMonth: MaramatakaYearMonth;
+  month: MaramatakaMonth;
+};
+
+type OfficialYearContext = {
+  year: number;
+  official: OfficialDate;
+  maramatakaYear: Awaited<ReturnType<MaramatakaService['getYear']>>;
+  detailedMonths: DetailedMonthEntry[];
+  calculatedHoliday: string;
+  holidayYearMonth: MaramatakaYearMonth | undefined;
+  bestCandidate: ReturnType<typeof bestTangaroaCandidate>;
+};
+
+type CacheFile = {
+  version: typeof ASTRONOMY_CACHE_FILE_VERSION;
+  entries: Record<
+    string,
+    {
+      version: typeof ASTRONOMY_CACHE_ENTRY_VERSION;
+      cachedAt: string;
+      value: unknown;
+    }
+  >;
+};
+
+class BufferedFileAstronomyCacheStore implements AstronomyCacheStore {
+  private cacheFilePromise?: Promise<CacheFile>;
+  private dirty = false;
+
+  constructor(private readonly filePath: string) {}
+
+  async get<T>(key: string): Promise<T | undefined> {
+    const cacheFile = await this.loadCacheFile();
+    const entry = cacheFile.entries[key];
+
+    if (!entry || entry.version !== ASTRONOMY_CACHE_ENTRY_VERSION) {
+      return undefined;
+    }
+
+    return entry.value as T | undefined;
+  }
+
+  async set<T>(key: string, value: T): Promise<void> {
+    const cacheFile = await this.loadCacheFile();
+    cacheFile.entries[key] = {
+      version: ASTRONOMY_CACHE_ENTRY_VERSION,
+      cachedAt: new Date().toISOString(),
+      value,
+    };
+    this.dirty = true;
+  }
+
+  async flush(): Promise<void> {
+    if (!this.dirty || !this.cacheFilePromise) {
+      return;
+    }
+
+    const cacheFile = await this.cacheFilePromise;
+    await mkdir(dirname(this.filePath), { recursive: true });
+    const tempPath = `${this.filePath}.tmp`;
+    await writeFile(
+      tempPath,
+      `${JSON.stringify(cacheFile, null, 2)}\n`,
+      'utf8',
+    );
+    await rename(tempPath, this.filePath);
+    this.dirty = false;
+  }
+
+  private async loadCacheFile(): Promise<CacheFile> {
+    this.cacheFilePromise ??= this.readCacheFile();
+
+    return this.cacheFilePromise;
+  }
+
+  private async readCacheFile(): Promise<CacheFile> {
+    try {
+      const rawCache = await readFile(this.filePath, 'utf8');
+      const parsed = JSON.parse(rawCache) as Partial<CacheFile>;
+
+      if (parsed.version !== ASTRONOMY_CACHE_FILE_VERSION || !parsed.entries) {
+        return this.emptyCacheFile();
+      }
+
+      return {
+        version: ASTRONOMY_CACHE_FILE_VERSION,
+        entries: parsed.entries,
+      };
+    } catch (error) {
+      if (
+        error instanceof SyntaxError ||
+        (typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'ENOENT')
+      ) {
+        return this.emptyCacheFile();
+      }
+
+      throw error;
+    }
+  }
+
+  private emptyCacheFile(): CacheFile {
+    return {
+      version: ASTRONOMY_CACHE_FILE_VERSION,
+      entries: {},
+    };
+  }
+}
+
+function timed<T>(label: string, action: () => Promise<T>): Promise<T> {
+  const start = Date.now();
+
+  return action().finally(() => {
+    if (process.env.COMPARE_MATARIKI_TIMING === '1') {
+      console.error(`${label}: ${Date.now() - start}ms`);
+    }
+  });
+}
+
+async function mapWithConcurrency<T, U>(
+  items: T[],
+  concurrency: number,
+  mapItem: (item: T, index: number) => Promise<U>,
+): Promise<U[]> {
+  const results = new Array<U>(items.length);
+  let nextIndex = 0;
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (nextIndex < items.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await mapItem(items[index], index);
+      }
+    }),
+  );
+
+  return results;
+}
+
 const holidayTangaroaTargetMata = new Set([
   'Tangaroa-ā-mua',
   'Tangaroa-ā-roto',
@@ -340,16 +497,38 @@ const localDateFormatter = new Intl.DateTimeFormat('en-CA', {
   month: '2-digit',
   day: '2-digit',
 });
+const localDateTimeFormatter = new Intl.DateTimeFormat('en-NZ', {
+  timeZone: location.timezone,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
 
 function localDate(date: Date): string {
   const parts = Object.fromEntries(
-    localDateFormatter.formatToParts(date).map((part) => [
-      part.type,
-      part.value,
-    ]),
+    localDateFormatter
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
   );
 
   return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function localDateTime(date: Date | undefined): string {
+  if (!date) {
+    return 'missing';
+  }
+
+  const parts = Object.fromEntries(
+    localDateTimeFormatter
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  );
+
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
 function localDateOrdinal(date: string): number {
@@ -358,6 +537,12 @@ function localDateOrdinal(date: string): number {
     .map((part) => Number.parseInt(part, 10));
 
   return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000);
+}
+
+function addLocalDateDays(date: string, days: number): string {
+  return new Date((localDateOrdinal(date) + days) * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 function dateRange(start: string, end: string): string {
@@ -383,9 +568,9 @@ function dateRangeDelta(
   officialStart: string,
   officialEnd: string,
 ): string {
-  return `${localDateOrdinal(calculatedStart) - localDateOrdinal(
-    officialStart,
-  )}/${localDateOrdinal(calculatedEnd) - localDateOrdinal(officialEnd)}`;
+  return `${
+    localDateOrdinal(calculatedStart) - localDateOrdinal(officialStart)
+  }/${localDateOrdinal(calculatedEnd) - localDateOrdinal(officialEnd)}`;
 }
 
 function dateDelta(calculated: string, official: string): number {
@@ -427,64 +612,67 @@ function sunAltitudeAt(
   return horizon.altitude;
 }
 
-function ruhanuiRuleSignal(
-  firstAppearance: StarMarker | undefined,
-  pipiriWhiroStartsOn: string,
-): string {
-  if (!firstAppearance) {
-    return 'no Matariki appearance';
-  }
-
-  const daysAfterPipiri = dateDelta(
-    localDate(firstAppearance.observedAt),
-    pipiriWhiroStartsOn,
-  );
-
-  if (daysAfterPipiri <= 0) {
-    return 'no Ruhanui: Matariki before/at Pipiri Whiro';
-  }
-
-  if (daysAfterPipiri <= 11) {
-    return 'insert Ruhanui: Matariki within 11 days after Pipiri Whiro';
-  }
-
-  return 'skip Pipiri: Matariki more than 11 days after Pipiri Whiro';
+function ruhanuiRuleSignal(hamalYearNewMoonCount: number): string {
+  return hamalYearNewMoonCount > 12
+    ? `insert Ruhanui: ${hamalYearNewMoonCount} Hamal-year New Moons`
+    : `no Ruhanui: ${hamalYearNewMoonCount} Hamal-year New Moons`;
 }
 
 function markerFirstAppearanceDate(marker: StarMarker | undefined): string {
   return marker ? localDate(marker.observedAt) : 'missing';
 }
 
+function markerFirstAppearanceLocal(marker: StarMarker | undefined): string {
+  return localDateTime(marker?.observedAt);
+}
+
+async function providerFirstAppearance(
+  provider: AstronomyProvider,
+  startDate: string,
+  endDate: string,
+  location: Location,
+  marker: StarMarkerDefinition,
+): Promise<StarMarker | undefined> {
+  const [appearance] =
+    (await provider.getStarFirstAppearances?.(startDate, endDate, location, [
+      marker,
+    ])) ?? [];
+
+  return appearance;
+}
+
 function phaseLocalDate(phase: MoonPhase | undefined): string {
   return phase ? localDate(phase.occursAt) : 'missing';
 }
 
-function phasesOnOrAfter(
-  phases: MoonPhase[],
-  date: string,
-): MoonPhase[] {
+function phasesOnOrAfter(phases: MoonPhase[], date: string): MoonPhase[] {
   if (date === 'missing') {
     return [];
   }
 
   const dateOrdinal = localDateOrdinal(date);
   return phases
-    .filter((phase) => localDateOrdinal(localDate(phase.occursAt)) >= dateOrdinal)
-    .sort((first, second) => first.occursAt.getTime() - second.occursAt.getTime());
+    .filter(
+      (phase) => localDateOrdinal(localDate(phase.occursAt)) >= dateOrdinal,
+    )
+    .sort(
+      (first, second) => first.occursAt.getTime() - second.occursAt.getTime(),
+    );
 }
 
-function phasesBefore(
-  phases: MoonPhase[],
-  date: string,
-): MoonPhase[] {
+function phasesBefore(phases: MoonPhase[], date: string): MoonPhase[] {
   if (date === 'missing') {
     return [];
   }
 
   const dateOrdinal = localDateOrdinal(date);
   return phases
-    .filter((phase) => localDateOrdinal(localDate(phase.occursAt)) < dateOrdinal)
-    .sort((first, second) => first.occursAt.getTime() - second.occursAt.getTime());
+    .filter(
+      (phase) => localDateOrdinal(localDate(phase.occursAt)) < dateOrdinal,
+    )
+    .sort(
+      (first, second) => first.occursAt.getTime() - second.occursAt.getTime(),
+    );
 }
 
 function phaseCountBetween(
@@ -616,16 +804,18 @@ function closestFridayInDateRangeToInterval(
     isFriday(date),
   );
 
-  return fridays
-    .map((date) => ({
-      date,
-      distance: Math.abs(localMidday(date).getTime() - intervalMidpoint),
-    }))
-    .sort(
-      (first, second) =>
-        first.distance - second.distance ||
-        localDateOrdinal(first.date) - localDateOrdinal(second.date),
-    )[0]?.date ?? 'missing';
+  return (
+    fridays
+      .map((date) => ({
+        date,
+        distance: Math.abs(localMidday(date).getTime() - intervalMidpoint),
+      }))
+      .sort(
+        (first, second) =>
+          first.distance - second.distance ||
+          localDateOrdinal(first.date) - localDateOrdinal(second.date),
+      )[0]?.date ?? 'missing'
+  );
 }
 
 function isPrefixMatch(actual: string[], expected: string[]): boolean {
@@ -674,9 +864,7 @@ function likelyDifference(
   return 'mixed';
 }
 
-function countBy<T extends string>(
-  values: T[],
-): Record<T, number> {
+function countBy<T extends string>(values: T[]): Record<T, number> {
   return values.reduce(
     (counts, value) => ({
       ...counts,
@@ -697,28 +885,82 @@ async function detailedMonthForYearMonth(
     };
   },
 ): Promise<MaramatakaMonth> {
-  return service.getMonth(
+  const cycle = await service.getCycleDetails(
     location,
     yearMonth.anchors.whiro.astronomicalOccursAt ??
       yearMonth.anchors.whiro.occursAt,
   );
+
+  if (!cycle) {
+    throw new Error('No cycle details found for generated marama');
+  }
+
+  return monthFromCycle(cycle);
+}
+
+function monthFromCycle(cycle: MaramatakaCycleDetails): MaramatakaMonth {
+  return {
+    version: cycle.version,
+    ruleSet: cycle.ruleSet,
+    whiroStartsAt: cycle.anchors.whiro.occursAt,
+    starMonthSequence: cycle.starMonth?.note?.sequence,
+    nights: cycle.nights,
+  };
 }
 
 async function detailedMonthsForYear(
   service: MaramatakaService,
   months: MaramatakaYearMonth[],
-): Promise<
-  Array<{
-    yearMonth: MaramatakaYearMonth;
-    month: MaramatakaMonth;
-  }>
-> {
+): Promise<DetailedMonthEntry[]> {
   return Promise.all(
     months.map(async (yearMonth) => ({
       yearMonth,
       month: await detailedMonthForYearMonth(service, yearMonth),
     })),
   );
+}
+
+async function officialYearContexts(
+  service: MaramatakaService,
+): Promise<OfficialYearContext[]> {
+  const entries = [...officialDates.entries()];
+
+  return mapWithConcurrency(entries, 4, async ([year, official]) => {
+    const maramatakaYear = await timed(`year ${year} getYear`, () =>
+      service.getYear(location, new Date(`${year}-07-01T12:00:00+12:00`), {
+        includeTimelineEvents: false,
+      }),
+    );
+    const detailedMonths = await timed(`year ${year} detailedMonths`, () =>
+      detailedMonthsForYear(service, maramatakaYear.months),
+    );
+    const holiday = maramatakaYear.events.find(
+      (event) =>
+        event.type === 'public-holiday' &&
+        event.name === 'Matariki public holiday',
+    );
+    const calculatedHoliday = holiday ? localDate(holiday.occursAt) : 'missing';
+    const holidayYearMonth = holiday?.monthSequence
+      ? maramatakaYear.months.find(
+          (month) => month.sequence === holiday.monthSequence,
+        )
+      : undefined;
+    const bestCandidate = bestTangaroaCandidate(
+      detailedMonths,
+      official.tangaroaStartsOn,
+      official.tangaroaEndsOn,
+    );
+
+    return {
+      year,
+      official,
+      maramatakaYear,
+      detailedMonths,
+      calculatedHoliday,
+      holidayYearMonth,
+      bestCandidate,
+    };
+  });
 }
 
 function tangaroaPeriod(month: MaramatakaMonth):
@@ -908,7 +1150,7 @@ function generatedCoverageForOfficialTangaroa(
   };
 }
 
-async function officialComparisonRows(service: MaramatakaService): Promise<{
+function officialComparisonRows(contexts: OfficialYearContext[]): {
   rows: Array<{
     year: number;
     officialHoliday: string;
@@ -939,44 +1181,27 @@ async function officialComparisonRows(service: MaramatakaService): Promise<{
     generatedMata: string;
     isTangaroaTarget: boolean;
   }>;
-}> {
+} {
   const rows = [];
   const details = [];
 
-  for (const [year, official] of officialDates) {
-    const maramatakaYear = await service.getYear(
-      location,
-      new Date(`${year}-07-01T12:00:00+12:00`),
-    );
-    const detailedMonths = await detailedMonthsForYear(
-      service,
-      maramatakaYear.months,
-    );
-    const holiday = maramatakaYear.events.find(
-      (event) =>
-        event.type === 'public-holiday' &&
-        event.name === 'Matariki public holiday',
-    );
-    const calculatedHoliday = holiday ? localDate(holiday.occursAt) : 'missing';
-    const holidayYearMonth = holiday?.monthSequence
-      ? maramatakaYear.months.find(
-          (month) => month.sequence === holiday.monthSequence,
-        )
-      : undefined;
-    const holidayMonth = holidayYearMonth
-      ? await detailedMonthForYearMonth(service, holidayYearMonth)
-      : undefined;
+  for (const {
+    year,
+    official,
+    detailedMonths,
+    calculatedHoliday,
+    holidayYearMonth,
+    bestCandidate,
+  } of contexts) {
+    const holidayMonth = detailedMonths.find(
+      ({ yearMonth }) => yearMonth.sequence === holidayYearMonth?.sequence,
+    )?.month;
     const holidayTangaroa = holidayMonth
       ? tangaroaPeriod(holidayMonth)
       : undefined;
     const holidayTangaroaStart = holidayTangaroa?.startsOn ?? 'missing';
     const holidayTangaroaEnd = holidayTangaroa?.endsOn ?? 'missing';
     const officialCoverage = generatedCoverageForOfficialTangaroa(
-      detailedMonths,
-      official.tangaroaStartsOn,
-      official.tangaroaEndsOn,
-    );
-    const bestCandidate = bestTangaroaCandidate(
       detailedMonths,
       official.tangaroaStartsOn,
       official.tangaroaEndsOn,
@@ -994,8 +1219,7 @@ async function officialComparisonRows(service: MaramatakaService): Promise<{
       year,
       officialHoliday: official.holiday,
       calculatedHoliday,
-      holidayStatus:
-        calculatedHoliday === official.holiday ? 'MATCH' : 'DIFF',
+      holidayStatus: calculatedHoliday === official.holiday ? 'MATCH' : 'DIFF',
       officialTangaroa: dateRange(
         official.tangaroaStartsOn,
         official.tangaroaEndsOn,
@@ -1019,8 +1243,7 @@ async function officialComparisonRows(service: MaramatakaService): Promise<{
           official.tangaroaStartsOn,
           official.tangaroaEndsOn,
         ),
-      holidayMonthOverlapsOfficial:
-        holidayMonthOverlapsOfficial,
+      holidayMonthOverlapsOfficial: holidayMonthOverlapsOfficial,
       officialTangaroaGeneratedMarama: officialCoverage.generatedMarama,
       officialTangaroaGeneratedMata: officialCoverage.generatedMata,
       officialTangaroaGeneratedMataAreTarget:
@@ -1063,7 +1286,7 @@ async function officialComparisonRows(service: MaramatakaService): Promise<{
 }
 
 async function officialMatarikiBehaviourRows(
-  service: MaramatakaService,
+  contexts: OfficialYearContext[],
   provider: CachedAstronomyProvider,
 ): Promise<
   Array<{
@@ -1119,7 +1342,8 @@ async function officialMatarikiBehaviourRows(
   const rows = [];
   const engine = await import('astronomy-engine');
   const matarikiMarker =
-    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.yearStartRule?.marker;
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday
+      ?.calibrationMarker;
   const pipiriMarkerId =
     LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.months.find(
       (month) => month.sequence === 1,
@@ -1141,15 +1365,15 @@ async function officialMatarikiBehaviourRows(
     return [];
   }
 
-  for (const [year, official] of officialDates) {
-    const maramatakaYear = await service.getYear(
-      location,
-      new Date(`${year}-07-01T12:00:00+12:00`),
-    );
-    const detailedMonths = await detailedMonthsForYear(
-      service,
-      maramatakaYear.months,
-    );
+  for (const {
+    year,
+    official,
+    maramatakaYear,
+    detailedMonths,
+    calculatedHoliday,
+    holidayYearMonth,
+    bestCandidate,
+  } of contexts) {
     const pipiri = maramatakaYear.months.find(
       (month) =>
         month.name === 'Te Tahi o Pipiri' ||
@@ -1169,52 +1393,38 @@ async function officialMatarikiBehaviourRows(
     const teTahiTangaroa = pipiriMonth
       ? tangaroaPeriod(pipiriMonth)
       : undefined;
-    const holiday = maramatakaYear.events.find(
-      (event) =>
-        event.type === 'public-holiday' &&
-        event.name === 'Matariki public holiday',
-    );
-    const holidayYearMonth = holiday?.monthSequence
-      ? maramatakaYear.months.find(
-          (month) => month.sequence === holiday.monthSequence,
-        )
-      : undefined;
-    const calculatedHoliday = holiday ? localDate(holiday.occursAt) : 'missing';
-    const bestCandidate = bestTangaroaCandidate(
-      detailedMonths,
-      official.tangaroaStartsOn,
-      official.tangaroaEndsOn,
-    );
-    const [firstAppearance] =
-      (await provider.getStarFirstAppearances?.(
-        `${year}-01-01`,
-        `${year + 1}-01-01`,
-        location,
-        [matarikiMarker],
-      )) ?? [];
-    const [pipiriAppearance] =
-      (await provider.getStarFirstAppearances?.(
-        `${year}-01-01`,
-        `${year + 1}-01-01`,
-        location,
-        [pipiriMarker],
-      )) ?? [];
-    const [ruhanuiAppearance] =
-      (await provider.getStarFirstAppearances?.(
-        `${year}-01-01`,
-        `${year + 1}-01-01`,
-        location,
-        [ruhanuiMarker],
-      )) ?? [];
+    const searchStart = `${year}-01-01`;
+    const searchEnd = `${year + 1}-01-01`;
+    const [firstAppearance, pipiriAppearance, ruhanuiAppearance, moonPhases] =
+      await Promise.all([
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          matarikiMarker,
+        ),
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          pipiriMarker,
+        ),
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          ruhanuiMarker,
+        ),
+        provider.getMoonPhases(year),
+      ]);
     const firstAppearanceDate = markerFirstAppearanceDate(firstAppearance);
     const pipiriAppearanceDate = markerFirstAppearanceDate(pipiriAppearance);
-    const ruhanuiAppearanceDate =
-      markerFirstAppearanceDate(ruhanuiAppearance);
-    const moonPhases = await provider.getMoonPhases(year);
+    const ruhanuiAppearanceDate = markerFirstAppearanceDate(ruhanuiAppearance);
     const newMoons = moonPhases.filter((phase) => phase.phase === 'New Moon');
-    const fullMoons = moonPhases.filter(
-      (phase) => phase.phase === 'Full Moon',
-    );
+    const fullMoons = moonPhases.filter((phase) => phase.phase === 'Full Moon');
     const newMoonsAfterMatariki = phasesOnOrAfter(
       newMoons,
       firstAppearanceDate,
@@ -1223,19 +1433,17 @@ async function officialMatarikiBehaviourRows(
       fullMoons,
       firstAppearanceDate,
     );
-    const lastNewMoonBeforeOfficialTangaroa =
-      phasesBefore(newMoons, official.tangaroaStartsOn).at(-1);
-    const lastFullMoonBeforeOfficialTangaroa =
-      phasesBefore(fullMoons, official.tangaroaStartsOn).at(-1);
-    const firstNewMoonAfterMatariki = phaseLocalDate(
-      newMoonsAfterMatariki[0],
-    );
-    const secondNewMoonAfterMatariki = phaseLocalDate(
-      newMoonsAfterMatariki[1],
-    );
-    const thirdNewMoonAfterMatariki = phaseLocalDate(
-      newMoonsAfterMatariki[2],
-    );
+    const lastNewMoonBeforeOfficialTangaroa = phasesBefore(
+      newMoons,
+      official.tangaroaStartsOn,
+    ).at(-1);
+    const lastFullMoonBeforeOfficialTangaroa = phasesBefore(
+      fullMoons,
+      official.tangaroaStartsOn,
+    ).at(-1);
+    const firstNewMoonAfterMatariki = phaseLocalDate(newMoonsAfterMatariki[0]);
+    const secondNewMoonAfterMatariki = phaseLocalDate(newMoonsAfterMatariki[1]);
+    const thirdNewMoonAfterMatariki = phaseLocalDate(newMoonsAfterMatariki[2]);
     const firstFullMoonAfterMatariki = phaseLocalDate(
       fullMoonsAfterMatariki[0],
     );
@@ -1250,12 +1458,12 @@ async function officialMatarikiBehaviourRows(
       ? localDate(secondMonth.startsAt)
       : 'missing';
     const teTahiTangaroaEnd = teTahiTangaroa?.endsOn ?? 'missing';
+    const hamalYearNewMoonCount = maramatakaYear.months.length;
 
     rows.push({
       year,
       officialHoliday: official.holiday,
-      holidayStatus:
-        calculatedHoliday === official.holiday ? 'MATCH' : 'DIFF',
+      holidayStatus: calculatedHoliday === official.holiday ? 'MATCH' : 'DIFF',
       selectedMarama: holidayYearMonth?.name ?? 'missing',
       bestOfficialTangaroaMarama: bestCandidate?.yearMonth.name ?? 'missing',
       monthSelectionDelta:
@@ -1364,7 +1572,7 @@ async function officialMatarikiBehaviourRows(
         official.tangaroaStartsOn,
         thirdFullMoonAfterMatariki,
       ),
-      currentRuhanuiSignal: ruhanuiRuleSignal(firstAppearance, pipiriWhiro),
+      currentRuhanuiSignal: ruhanuiRuleSignal(hamalYearNewMoonCount),
     });
   }
 
@@ -1389,6 +1597,7 @@ async function sourceCalendarRows(service: MaramatakaService): Promise<
     const maramatakaYear = await service.getYear(
       location,
       new Date(`${fixture.date}T12:00:00+12:00`),
+      { includeTimelineEvents: false },
     );
     const pipiri = maramatakaYear.months.find(
       (month) =>
@@ -1423,51 +1632,375 @@ async function sourceCalendarRows(service: MaramatakaService): Promise<
   return rows;
 }
 
+async function sourceCalendarEvidenceRows(
+  service: MaramatakaService,
+  provider: AstronomyProvider,
+): Promise<
+  Array<{
+    sourceYear: string;
+    expectedPipiriWhiro: string;
+    calculatedPipiriWhiro: string;
+    pipiriDeltaDays: number | string;
+    expectedRuhanuiWhiro: string;
+    calculatedRuhanuiWhiro: string;
+    ruhanuiDeltaDays: number | string;
+    nextWhiroAfterPipiri: string;
+    sourceMatarikiPeriod: string;
+    pipiriFirstVisible: string;
+    pipiriVisibleVsExpectedWhiro: number | string;
+    ruhanuiFirstVisible: string;
+    ruhanuiVisibleVsExpectedRuhanui: number | string;
+    matarikiFirstVisible: string;
+    matarikiVisibleVsExpectedWhiro: number | string;
+    matarikiVisibleVsSourcePeriodStart: number | string;
+    generatedWhiroCount: number;
+    currentRuhanuiSignal: string;
+    placementMatchesSource: boolean;
+  }>
+> {
+  const matarikiMarker =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.matarikiHoliday
+      ?.calibrationMarker;
+  const pipiriMarkerId =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.months.find(
+      (month) => month.sequence === 1,
+    )?.markerIds[0];
+  const pipiriMarker =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers.find(
+      (marker) => marker.id === pipiriMarkerId,
+    );
+  const ruhanuiMarkerId =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.months.find(
+      (month) => month.sequence === 0,
+    )?.markerIds[0];
+  const ruhanuiMarker =
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET.starMonthNaming?.markers.find(
+      (marker) => marker.id === ruhanuiMarkerId,
+    );
+
+  if (!matarikiMarker || !pipiriMarker || !ruhanuiMarker) {
+    return [];
+  }
+
+  const rows = [];
+
+  for (const fixture of sourceCalendarFixtures) {
+    const sourceYear = Number.parseInt(fixture.label.slice(0, 4), 10);
+    const maramatakaYear = await service.getYear(
+      location,
+      new Date(`${fixture.date}T12:00:00+12:00`),
+      { includeTimelineEvents: false },
+    );
+    const pipiri = maramatakaYear.months.find(
+      (month) =>
+        month.name === 'Te Tahi o Pipiri' ||
+        month.starMonth?.note?.sequence === 1,
+    );
+    const ruhanui = maramatakaYear.months.find(
+      (month) => month.name === 'Ruhanui',
+    );
+    const nextMonth = pipiri
+      ? maramatakaYear.months.find(
+          (month) => month.sequence === pipiri.sequence + 1,
+        )
+      : undefined;
+    const searchStart = `${sourceYear}-01-01`;
+    const searchEnd = `${sourceYear + 1}-01-01`;
+    const [pipiriAppearance, ruhanuiAppearance, matarikiAppearance] =
+      await Promise.all([
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          pipiriMarker,
+        ),
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          ruhanuiMarker,
+        ),
+        providerFirstAppearance(
+          provider,
+          searchStart,
+          searchEnd,
+          location,
+          matarikiMarker,
+        ),
+      ]);
+    const calculatedPipiri = pipiri ? localDate(pipiri.startsAt) : 'missing';
+    const calculatedRuhanui = ruhanui ? localDate(ruhanui.startsAt) : 'none';
+    const expectedMatarikiPeriodStart = fixture.matarikiPeriod.split('..')[0];
+
+    rows.push({
+      sourceYear: fixture.label,
+      expectedPipiriWhiro: fixture.pipiriStartsOn,
+      calculatedPipiriWhiro: calculatedPipiri,
+      pipiriDeltaDays: dateMinusReferenceDays(
+        calculatedPipiri,
+        fixture.pipiriStartsOn,
+      ),
+      expectedRuhanuiWhiro: fixture.ruhanuiStartsOn,
+      calculatedRuhanuiWhiro: calculatedRuhanui,
+      ruhanuiDeltaDays:
+        fixture.ruhanuiStartsOn === 'none'
+          ? calculatedRuhanui === 'none'
+            ? 0
+            : 'unexpected'
+          : calculatedRuhanui === 'none'
+            ? 'missing'
+            : dateMinusReferenceDays(
+                calculatedRuhanui,
+                fixture.ruhanuiStartsOn,
+              ),
+      nextWhiroAfterPipiri: nextMonth ? localDate(nextMonth.startsAt) : 'none',
+      sourceMatarikiPeriod: fixture.matarikiPeriod,
+      pipiriFirstVisible: markerFirstAppearanceLocal(pipiriAppearance),
+      pipiriVisibleVsExpectedWhiro: markerMinusReferenceDays(
+        pipiriAppearance,
+        fixture.pipiriStartsOn,
+      ),
+      ruhanuiFirstVisible: markerFirstAppearanceLocal(ruhanuiAppearance),
+      ruhanuiVisibleVsExpectedRuhanui:
+        fixture.ruhanuiStartsOn === 'none'
+          ? 'n/a'
+          : markerMinusReferenceDays(
+              ruhanuiAppearance,
+              fixture.ruhanuiStartsOn,
+            ),
+      matarikiFirstVisible: markerFirstAppearanceLocal(matarikiAppearance),
+      matarikiVisibleVsExpectedWhiro: markerMinusReferenceDays(
+        matarikiAppearance,
+        fixture.pipiriStartsOn,
+      ),
+      matarikiVisibleVsSourcePeriodStart: markerMinusReferenceDays(
+        matarikiAppearance,
+        expectedMatarikiPeriodStart,
+      ),
+      generatedWhiroCount: maramatakaYear.months.length,
+      currentRuhanuiSignal: ruhanuiRuleSignal(maramatakaYear.months.length),
+      placementMatchesSource:
+        calculatedPipiri === fixture.pipiriStartsOn &&
+        calculatedRuhanui === fixture.ruhanuiStartsOn,
+    });
+  }
+
+  return rows;
+}
+
 async function main(): Promise<void> {
-  const focus = process.argv.find((arg) => arg.startsWith('--focus='))?.slice(
-    '--focus='.length,
+  const focus = process.argv
+    .find((arg) => arg.startsWith('--focus='))
+    ?.slice('--focus='.length);
+  const cacheStore = new BufferedFileAstronomyCacheStore(
+    join(process.cwd(), '.cache', 'astronomy.json'),
   );
   const provider = new CachedAstronomyProvider(
     new PersistentCachedAstronomyProvider(
       new AstronomyEngineProvider(),
-      new FileAstronomyCacheStore(
-        join(process.cwd(), '.cache', 'astronomy.json'),
-      ),
+      cacheStore,
     ),
   );
-  const service = new MaramatakaService({ astronomyProvider: provider });
-  const officialReport = await officialComparisonRows(service);
-  const officialRows = officialReport.rows;
-  const matarikiBehaviourRows = await officialMatarikiBehaviourRows(
-    service,
-    provider,
-  );
+  try {
+    const service = new MaramatakaService({ astronomyProvider: provider });
 
-  if (focus === 'matariki-visibility') {
-    const markerOfficialDateRows = matarikiBehaviourRows.map((row) => ({
-      year: row.year,
-      status: row.holidayStatus,
-      monthDelta: row.monthSelectionDelta,
-      officialTangaroa: row.officialTangaroa,
-      officialHoliday: row.officialHoliday,
-      pipiriWhiro: row.pipiriWhiro,
-      secondWhiro: row.secondWhiro,
-      ruhanuiMonth: row.ruhanui,
-      pipiriVisible: row.pipiriFirstAppearance,
-      pipiriVsTangaroaStart: dateMinusReferenceDays(
-        row.pipiriFirstAppearance,
-        officialDates.get(row.year)?.tangaroaStartsOn ?? 'missing',
-      ),
-      matarikiVisible: row.matarikiFirstAppearance,
-      matarikiVsTangaroaStart:
-        row.matarikiMinusOfficialTangaroaStartDays,
-      ruhanuiVisible: row.ruhanuiFirstAppearance,
-      ruhanuiVsTangaroaStart: dateMinusReferenceDays(
-        row.ruhanuiFirstAppearance,
-        officialDates.get(row.year)?.tangaroaStartsOn ?? 'missing',
-      ),
-      currentRuhanuiSignal: row.currentRuhanuiSignal,
-    }));
+    if (focus === 'source-calendar') {
+      const sourceRows = await timed('sourceCalendarEvidenceRows', () =>
+        sourceCalendarEvidenceRows(service, provider),
+      );
+      console.log('Living by the Stars 2021-2024 calendar source evidence');
+      console.table(sourceRows);
+      console.log(
+        `Living by the Stars calendar month placement matches ${
+          sourceRows.filter((row) => row.placementMatchesSource).length
+        }/${sourceRows.length}`,
+      );
+
+      return;
+    }
+
+    const yearContexts = await timed('officialYearContexts', () =>
+      officialYearContexts(service),
+    );
+    const matarikiBehaviourRows = await timed(
+      'officialMatarikiBehaviourRows',
+      () => officialMatarikiBehaviourRows(yearContexts, provider),
+    );
+
+    if (focus === 'matariki-visibility') {
+      const markerOfficialDateRows = matarikiBehaviourRows.map((row) => ({
+        year: row.year,
+        status: row.holidayStatus,
+        monthDelta: row.monthSelectionDelta,
+        officialTangaroa: row.officialTangaroa,
+        officialHoliday: row.officialHoliday,
+        pipiriWhiro: row.pipiriWhiro,
+        secondWhiro: row.secondWhiro,
+        ruhanuiMonth: row.ruhanui,
+        pipiriVisible: row.pipiriFirstAppearance,
+        pipiriVsTangaroaStart: dateMinusReferenceDays(
+          row.pipiriFirstAppearance,
+          officialDates.get(row.year)?.tangaroaStartsOn ?? 'missing',
+        ),
+        matarikiVisible: row.matarikiFirstAppearance,
+        matarikiVsTangaroaStart: row.matarikiMinusOfficialTangaroaStartDays,
+        ruhanuiVisible: row.ruhanuiFirstAppearance,
+        ruhanuiVsTangaroaStart: dateMinusReferenceDays(
+          row.ruhanuiFirstAppearance,
+          officialDates.get(row.year)?.tangaroaStartsOn ?? 'missing',
+        ),
+        currentRuhanuiSignal: row.currentRuhanuiSignal,
+      }));
+      const matarikiOfficialDateRows = matarikiBehaviourRows.map((row) => ({
+        year: row.year,
+        status: row.holidayStatus,
+        monthDelta: row.monthSelectionDelta,
+        officialTangaroa: row.officialTangaroa,
+        officialHoliday: row.officialHoliday,
+        matarikiVisible: row.matarikiFirstAppearance,
+        vsTangaroaStart: row.matarikiMinusOfficialTangaroaStartDays,
+        vsTangaroaEnd: row.matarikiMinusOfficialTangaroaEndDays,
+        vsHoliday: row.matarikiMinusOfficialHolidayDays,
+      }));
+      const lunarAnchorRows = matarikiBehaviourRows.map((row) => ({
+        year: row.year,
+        status: row.holidayStatus,
+        monthDelta: row.monthSelectionDelta,
+        officialTangaroa: row.officialTangaroa,
+        matarikiVisible: row.matarikiFirstAppearance,
+        newMoonsToOfficialStart: row.newMoonsMatarikiToOfficialTangaroaStart,
+        fullMoonsToOfficialStart: row.fullMoonsMatarikiToOfficialTangaroaStart,
+        secondNewAfterMatariki: row.secondNewMoonAfterMatariki,
+        startVsSecondNew: row.officialTangaroaStartMinusSecondNewMoon,
+        thirdNewAfterMatariki: row.thirdNewMoonAfterMatariki,
+        startVsThirdNew: row.officialTangaroaStartMinusThirdNewMoon,
+        secondFullAfterMatariki: row.secondFullMoonAfterMatariki,
+        startVsSecondFull: row.officialTangaroaStartMinusSecondFullMoon,
+        thirdFullAfterMatariki: row.thirdFullMoonAfterMatariki,
+        startVsThirdFull: row.officialTangaroaStartMinusThirdFullMoon,
+        lastNewBeforeOfficial: row.lastNewMoonBeforeOfficialTangaroa,
+        lastFullBeforeOfficial: row.lastFullMoonBeforeOfficialTangaroa,
+      }));
+      const outlierOfficialDateRows = matarikiOfficialDateRows.filter(
+        (row) => row.monthDelta === 1,
+      );
+      const outlierMarkerRows = markerOfficialDateRows.filter(
+        (row) => row.monthDelta === 1,
+      );
+      const outlierLunarAnchorRows = lunarAnchorRows.filter(
+        (row) => row.monthDelta === 1,
+      );
+
+      console.log(
+        'Pipiri / Matariki / Ruhanui visibility against official dates',
+      );
+      console.table(markerOfficialDateRows);
+      console.log('Visibility ranges against official Tangaroa start');
+      console.table([
+        rangeSummary(markerOfficialDateRows, 'pipiriVsTangaroaStart'),
+        rangeSummary(markerOfficialDateRows, 'matarikiVsTangaroaStart'),
+        rangeSummary(markerOfficialDateRows, 'ruhanuiVsTangaroaStart'),
+      ]);
+      console.log('Visibility ranges for month-placement outliers');
+      console.table(outlierMarkerRows);
+      console.table([
+        rangeSummary(outlierMarkerRows, 'pipiriVsTangaroaStart'),
+        rangeSummary(outlierMarkerRows, 'matarikiVsTangaroaStart'),
+        rangeSummary(outlierMarkerRows, 'ruhanuiVsTangaroaStart'),
+      ]);
+      console.log('Lunar anchors after Matariki against official Tangaroa');
+      console.table(lunarAnchorRows);
+      console.log('Lunar anchor ranges against official Tangaroa start');
+      console.table([
+        rangeSummary(lunarAnchorRows, 'newMoonsToOfficialStart'),
+        rangeSummary(lunarAnchorRows, 'fullMoonsToOfficialStart'),
+        rangeSummary(lunarAnchorRows, 'startVsSecondNew'),
+        rangeSummary(lunarAnchorRows, 'startVsThirdNew'),
+        rangeSummary(lunarAnchorRows, 'startVsSecondFull'),
+        rangeSummary(lunarAnchorRows, 'startVsThirdFull'),
+      ]);
+      console.log('Potential second-Full-Moon trigger years');
+      console.table(
+        lunarAnchorRows.filter(
+          (row) =>
+            typeof row.startVsSecondFull === 'number' &&
+            row.startVsSecondFull >= 7,
+        ),
+      );
+      console.log('Lunar anchors for month-placement outliers');
+      console.table(outlierLunarAnchorRows);
+      console.table([
+        rangeSummary(outlierLunarAnchorRows, 'newMoonsToOfficialStart'),
+        rangeSummary(outlierLunarAnchorRows, 'fullMoonsToOfficialStart'),
+        rangeSummary(outlierLunarAnchorRows, 'startVsSecondNew'),
+        rangeSummary(outlierLunarAnchorRows, 'startVsThirdNew'),
+        rangeSummary(outlierLunarAnchorRows, 'startVsSecondFull'),
+        rangeSummary(outlierLunarAnchorRows, 'startVsThirdFull'),
+      ]);
+      console.log('Matariki first visibility against official dates');
+      console.table(matarikiOfficialDateRows);
+      console.log('Matariki visibility range against official dates');
+      console.table([
+        rangeSummary(matarikiOfficialDateRows, 'vsTangaroaStart'),
+        rangeSummary(matarikiOfficialDateRows, 'vsTangaroaEnd'),
+        rangeSummary(matarikiOfficialDateRows, 'vsHoliday'),
+      ]);
+      console.log('Matariki visibility range for month-placement outliers');
+      console.table(outlierOfficialDateRows);
+      console.table([
+        rangeSummary(outlierOfficialDateRows, 'vsTangaroaStart'),
+        rangeSummary(outlierOfficialDateRows, 'vsTangaroaEnd'),
+        rangeSummary(outlierOfficialDateRows, 'vsHoliday'),
+      ]);
+
+      return;
+    }
+
+    const officialReport = officialComparisonRows(yearContexts);
+    const officialRows = officialReport.rows;
+    const sourceRows = await sourceCalendarRows(service);
+
+    console.log('Official Matariki calibration report');
+    console.table(officialRows);
+    console.log('Official Tangaroa date coverage by generated maramataka');
+    console.table(officialReport.details);
+    console.log(
+      `holiday matches ${
+        officialRows.filter((row) => row.holidayStatus === 'MATCH').length
+      }/${officialRows.length}`,
+    );
+    console.log(
+      `holiday-month Tangaroa period matches ${
+        officialRows.filter((row) => row.holidayMonthDelta === '0/0').length
+      }/${officialRows.length}`,
+    );
+    console.log(
+      `holiday-month Tangaroa contains official ${
+        officialRows.filter((row) => row.holidayMonthContainsOfficial).length
+      }/${officialRows.length}`,
+    );
+    console.log(
+      `holiday-month Tangaroa overlaps official ${
+        officialRows.filter((row) => row.holidayMonthOverlapsOfficial).length
+      }/${officialRows.length}`,
+    );
+    console.log(
+      `official Tangaroa dates land on generated target Tangaroa mata ${
+        officialRows.filter((row) => row.officialTangaroaGeneratedMataAreTarget)
+          .length
+      }/${officialRows.length}`,
+    );
+    console.log('official Tangaroa boundary pattern counts');
+    console.table(
+      countBy(officialRows.map((row) => row.officialTangaroaBoundaryPattern)),
+    );
+    console.log('likely remaining difference counts');
+    console.table(countBy(officialRows.map((row) => row.likelyDifference)));
+
+    console.log('Matariki behaviour by official year');
+    console.table(matarikiBehaviourRows);
     const matarikiOfficialDateRows = matarikiBehaviourRows.map((row) => ({
       year: row.year,
       status: row.holidayStatus,
@@ -1479,81 +2012,6 @@ async function main(): Promise<void> {
       vsTangaroaEnd: row.matarikiMinusOfficialTangaroaEndDays,
       vsHoliday: row.matarikiMinusOfficialHolidayDays,
     }));
-    const lunarAnchorRows = matarikiBehaviourRows.map((row) => ({
-      year: row.year,
-      status: row.holidayStatus,
-      monthDelta: row.monthSelectionDelta,
-      officialTangaroa: row.officialTangaroa,
-      matarikiVisible: row.matarikiFirstAppearance,
-      newMoonsToOfficialStart:
-        row.newMoonsMatarikiToOfficialTangaroaStart,
-      fullMoonsToOfficialStart:
-        row.fullMoonsMatarikiToOfficialTangaroaStart,
-      secondNewAfterMatariki: row.secondNewMoonAfterMatariki,
-      startVsSecondNew: row.officialTangaroaStartMinusSecondNewMoon,
-      thirdNewAfterMatariki: row.thirdNewMoonAfterMatariki,
-      startVsThirdNew: row.officialTangaroaStartMinusThirdNewMoon,
-      secondFullAfterMatariki: row.secondFullMoonAfterMatariki,
-      startVsSecondFull: row.officialTangaroaStartMinusSecondFullMoon,
-      thirdFullAfterMatariki: row.thirdFullMoonAfterMatariki,
-      startVsThirdFull: row.officialTangaroaStartMinusThirdFullMoon,
-      lastNewBeforeOfficial: row.lastNewMoonBeforeOfficialTangaroa,
-      lastFullBeforeOfficial: row.lastFullMoonBeforeOfficialTangaroa,
-    }));
-    const outlierOfficialDateRows = matarikiOfficialDateRows.filter(
-      (row) => row.monthDelta === 1,
-    );
-    const outlierMarkerRows = markerOfficialDateRows.filter(
-      (row) => row.monthDelta === 1,
-    );
-    const outlierLunarAnchorRows = lunarAnchorRows.filter(
-      (row) => row.monthDelta === 1,
-    );
-
-    console.log('Pipiri / Matariki / Ruhanui visibility against official dates');
-    console.table(markerOfficialDateRows);
-    console.log('Visibility ranges against official Tangaroa start');
-    console.table([
-      rangeSummary(markerOfficialDateRows, 'pipiriVsTangaroaStart'),
-      rangeSummary(markerOfficialDateRows, 'matarikiVsTangaroaStart'),
-      rangeSummary(markerOfficialDateRows, 'ruhanuiVsTangaroaStart'),
-    ]);
-    console.log('Visibility ranges for month-placement outliers');
-    console.table(outlierMarkerRows);
-    console.table([
-      rangeSummary(outlierMarkerRows, 'pipiriVsTangaroaStart'),
-      rangeSummary(outlierMarkerRows, 'matarikiVsTangaroaStart'),
-      rangeSummary(outlierMarkerRows, 'ruhanuiVsTangaroaStart'),
-    ]);
-    console.log('Lunar anchors after Matariki against official Tangaroa');
-    console.table(lunarAnchorRows);
-    console.log('Lunar anchor ranges against official Tangaroa start');
-    console.table([
-      rangeSummary(lunarAnchorRows, 'newMoonsToOfficialStart'),
-      rangeSummary(lunarAnchorRows, 'fullMoonsToOfficialStart'),
-      rangeSummary(lunarAnchorRows, 'startVsSecondNew'),
-      rangeSummary(lunarAnchorRows, 'startVsThirdNew'),
-      rangeSummary(lunarAnchorRows, 'startVsSecondFull'),
-      rangeSummary(lunarAnchorRows, 'startVsThirdFull'),
-    ]);
-    console.log('Potential second-Full-Moon trigger years');
-    console.table(
-      lunarAnchorRows.filter(
-        (row) =>
-          typeof row.startVsSecondFull === 'number' &&
-          row.startVsSecondFull >= 7,
-      ),
-    );
-    console.log('Lunar anchors for month-placement outliers');
-    console.table(outlierLunarAnchorRows);
-    console.table([
-      rangeSummary(outlierLunarAnchorRows, 'newMoonsToOfficialStart'),
-      rangeSummary(outlierLunarAnchorRows, 'fullMoonsToOfficialStart'),
-      rangeSummary(outlierLunarAnchorRows, 'startVsSecondNew'),
-      rangeSummary(outlierLunarAnchorRows, 'startVsThirdNew'),
-      rangeSummary(outlierLunarAnchorRows, 'startVsSecondFull'),
-      rangeSummary(outlierLunarAnchorRows, 'startVsThirdFull'),
-    ]);
     console.log('Matariki first visibility against official dates');
     console.table(matarikiOfficialDateRows);
     console.log('Matariki visibility range against official dates');
@@ -1563,117 +2021,25 @@ async function main(): Promise<void> {
       rangeSummary(matarikiOfficialDateRows, 'vsHoliday'),
     ]);
     console.log('Matariki visibility range for month-placement outliers');
+    const outlierOfficialDateRows = matarikiOfficialDateRows.filter(
+      (row) => row.monthDelta === 1,
+    );
     console.table(outlierOfficialDateRows);
     console.table([
       rangeSummary(outlierOfficialDateRows, 'vsTangaroaStart'),
       rangeSummary(outlierOfficialDateRows, 'vsTangaroaEnd'),
       rangeSummary(outlierOfficialDateRows, 'vsHoliday'),
     ]);
-
-    return;
-  }
-
-  const sourceRows = await sourceCalendarRows(service);
-
-  console.log('Official Matariki calibration report');
-  console.table(officialRows);
-  console.log('Official Tangaroa date coverage by generated maramataka');
-  console.table(officialReport.details);
-  console.log(
-    `holiday matches ${
-      officialRows.filter((row) => row.holidayStatus === 'MATCH').length
-    }/${officialRows.length}`,
-  );
-  console.log(
-    `holiday-month Tangaroa period matches ${
-      officialRows.filter((row) => row.holidayMonthDelta === '0/0').length
-    }/${officialRows.length}`,
-  );
-  console.log(
-    `holiday-month Tangaroa contains official ${
-      officialRows.filter((row) => row.holidayMonthContainsOfficial).length
-    }/${officialRows.length}`,
-  );
-  console.log(
-    `holiday-month Tangaroa overlaps official ${
-      officialRows.filter((row) => row.holidayMonthOverlapsOfficial).length
-    }/${officialRows.length}`,
-  );
-  console.log(
-    `official Tangaroa dates land on generated target Tangaroa mata ${
-      officialRows.filter((row) => row.officialTangaroaGeneratedMataAreTarget)
-        .length
-    }/${officialRows.length}`,
-  );
-  console.log('official Tangaroa boundary pattern counts');
-  console.table(
-    countBy(officialRows.map((row) => row.officialTangaroaBoundaryPattern)),
-  );
-  console.log('likely remaining difference counts');
-  console.table(countBy(officialRows.map((row) => row.likelyDifference)));
-
-  console.log('Matariki behaviour by official year');
-  console.table(matarikiBehaviourRows);
-  const matarikiOfficialDateRows = matarikiBehaviourRows.map((row) => ({
-    year: row.year,
-    status: row.holidayStatus,
-    monthDelta: row.monthSelectionDelta,
-    officialTangaroa: row.officialTangaroa,
-    officialHoliday: row.officialHoliday,
-    matarikiVisible: row.matarikiFirstAppearance,
-    vsTangaroaStart: row.matarikiMinusOfficialTangaroaStartDays,
-    vsTangaroaEnd: row.matarikiMinusOfficialTangaroaEndDays,
-    vsHoliday: row.matarikiMinusOfficialHolidayDays,
-  }));
-  console.log('Matariki first visibility against official dates');
-  console.table(matarikiOfficialDateRows);
-  console.log('Matariki visibility range against official dates');
-  console.table([
-    rangeSummary(matarikiOfficialDateRows, 'vsTangaroaStart'),
-    rangeSummary(matarikiOfficialDateRows, 'vsTangaroaEnd'),
-    rangeSummary(matarikiOfficialDateRows, 'vsHoliday'),
-  ]);
-  console.log('Matariki visibility range for month-placement outliers');
-  const outlierOfficialDateRows = matarikiOfficialDateRows.filter(
-    (row) => row.monthDelta === 1,
-  );
-  console.table(outlierOfficialDateRows);
-  console.table([
-    rangeSummary(outlierOfficialDateRows, 'vsTangaroaStart'),
-    rangeSummary(outlierOfficialDateRows, 'vsTangaroaEnd'),
-    rangeSummary(outlierOfficialDateRows, 'vsHoliday'),
-  ]);
-  console.log('Matariki/Pipiri month-placement outliers');
-  console.table(
-    matarikiBehaviourRows.filter((row) => row.monthSelectionDelta === 1),
-  );
-  console.log('Pipiri / Whiro / Matariki / Ruhanui signal summary');
-  console.table(
-    matarikiBehaviourRows.map((row) => ({
-      year: row.year,
-      status: row.holidayStatus,
-      monthDelta: row.monthSelectionDelta,
-      selected: row.selectedMarama,
-      bestTangaroa: row.bestOfficialTangaroaMarama,
-      pipiriVisible: row.pipiriFirstAppearance,
-      whiro: row.pipiriWhiro,
-      secondWhiro: row.secondWhiro,
-      matarikiVisible: row.matarikiFirstAppearance,
-      matarikiVsWhiro: row.appearanceMinusPipiriDays,
-      matarikiVsSecondWhiro: row.matarikiMinusSecondWhiroDays,
-      ruhanuiVisible: row.ruhanuiFirstAppearance,
-      ruhanuiVsWhiro: row.ruhanuiMinusWhiroDays,
-      ruhanuiVsSecondWhiro: row.ruhanuiMinusSecondWhiroDays,
-      ruhanuiStart: row.ruhanui,
-    })),
-  );
-  console.log('Four-signal summary for month-placement outliers');
-  console.table(
-    matarikiBehaviourRows
-      .filter((row) => row.monthSelectionDelta === 1)
-      .map((row) => ({
+    console.log('Matariki/Pipiri month-placement outliers');
+    console.table(
+      matarikiBehaviourRows.filter((row) => row.monthSelectionDelta === 1),
+    );
+    console.log('Pipiri / Whiro / Matariki / Ruhanui signal summary');
+    console.table(
+      matarikiBehaviourRows.map((row) => ({
         year: row.year,
-        officialHoliday: row.officialHoliday,
+        status: row.holidayStatus,
+        monthDelta: row.monthSelectionDelta,
         selected: row.selectedMarama,
         bestTangaroa: row.bestOfficialTangaroaMarama,
         pipiriVisible: row.pipiriFirstAppearance,
@@ -1685,28 +2051,52 @@ async function main(): Promise<void> {
         ruhanuiVisible: row.ruhanuiFirstAppearance,
         ruhanuiVsWhiro: row.ruhanuiMinusWhiroDays,
         ruhanuiVsSecondWhiro: row.ruhanuiMinusSecondWhiroDays,
+        ruhanuiStart: row.ruhanui,
       })),
-  );
-  console.log('Matariki behaviour grouped by current Ruhanui signal');
-  console.table(
-    countBy(matarikiBehaviourRows.map((row) => row.currentRuhanuiSignal)),
-  );
-  console.log('Matariki behaviour grouped by holiday status and month delta');
-  console.table(
-    countBy(
-      matarikiBehaviourRows.map(
-        (row) => `${row.holidayStatus} / ${row.monthSelectionDelta}`,
+    );
+    console.log('Four-signal summary for month-placement outliers');
+    console.table(
+      matarikiBehaviourRows
+        .filter((row) => row.monthSelectionDelta === 1)
+        .map((row) => ({
+          year: row.year,
+          officialHoliday: row.officialHoliday,
+          selected: row.selectedMarama,
+          bestTangaroa: row.bestOfficialTangaroaMarama,
+          pipiriVisible: row.pipiriFirstAppearance,
+          whiro: row.pipiriWhiro,
+          secondWhiro: row.secondWhiro,
+          matarikiVisible: row.matarikiFirstAppearance,
+          matarikiVsWhiro: row.appearanceMinusPipiriDays,
+          matarikiVsSecondWhiro: row.matarikiMinusSecondWhiroDays,
+          ruhanuiVisible: row.ruhanuiFirstAppearance,
+          ruhanuiVsWhiro: row.ruhanuiMinusWhiroDays,
+          ruhanuiVsSecondWhiro: row.ruhanuiMinusSecondWhiroDays,
+        })),
+    );
+    console.log('Matariki behaviour grouped by current Ruhanui signal');
+    console.table(
+      countBy(matarikiBehaviourRows.map((row) => row.currentRuhanuiSignal)),
+    );
+    console.log('Matariki behaviour grouped by holiday status and month delta');
+    console.table(
+      countBy(
+        matarikiBehaviourRows.map(
+          (row) => `${row.holidayStatus} / ${row.monthSelectionDelta}`,
+        ),
       ),
-    ),
-  );
+    );
 
-  console.log('Living by the Stars source-calendar fixture comparison');
-  console.table(sourceRows);
-  console.log(
-    `source-calendar month placement matches ${
-      sourceRows.filter((row) => row.matchesSourceMonthPlacement).length
-    }/${sourceRows.length}`,
-  );
+    console.log('Living by the Stars 2021-2024 calendar source comparison');
+    console.table(sourceRows);
+    console.log(
+      `Living by the Stars calendar month placement matches ${
+        sourceRows.filter((row) => row.matchesSourceMonthPlacement).length
+      }/${sourceRows.length}`,
+    );
+  } finally {
+    await timed('cache flush', () => cacheStore.flush());
+  }
 }
 
 main().catch((error: unknown) => {

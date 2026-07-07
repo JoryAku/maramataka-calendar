@@ -156,16 +156,16 @@ describe('MaramatakaController golden date fixtures', () => {
         date: fixture.requestDate,
         location: fixture.locationId,
       });
-      const response = await controller.getMonth(query);
+      const response = await controller.getCycle(query);
       const mataNames = response.nights.map((night) => night.mata.name);
 
-      expect(response.whiroStartsAt.toISOString()).toBe(
+      expect(response.anchors.whiro.occursAt.toISOString()).toBe(
         fixture.expected.whiroStartsAt,
       );
       expect(response.nights).toHaveLength(fixture.expected.nightCount);
-      expect(response.nights[response.nights.length - 1].endsAt.toISOString()).toBe(
-        fixture.expected.nextWhiroStartsAt,
-      );
+      expect(
+        response.nights[response.nights.length - 1].endsAt.toISOString(),
+      ).toBe(fixture.expected.nextWhiroStartsAt);
       expect(mataNames.slice(0, 5)).toEqual(fixture.expected.firstFiveMata);
       expect(mataNames.slice(-5)).toEqual(fixture.expected.lastFiveMata);
     },

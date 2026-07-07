@@ -37,10 +37,7 @@ import {
   LIVING_BY_THE_STARS_MATA,
   LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
 } from './living-by-the-stars';
-import {
-  calculateWhiroStart,
-  findWhiroMoonrise,
-} from './whiro-calculator';
+import { calculateWhiroStart, findWhiroMoonrise } from './whiro-calculator';
 
 type WhiroCalculatorFn = typeof calculateWhiroStart;
 type MonthGeneratorFn = typeof generateMaramatakaMonth;
@@ -74,10 +71,8 @@ const DEFAULT_MATARIKI_PUBLIC_HOLIDAY_TARGET_MATA = [
   'Tangaroa-whakapau',
   'Tangaroa whāriki kio-kio',
 ];
-// Calibrated from the Living by the Stars 2021/2022-2023/2024 examples:
-// early Matariki return keeps Te Tahi o Pipiri and inserts Ruhanui; later
-// return shifts Te Tahi o Pipiri to the next Whiro.
-const RUHANUI_EARLY_MATARIKI_AFTER_WHIRO_MAX_DAYS = 11;
+const MONTH_CACHE_LIMIT = 48;
+const YEAR_CACHE_LIMIT = 12;
 
 interface YearMonthResult {
   month: MaramatakaYearMonth;
@@ -93,6 +88,10 @@ export interface MaramatakaServiceDependencies {
   version?: MaramatakaVersion;
 }
 
+export interface MaramatakaYearOptions {
+  includeTimelineEvents?: boolean;
+}
+
 export class MaramatakaService {
   private readonly astronomyProvider: AstronomyProvider;
   private readonly calculateWhiroStartFn: WhiroCalculatorFn;
@@ -102,6 +101,8 @@ export class MaramatakaService {
     string,
     NewMoon | undefined
   >();
+  private readonly monthCache = new Map<string, Promise<MaramatakaMonth>>();
+  private readonly yearCache = new Map<string, Promise<MaramatakaYear>>();
 
   constructor(dependencies: MaramatakaServiceDependencies) {
     this.astronomyProvider = dependencies.astronomyProvider;
@@ -118,15 +119,12 @@ export class MaramatakaService {
     const requestedYear = date.getUTCFullYear();
     const requestedTime = date.getTime();
 
-    const [
-      previousYearNewMoons,
-      requestedYearNewMoons,
-      nextYearNewMoons,
-    ] = await Promise.all([
-      this.astronomyProvider.getNewMoons(requestedYear - 1),
-      this.astronomyProvider.getNewMoons(requestedYear),
-      this.astronomyProvider.getNewMoons(requestedYear + 1),
-    ]);
+    const [previousYearNewMoons, requestedYearNewMoons, nextYearNewMoons] =
+      await Promise.all([
+        this.astronomyProvider.getNewMoons(requestedYear - 1),
+        this.astronomyProvider.getNewMoons(requestedYear),
+        this.astronomyProvider.getNewMoons(requestedYear + 1),
+      ]);
     const newMoons = [
       ...this.asArray(previousYearNewMoons),
       ...this.asArray(requestedYearNewMoons),
@@ -139,70 +137,118 @@ export class MaramatakaService {
       throw new Error('No New Moon found for requested period');
     }
 
-    const whiroDate = this.formatIsoDateForLocation(
-      relevantNewMoon.occursAt,
+    const monthCacheKey = this.monthCacheKey(
       location,
+      relevantNewMoon.occursAt,
     );
-    const moonRises = await this.fetchMoonRisesForMonth(whiroDate, location);
-
-    let whiroStartsAt: Date;
-    try {
-      whiroStartsAt = this.calculateWhiroStartFn({
-        newMoonAt: relevantNewMoon.occursAt,
-        newMoonLocalDate: whiroDate,
-        moonRises,
-      });
-    } catch (error) {
-      throw new Error(
-        `Failed to calculate Whiro start: ${this.getErrorMessage(error)}`,
-      );
+    const cachedMonth = this.monthCache.get(monthCacheKey);
+    if (cachedMonth) {
+      return cachedMonth;
     }
 
-    const whiroStartIndex = moonRises.findIndex(
-      (moonRise) => moonRise.risesAt.getTime() === whiroStartsAt.getTime(),
-    );
-
-    if (whiroStartIndex === -1) {
-      throw new Error(
-        'Calculated Whiro start does not match retrieved moonrise intervals',
-      );
-    }
-
-    const monthMoonRises = moonRises.slice(
-      whiroStartIndex,
-      this.findMonthEndMoonRiseIndex(
-        moonRises,
-        whiroStartIndex,
-        newMoons,
-        relevantNewMoon,
+    const monthPromise = (async () => {
+      const whiroDate = this.formatIsoDateForLocation(
+        relevantNewMoon.occursAt,
         location,
-      ) + 1,
-    );
-    const monthMata = this.selectMataForMoonRiseIntervals(
-      this.ruleSet.mata,
-      monthMoonRises,
-    );
+      );
+      const moonRises = await this.fetchMoonRisesForMonth(whiroDate, location);
 
-    try {
-      return {
-        ...this.generateMaramatakaMonthFn({
-          version: this.version,
-          ruleSet: summarizeRuleSet(this.ruleSet),
-          whiroStartsAt,
-          mata: monthMata,
-          moonRises: monthMoonRises,
-        }),
-        starMonthSequence: await this.calculateStarMonthSequence(
+      let whiroStartsAt: Date;
+      try {
+        whiroStartsAt = this.calculateWhiroStartFn({
+          newMoonAt: relevantNewMoon.occursAt,
+          newMoonLocalDate: whiroDate,
+          moonRises,
+        });
+      } catch (error) {
+        throw new Error(
+          `Failed to calculate Whiro start: ${this.getErrorMessage(error)}`,
+        );
+      }
+
+      const whiroStartIndex = moonRises.findIndex(
+        (moonRise) => moonRise.risesAt.getTime() === whiroStartsAt.getTime(),
+      );
+
+      if (whiroStartIndex === -1) {
+        throw new Error(
+          'Calculated Whiro start does not match retrieved moonrise intervals',
+        );
+      }
+
+      const monthMoonRises = moonRises.slice(
+        whiroStartIndex,
+        this.findMonthEndMoonRiseIndex(
+          moonRises,
+          whiroStartIndex,
           newMoons,
           relevantNewMoon,
           location,
-        ),
-      };
-    } catch (error) {
-      throw new Error(
-        `Failed to generate Maramataka month: ${this.getErrorMessage(error)}`,
+        ) + 1,
       );
+      const monthMata = this.selectMataForMoonRiseIntervals(
+        this.ruleSet.mata,
+        monthMoonRises,
+      );
+
+      try {
+        return {
+          ...this.generateMaramatakaMonthFn({
+            version: this.version,
+            ruleSet: summarizeRuleSet(this.ruleSet),
+            whiroStartsAt,
+            mata: monthMata,
+            moonRises: monthMoonRises,
+          }),
+          starMonthSequence: await this.calculateStarMonthSequence(
+            newMoons,
+            relevantNewMoon,
+            location,
+          ),
+        };
+      } catch (error) {
+        throw new Error(
+          `Failed to generate Maramataka month: ${this.getErrorMessage(error)}`,
+        );
+      }
+    })();
+
+    this.rememberCachedMonth(monthCacheKey, monthPromise);
+
+    try {
+      return await monthPromise;
+    } catch (error) {
+      this.monthCache.delete(monthCacheKey);
+      throw error;
     }
+  }
+
+  private rememberCachedMonth(
+    key: string,
+    monthPromise: Promise<MaramatakaMonth>,
+  ): void {
+    if (
+      !this.monthCache.has(key) &&
+      this.monthCache.size >= MONTH_CACHE_LIMIT
+    ) {
+      const oldestKey = this.monthCache.keys().next().value;
+      if (oldestKey) {
+        this.monthCache.delete(oldestKey);
+      }
+    }
+
+    this.monthCache.set(key, monthPromise);
+  }
+
+  private monthCacheKey(location: Location, newMoonAt: Date): string {
+    return [
+      this.ruleSet.id,
+      this.ruleSet.version,
+      location.latitude,
+      location.longitude,
+      location.timezone,
+      newMoonAt.toISOString(),
+    ].join(':');
   }
 
   async getMoonDetails(location: Location, date: Date): Promise<MoonDetails> {
@@ -211,7 +257,12 @@ export class MaramatakaService {
     return this.astronomyProvider.getMoonDetails(localDate, location);
   }
 
-  async getYear(location: Location, date: Date): Promise<MaramatakaYear> {
+  async getYear(
+    location: Location,
+    date: Date,
+    options: MaramatakaYearOptions = {},
+  ): Promise<MaramatakaYear> {
+    const includeTimelineEvents = options.includeTimelineEvents ?? true;
     const requestedLocalDate = this.formatIsoDateForLocation(date, location);
     const localYear = Number(requestedLocalDate.slice(0, 4));
     const localMonth = Number(requestedLocalDate.slice(5, 7));
@@ -244,168 +295,223 @@ export class MaramatakaService {
       date.getTime() < candidateYearStartsAt.occursAt.getTime()
     ) {
       starYear -= 1;
-    } else {
-      const nextYearStartsAt = await this.findStarYearStartNewMoon(
+    } else if (candidateYearStartsAt) {
+      const candidateYearEndsAt = await this.findStarYearEndNewMoon(
         newMoons,
-        starYear + 1,
+        starYear,
+        candidateYearStartsAt,
         location,
       );
       if (
-        nextYearStartsAt &&
-        date.getTime() >= nextYearStartsAt.occursAt.getTime()
+        candidateYearEndsAt &&
+        date.getTime() >= candidateYearEndsAt.occursAt.getTime()
       ) {
         starYear += 1;
       }
     }
-    const fullMoonResults = await Promise.all(
-      [starYear - 1, starYear, starYear + 1, starYear + 2].map((year) =>
-        this.getOptionalFullMoons(year),
-      ),
+    const yearCacheKey = this.yearCacheKey(
+      location,
+      starYear,
+      includeTimelineEvents,
     );
-    diagnostics.push(
-      ...fullMoonResults
-        .filter((result) => result.error)
-        .map((result) => ({
-          type: 'phase-provider' as const,
-          name: `${result.year} Full Moon anchors`,
-          reason: result.error!,
-        })),
-    );
-    const fullMoons = fullMoonResults
-      .flatMap((result) => result.values)
-      .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
-    const yearStartsAt =
-      (await this.findStarYearStartNewMoon(newMoons, starYear, location)) ??
-      newMoons.find(
-        (newMoon) =>
-          this.formatIsoDateForLocation(newMoon.occursAt, location) >=
-          `${starYear}-06-01`,
-      );
-    const yearEndsAt =
-      (await this.findStarYearStartNewMoon(newMoons, starYear + 1, location)) ??
-      (yearStartsAt
-        ? newMoons.find(
-            (newMoon) =>
-              newMoon.occursAt.getTime() > yearStartsAt.occursAt.getTime() &&
-              this.formatIsoDateForLocation(newMoon.occursAt, location) >=
-                `${starYear + 1}-06-01`,
-          )
-        : undefined);
-    const yearNewMoonAnchors =
-      yearStartsAt && yearEndsAt
-        ? newMoons.filter(
-            (newMoon) =>
-              newMoon.occursAt.getTime() >= yearStartsAt.occursAt.getTime() &&
-              newMoon.occursAt.getTime() < yearEndsAt.occursAt.getTime(),
-          )
-        : [];
-    const months: MaramatakaYearMonth[] = [];
-    const yearSpecificEvents: MaramatakaYearEvent[] = [];
-    for (const [index, newMoon] of yearNewMoonAnchors.entries()) {
-      const monthResult = await this.createYearMonthSafe({
-        newMoon,
-        nextNewMoon: this.findNextNewMoon(newMoons, newMoon.occursAt.getTime()),
-        fullMoons,
-        location,
-        sequence: index + 1,
-        allNewMoons: newMoons,
-      });
+    const cachedYear = this.yearCache.get(yearCacheKey);
+    if (cachedYear) {
+      return cachedYear;
+    }
 
-      if (monthResult) {
-        const { month } = monthResult;
-        months.push(month);
-        yearSpecificEvents.push(...monthResult.events);
-        if (month.isEstimated && month.unavailableReason) {
+    const yearPromise = (async () => {
+      const fullMoonResults = await Promise.all(
+        [starYear - 1, starYear, starYear + 1, starYear + 2].map((year) =>
+          this.getOptionalFullMoons(year),
+        ),
+      );
+      diagnostics.push(
+        ...fullMoonResults
+          .filter((result) => result.error)
+          .map((result) => ({
+            type: 'phase-provider' as const,
+            name: `${result.year} Full Moon anchors`,
+            reason: result.error!,
+          })),
+      );
+      const fullMoons = fullMoonResults
+        .flatMap((result) => result.values)
+        .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
+      const yearStartsAt =
+        (await this.findStarYearStartNewMoon(newMoons, starYear, location)) ??
+        newMoons.find(
+          (newMoon) =>
+            this.formatIsoDateForLocation(newMoon.occursAt, location) >=
+            `${starYear}-06-01`,
+        );
+      const yearEndsAt = yearStartsAt
+        ? await this.findStarYearEndNewMoon(
+            newMoons,
+            starYear,
+            yearStartsAt,
+            location,
+          )
+        : undefined;
+      const yearNewMoonAnchors =
+        yearStartsAt && yearEndsAt
+          ? newMoons.filter(
+              (newMoon) =>
+                newMoon.occursAt.getTime() >= yearStartsAt.occursAt.getTime() &&
+                newMoon.occursAt.getTime() < yearEndsAt.occursAt.getTime(),
+            )
+          : [];
+      const months: MaramatakaYearMonth[] = [];
+      const yearSpecificEvents: MaramatakaYearEvent[] = [];
+      for (const [index, newMoon] of yearNewMoonAnchors.entries()) {
+        const monthResult = await this.createYearMonthSafe({
+          newMoon,
+          nextNewMoon: this.findNextNewMoon(
+            newMoons,
+            newMoon.occursAt.getTime(),
+          ),
+          fullMoons,
+          location,
+          sequence: index + 1,
+          allNewMoons: newMoons,
+        });
+
+        if (monthResult) {
+          const { month } = monthResult;
+          months.push(month);
+          yearSpecificEvents.push(...monthResult.events);
+          if (month.isEstimated && month.unavailableReason) {
+            diagnostics.push({
+              type: 'estimated-month',
+              sequence: month.sequence,
+              name: month.name,
+              anchorDate:
+                month.anchors.whiro.astronomicalOccursAt ??
+                month.anchors.whiro.occursAt,
+              reason: month.unavailableReason,
+            });
+          }
+        } else {
           diagnostics.push({
-            type: 'estimated-month',
-            sequence: month.sequence,
-            name: month.name,
-            anchorDate:
-              month.anchors.whiro.astronomicalOccursAt ??
-              month.anchors.whiro.occursAt,
-            reason: month.unavailableReason,
+            type: 'skipped-month',
+            sequence: index + 1,
+            name: `Marama ${index + 1}`,
+            anchorDate: newMoon.occursAt,
+            reason:
+              'No following New Moon anchor was available to close this marama.',
           });
         }
-      } else {
-        diagnostics.push({
-          type: 'skipped-month',
-          sequence: index + 1,
-          name: `Marama ${index + 1}`,
-          anchorDate: newMoon.occursAt,
-          reason:
-            'No following New Moon anchor was available to close this marama.',
-        });
+      }
+      const timelineStartsAt =
+        months[0]?.startsAt ??
+        yearStartsAt?.occursAt ??
+        this.localYearBoundary(starYear, location, 5);
+      const timelineEndsAt =
+        yearEndsAt?.occursAt ??
+        months[months.length - 1]?.anchors.nextWhiro.occursAt ??
+        this.localYearBoundary(starYear + 1, location, 5);
+      const monthScopedStarFirstAppearances =
+        includeTimelineEvents && months.length > 0
+          ? await this.getMonthScopedStarFirstAppearances(location, months)
+          : [];
+      const seasonalStarFirstAppearances =
+        includeTimelineEvents && months.length > 0
+          ? await this.getSeasonalStarFirstAppearances(
+              location,
+              this.formatIsoDateForLocation(timelineStartsAt, location),
+              this.formatIsoDateForLocation(timelineEndsAt, location),
+              monthScopedStarFirstAppearances,
+            )
+          : [];
+      const starFirstAppearances = [
+        ...monthScopedStarFirstAppearances,
+        ...seasonalStarFirstAppearances,
+      ];
+      const matarikiCalibrationMarkerAppearanceEvents =
+        includeTimelineEvents && months.length > 0
+          ? await this.createMatarikiCalibrationMarkerAppearanceEvents(
+              location,
+              this.formatIsoDateForLocation(timelineStartsAt, location),
+              this.formatIsoDateForLocation(timelineEndsAt, location),
+            )
+          : [];
+      const starInvisibilityEvents =
+        includeTimelineEvents && months.length > 0
+          ? await this.createStarInvisibilityEvents(
+              location,
+              this.formatIsoDateForLocation(timelineStartsAt, location),
+              this.formatIsoDateForLocation(timelineEndsAt, location),
+            )
+          : [];
+      const solarSeasonEvents = includeTimelineEvents
+        ? await this.createSolarSeasonEvents(
+            starYear,
+            timelineStartsAt,
+            timelineEndsAt,
+          )
+        : [];
+
+      return {
+        version: this.version,
+        ruleSet: summarizeRuleSet(this.ruleSet),
+        year: starYear,
+        timezone: location.timezone,
+        startsAt: timelineStartsAt,
+        endsAt: timelineEndsAt,
+        months,
+        events: this.createYearEvents(
+          months,
+          yearStartsAt,
+          yearEndsAt,
+          starFirstAppearances,
+          [
+            ...yearSpecificEvents,
+            ...matarikiCalibrationMarkerAppearanceEvents,
+            ...starInvisibilityEvents,
+            ...solarSeasonEvents,
+          ],
+        ),
+        diagnostics,
+      };
+    })();
+
+    this.rememberCachedYear(yearCacheKey, yearPromise);
+
+    try {
+      return await yearPromise;
+    } catch (error) {
+      this.yearCache.delete(yearCacheKey);
+      throw error;
+    }
+  }
+
+  private rememberCachedYear(
+    key: string,
+    yearPromise: Promise<MaramatakaYear>,
+  ): void {
+    if (!this.yearCache.has(key) && this.yearCache.size >= YEAR_CACHE_LIMIT) {
+      const oldestKey = this.yearCache.keys().next().value;
+      if (oldestKey) {
+        this.yearCache.delete(oldestKey);
       }
     }
-    const timelineStartsAt =
-      months[0]?.startsAt ??
-      yearStartsAt?.occursAt ??
-      this.localYearBoundary(starYear, location, 5);
-    const timelineEndsAt =
-      yearEndsAt?.occursAt ??
-      months[months.length - 1]?.anchors.nextWhiro.occursAt ??
-      this.localYearBoundary(starYear + 1, location, 5);
-    const monthScopedStarFirstAppearances =
-      months.length > 0
-        ? await this.getMonthScopedStarFirstAppearances(location, months)
-        : [];
-    const seasonalStarFirstAppearances =
-      months.length > 0
-        ? await this.getSeasonalStarFirstAppearances(
-            location,
-            this.formatIsoDateForLocation(timelineStartsAt, location),
-            this.formatIsoDateForLocation(timelineEndsAt, location),
-            monthScopedStarFirstAppearances,
-          )
-        : [];
-    const starFirstAppearances = [
-      ...monthScopedStarFirstAppearances,
-      ...seasonalStarFirstAppearances,
-    ];
-    const matarikiCalibrationMarkerAppearanceEvents =
-      months.length > 0
-        ? await this.createMatarikiCalibrationMarkerAppearanceEvents(
-            location,
-            this.formatIsoDateForLocation(timelineStartsAt, location),
-            this.formatIsoDateForLocation(timelineEndsAt, location),
-          )
-        : [];
-    const starInvisibilityEvents =
-      months.length > 0
-        ? await this.createStarInvisibilityEvents(
-            location,
-            this.formatIsoDateForLocation(timelineStartsAt, location),
-            this.formatIsoDateForLocation(timelineEndsAt, location),
-          )
-        : [];
-    const solarSeasonEvents = await this.createSolarSeasonEvents(
-      starYear,
-      timelineStartsAt,
-      timelineEndsAt,
-    );
 
-    return {
-      version: this.version,
-      ruleSet: summarizeRuleSet(this.ruleSet),
-      year: starYear,
-      timezone: location.timezone,
-      startsAt: timelineStartsAt,
-      endsAt: timelineEndsAt,
-      months,
-      events: this.createYearEvents(
-        months,
-        yearStartsAt,
-        yearEndsAt,
-        starFirstAppearances,
-        [
-          ...yearSpecificEvents,
-          ...matarikiCalibrationMarkerAppearanceEvents,
-          ...starInvisibilityEvents,
-          ...solarSeasonEvents,
-        ],
-      ),
-      diagnostics,
-    };
+    this.yearCache.set(key, yearPromise);
+  }
+
+  private yearCacheKey(
+    location: Location,
+    starYear: number,
+    includeTimelineEvents: boolean,
+  ): string {
+    return [
+      this.ruleSet.id,
+      this.ruleSet.version,
+      location.latitude,
+      location.longitude,
+      location.timezone,
+      starYear,
+      includeTimelineEvents ? 'full' : 'light',
+    ].join(':');
   }
 
   async getStarMarkers(location: Location, date: Date): Promise<StarMarker[]> {
@@ -803,8 +909,7 @@ export class MaramatakaService {
         occursAt: this.localDateStart(holidayDate, location),
         monthSequence: yearMonth.sequence,
         monthName: yearMonth.name,
-        description:
-          `Estimated as the Friday within the selected holiday marama closest to the configured Tangaroa period: ${this.matarikiPublicHolidayTargetMataNames().join(', ')}.`,
+        description: `Estimated as the Friday within the selected holiday marama closest to the configured Tangaroa period: ${this.matarikiPublicHolidayTargetMataNames().join(', ')}.`,
         source: 'Matariki public holiday maramataka rule',
       },
     ];
@@ -875,7 +980,7 @@ export class MaramatakaService {
         type: 'star-appearance',
         name: `${calibrationMarker.name} appears`,
         occursAt: appearance.observedAt,
-        description: `${calibrationMarker.name} first appears in the configured dawn sky window for this maramataka year.`,
+        description: `${calibrationMarker.name} first appears in the sampled dawn sky for this maramataka year.`,
         source: appearance.calculation ?? appearance.source,
       },
     ];
@@ -1195,7 +1300,8 @@ export class MaramatakaService {
       this.ruleSet.starMonthNaming?.markers ?? []
     ).filter(
       (marker) =>
-        !alreadyPlacedMarkerIds.has(marker.id) && !monthMarkerIds.has(marker.id),
+        !alreadyPlacedMarkerIds.has(marker.id) &&
+        !monthMarkerIds.has(marker.id),
     );
 
     if (!seasonalMarkers.length) {
@@ -1411,8 +1517,7 @@ export class MaramatakaService {
       location.latitude,
       location.longitude,
       location.timezone,
-      this.ruleSet.matarikiHoliday?.monthSelection ??
-        'year-start-or-ruhanui',
+      this.ruleSet.matarikiHoliday?.monthSelection ?? 'year-start-or-ruhanui',
       yearStart.occursAt.toISOString(),
     ].join(':');
     if (this.matarikiHolidayNewMoonCache.has(cacheKey)) {
@@ -1506,8 +1611,12 @@ export class MaramatakaService {
     location: Location,
   ): Promise<NewMoon | undefined> {
     return (
-      (await this.findRuhanuiStartNewMoon(newMoons, year, yearStart, location)) ??
-      yearStart
+      (await this.findRuhanuiStartNewMoon(
+        newMoons,
+        year,
+        yearStart,
+        location,
+      )) ?? yearStart
     );
   }
 
@@ -1548,9 +1657,10 @@ export class MaramatakaService {
         continue;
       }
 
-      const end = await this.findStarYearStartNewMoon(
+      const end = await this.findStarYearEndNewMoon(
         newMoons,
-        candidateYear + 1,
+        candidateYear,
+        start,
         location,
       );
       if (!end || relevantNewMoon.occursAt.getTime() < end.occursAt.getTime()) {
@@ -1565,35 +1675,52 @@ export class MaramatakaService {
     return undefined;
   }
 
+  private async findStarYearEndNewMoon(
+    newMoons: NewMoon[],
+    year: number,
+    yearStart: NewMoon,
+    location: Location,
+  ): Promise<NewMoon | undefined> {
+    const ruhanuiStart = await this.findRuhanuiStartNewMoon(
+      newMoons,
+      year,
+      yearStart,
+      location,
+    );
+    if (ruhanuiStart) {
+      return newMoons
+        .filter(
+          (newMoon) =>
+            newMoon.occursAt.getTime() > yearStart.occursAt.getTime(),
+        )
+        .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime())[
+        this.regularStarMonthCount()
+      ];
+    }
+
+    return (
+      (await this.findStarYearStartNewMoon(newMoons, year + 1, location)) ??
+      newMoons.find(
+        (newMoon) =>
+          newMoon.occursAt.getTime() > yearStart.occursAt.getTime() &&
+          this.formatIsoDateForLocation(newMoon.occursAt, location) >=
+            `${year + 1}-06-01`,
+      )
+    );
+  }
+
   private async findStarYearStartNewMoon(
     newMoons: NewMoon[],
     year: number,
     location: Location,
   ): Promise<NewMoon | undefined> {
-    let pipiriStart = await this.findPipiriStartNewMoon(
+    const pipiriStart = await this.findPipiriStartNewMoon(
       newMoons,
       year,
       location,
     );
     if (!pipiriStart) {
       return undefined;
-    }
-
-    if (
-      await this.shouldSkipPipiriStartForDelayedCalibrationMarker(
-        newMoons,
-        year,
-        pipiriStart,
-        location,
-      )
-    ) {
-      pipiriStart = this.findNextNewMoon(
-        newMoons,
-        pipiriStart.occursAt.getTime(),
-      );
-      if (!pipiriStart) {
-        return undefined;
-      }
     }
 
     const previousPipiriStart = await this.findPipiriStartNewMoon(
@@ -1624,15 +1751,65 @@ export class MaramatakaService {
     year: number,
     location: Location,
   ): Promise<NewMoon | undefined> {
+    const pipiriStart = await this.findPipiriCandidateStartNewMoon(
+      newMoons,
+      year,
+      location,
+    );
+    if (!pipiriStart) {
+      return undefined;
+    }
+
+    const matarikiAppearance =
+      await this.getMatarikiCalibrationMarkerFirstAppearance(year, location);
+    if (
+      !matarikiAppearance ||
+      matarikiAppearance.observedAt.getTime() <= pipiriStart.occursAt.getTime()
+    ) {
+      return pipiriStart;
+    }
+
+    const nextPipiriCandidateStart = await this.findPipiriCandidateStartNewMoon(
+      newMoons,
+      year + 1,
+      location,
+    );
+    if (!nextPipiriCandidateStart) {
+      return pipiriStart;
+    }
+
+    const newMoonsInCandidateYear = this.countNewMoonsInRange(
+      newMoons,
+      pipiriStart,
+      nextPipiriCandidateStart,
+    );
+    if (newMoonsInCandidateYear > this.regularStarMonthCount()) {
+      return this.findNextNewMoon(newMoons, pipiriStart.occursAt.getTime());
+    }
+
+    return pipiriStart;
+  }
+
+  private async findPipiriCandidateStartNewMoon(
+    newMoons: NewMoon[],
+    year: number,
+    location: Location,
+  ): Promise<NewMoon | undefined> {
     const pipiriMarker = await this.getPipiriMarkerFirstAppearance(
       year,
       location,
     );
     if (pipiriMarker) {
+      const pipiriMarkerLocalDate = this.formatIsoDateForLocation(
+        pipiriMarker.observedAt,
+        location,
+      );
+
       return newMoons
         .filter(
           (newMoon) =>
-            newMoon.occursAt.getTime() > pipiriMarker.observedAt.getTime(),
+            this.formatIsoDateForLocation(newMoon.occursAt, location) >=
+            pipiriMarkerLocalDate,
         )
         .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime())[0];
     }
@@ -1653,81 +1830,59 @@ export class MaramatakaService {
     pipiriStart: NewMoon,
     location: Location,
   ): Promise<NewMoon | undefined> {
-    const ruhanuiCandidate = this.findNextNewMoon(
+    const pipiriCandidateStart = await this.findPipiriCandidateStartNewMoon(
       newMoons,
-      pipiriStart.occursAt.getTime(),
-    );
-    if (!ruhanuiCandidate) {
-      return undefined;
-    }
-
-    const calibrationMarker =
-      await this.getMatarikiCalibrationMarkerFirstAppearance(year, location);
-    if (!calibrationMarker) {
-      return undefined;
-    }
-
-    const pipiriWhiroStartsAt = await this.getWhiroStartsAt(
-      pipiriStart,
+      year,
       location,
     );
-    if (!pipiriWhiroStartsAt) {
-      return undefined;
-    }
-
     if (
-      calibrationMarker.observedAt.getTime() <= pipiriWhiroStartsAt.getTime()
+      !pipiriCandidateStart ||
+      pipiriCandidateStart.occursAt.getTime() !== pipiriStart.occursAt.getTime()
     ) {
       return undefined;
     }
 
+    const matarikiAppearance =
+      await this.getMatarikiCalibrationMarkerFirstAppearance(year, location);
     if (
-      this.localDaysBetween(
-        pipiriWhiroStartsAt,
-        calibrationMarker.observedAt,
-        location,
-      ) > RUHANUI_EARLY_MATARIKI_AFTER_WHIRO_MAX_DAYS
+      !matarikiAppearance ||
+      matarikiAppearance.observedAt.getTime() <= pipiriStart.occursAt.getTime()
     ) {
       return undefined;
     }
 
-    return ruhanuiCandidate;
+    const nextPipiriStart = await this.findPipiriCandidateStartNewMoon(
+      newMoons,
+      year + 1,
+      location,
+    );
+    if (!nextPipiriStart) {
+      return undefined;
+    }
+
+    const newMoonsInHamalYear = this.countNewMoonsInRange(
+      newMoons,
+      pipiriStart,
+      nextPipiriStart,
+    );
+
+    if (newMoonsInHamalYear > this.regularStarMonthCount()) {
+      return undefined;
+    }
+
+    return this.findNextNewMoon(newMoons, pipiriStart.occursAt.getTime());
   }
 
-  private async shouldSkipPipiriStartForDelayedCalibrationMarker(
+  private countNewMoonsInRange(
     newMoons: NewMoon[],
-    year: number,
-    pipiriStart: NewMoon,
-    location: Location,
-  ): Promise<boolean> {
-    if (!this.findNextNewMoon(newMoons, pipiriStart.occursAt.getTime())) {
-      return false;
-    }
-
-    const calibrationMarker =
-      await this.getMatarikiCalibrationMarkerFirstAppearance(year, location);
-    if (!calibrationMarker) {
-      return false;
-    }
-
-    const pipiriWhiroStartsAt = await this.getWhiroStartsAt(
-      pipiriStart,
-      location,
-    );
-    if (
-      !pipiriWhiroStartsAt ||
-      calibrationMarker.observedAt.getTime() <= pipiriWhiroStartsAt.getTime()
-    ) {
-      return false;
-    }
-
-    return (
-      this.localDaysBetween(
-        pipiriWhiroStartsAt,
-        calibrationMarker.observedAt,
-        location,
-      ) > RUHANUI_EARLY_MATARIKI_AFTER_WHIRO_MAX_DAYS
-    );
+    start: NewMoon,
+    end: NewMoon,
+  ): number {
+    return newMoons.filter(
+      (newMoon) =>
+        newMoon.occursAt.getTime() >= start.occursAt.getTime() &&
+        newMoon.occursAt.getTime() < end.occursAt.getTime(),
+    ).length;
   }
 
   private regularStarMonthCount(): number {

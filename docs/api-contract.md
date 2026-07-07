@@ -31,15 +31,15 @@ The API uses a global exception filter. Error responses use this shape:
   "statusCode": 400,
   "error": "Bad Request",
   "message": "date must be in YYYY-MM-DD format",
-  "path": "/maramataka/month?date=bad",
+  "path": "/maramataka/cycle?date=bad",
   "timestamp": "2026-01-01T00:00:00.000Z"
 }
 ```
 
 ## OpenAPI
 
-OpenAPI/Swagger generation is intentionally deferred for MVP. The project does
-not currently include `@nestjs/swagger`, and the API contract is still changing
-as the moon tracker and Maramataka rule-set model settle. The next API
-documentation step should add Swagger decorators and generated docs once DTOs
-are stable enough that generated schema churn is low.
+OpenAPI/Swagger generation is intentionally deferred while the API contract is
+still changing with the Matariki calendar rule-set model. The project does not
+currently include `@nestjs/swagger`. The next API documentation step should add
+Swagger decorators and generated docs once DTOs are stable enough that generated
+schema churn is low.

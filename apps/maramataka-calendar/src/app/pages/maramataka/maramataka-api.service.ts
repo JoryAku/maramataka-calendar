@@ -5,14 +5,12 @@ import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { NZ_TIMEZONE } from './maramataka.constants';
 import {
   ApiMaramatakaCycleDetails,
-  ApiMaramatakaMonth,
   ApiMaramatakaYear,
   ApiMata,
   ApiMoonDetails,
   ApiStarMarker,
   LocationSummary,
   MaramatakaCycleDetails,
-  MaramatakaMonth,
   MaramatakaNight,
   MaramatakaStarMonth,
   MaramatakaToday,
@@ -32,16 +30,6 @@ export class MaramatakaApiService {
 
   getLocations(): Observable<LocationSummary[]> {
     return this.http.get<LocationSummary[]>(this.apiUrl('/locations'));
-  }
-
-  getMonth(locationId: string, date: Date): Observable<MaramatakaMonth> {
-    const params = new HttpParams()
-      .set('date', this.toYyyyMmDd(date))
-      .set('location', locationId);
-
-    return this.http
-      .get<ApiMaramatakaMonth>(this.apiUrl('/maramataka/month'), { params })
-      .pipe(map((response) => this.mapMonth(response)));
   }
 
   getCycleDetails(
@@ -101,24 +89,12 @@ export class MaramatakaApiService {
         params,
       })
       .pipe(
-        map((response) =>
-          response.map((marker) => this.mapStarMarker(marker)),
-        ),
+        map((response) => response.map((marker) => this.mapStarMarker(marker))),
       );
   }
 
   private apiUrl(path: string): string {
     return `${this.config.apiBaseUrl}${path}`;
-  }
-
-  private mapMonth(apiMonth: ApiMaramatakaMonth): MaramatakaMonth {
-    return {
-      version: apiMonth.version,
-      ruleSet: apiMonth.ruleSet,
-      whiroStartsAt: new Date(apiMonth.whiroStartsAt),
-      starMonthSequence: apiMonth.starMonthSequence,
-      nights: apiMonth.nights.map((night) => this.mapNight(night)),
-    };
   }
 
   private mapToday(apiToday: MaramatakaToday<string>): MaramatakaToday {
@@ -165,8 +141,7 @@ export class MaramatakaApiService {
         nextWhiro: {
           ...apiCycle.anchors.nextWhiro,
           occursAt: new Date(apiCycle.anchors.nextWhiro.occursAt),
-          astronomicalOccursAt: apiCycle.anchors.nextWhiro
-            .astronomicalOccursAt
+          astronomicalOccursAt: apiCycle.anchors.nextWhiro.astronomicalOccursAt
             ? new Date(apiCycle.anchors.nextWhiro.astronomicalOccursAt)
             : undefined,
         },
@@ -237,7 +212,7 @@ export class MaramatakaApiService {
   }
 
   private mapNight(
-    night: ApiMaramatakaMonth['nights'][number],
+    night: ApiMaramatakaCycleDetails['nights'][number],
   ): MaramatakaNight {
     return {
       mata: this.mataName(night.mata),
@@ -304,7 +279,9 @@ export class MaramatakaApiService {
     return typeof mata === 'string' ? mata : mata.name;
   }
 
-  private mataPhaseGroup(mata: string | ApiMata): MaramatakaNight['phaseGroup'] {
+  private mataPhaseGroup(
+    mata: string | ApiMata,
+  ): MaramatakaNight['phaseGroup'] {
     return typeof mata === 'string' ? undefined : mata.phaseGroup;
   }
 

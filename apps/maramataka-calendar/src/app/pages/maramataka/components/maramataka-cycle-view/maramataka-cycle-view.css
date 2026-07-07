@@ -1,0 +1,85 @@
+:host {
+  display: block;
+}
+
+h2,
+p {
+  margin-top: 0;
+}
+
+h2 {
+  margin-bottom: 0;
+  color: #e6f8f0;
+  font-size: 1.1rem;
+}
+
+.month-section {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #223d35;
+  border-radius: 8px;
+  background: #071613cc;
+  box-shadow: 0 24px 70px #0000002e;
+}
+
+.section-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-header > div,
+.section-header > p {
+  min-width: 0;
+}
+
+.section-header p:last-child {
+  margin-bottom: 0;
+  color: #9fb5ac;
+  overflow-wrap: anywhere;
+}
+
+.eyebrow {
+  margin-bottom: 0.25rem;
+  color: #69d8c5;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.state {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #31534a;
+  border-radius: 8px;
+  background: #102821;
+  color: #d2e8df;
+}
+
+.state.compact {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.state.error {
+  border-color: #7e423d;
+  background: #2b1715;
+  color: #ffd9d3;
+}
+
+@media (max-width: 900px) {
+  .section-header {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .month-section {
+    padding: 0.75rem;
+  }
+}

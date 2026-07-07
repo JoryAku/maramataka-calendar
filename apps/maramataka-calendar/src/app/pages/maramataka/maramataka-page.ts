@@ -35,6 +35,7 @@ import {
     MaramatakaYearView,
   ],
   templateUrl: './maramataka-page.html',
+  styleUrl: './maramataka-page.css',
 })
 export class MaramatakaPage implements OnInit {
   private readonly api = inject(MaramatakaApiService);
@@ -236,31 +237,6 @@ export class MaramatakaPage implements OnInit {
     const generation = ++this.requestGeneration;
 
     this.api
-      .getMonth(locationId, requestDate)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (month) => {
-          if (generation !== this.requestGeneration) {
-            return;
-          }
-
-          this.month.set(month);
-          this.monthLoading.set(false);
-        },
-        error: () => {
-          if (generation !== this.requestGeneration) {
-            return;
-          }
-
-          this.month.set(null);
-          this.monthLoading.set(false);
-          this.monthError.set(
-            'Unable to load maramataka month. Please try again.',
-          );
-        },
-      });
-
-    this.api
       .getCycleDetails(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -270,6 +246,8 @@ export class MaramatakaPage implements OnInit {
           }
 
           this.cycle.set(cycle);
+          this.month.set(this.monthFromCycle(cycle));
+          this.monthLoading.set(false);
           this.cycleLoading.set(false);
         },
         error: () => {
@@ -277,8 +255,13 @@ export class MaramatakaPage implements OnInit {
             return;
           }
 
+          this.month.set(null);
           this.cycle.set(null);
+          this.monthLoading.set(false);
           this.cycleLoading.set(false);
+          this.monthError.set(
+            'Unable to load maramataka month. Please try again.',
+          );
           this.cycleError.set('Unable to load maramataka cycle anchors.');
         },
       });
@@ -396,12 +379,24 @@ export class MaramatakaPage implements OnInit {
     }
   }
 
+  private monthFromCycle(cycle: MaramatakaCycleDetails): MaramatakaMonth {
+    return {
+      version: cycle.version,
+      ruleSet: cycle.ruleSet,
+      whiroStartsAt: cycle.anchors.whiro.occursAt,
+      starMonthSequence: cycle.starMonth?.note?.sequence,
+      nights: cycle.nights,
+    };
+  }
+
   private requestDate(): Date {
     if (this.useLiveDate()) {
       return new Date();
     }
 
-    return this.selectedDateInstant() ?? this.nzMiddayForDate(this.selectedDate());
+    return (
+      this.selectedDateInstant() ?? this.nzMiddayForDate(this.selectedDate())
+    );
   }
 
   private dateInsideNight(night: MaramatakaNight): Date {

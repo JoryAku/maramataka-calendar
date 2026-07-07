@@ -1,9 +1,14 @@
-# Maramataka Calendar
+# Matariki Calendar
 
-Maramataka Calendar is an Nx workspace for a modern Maramataka app. The current
-product focus is an accurate moon tracker with current mata, moonrise and
-moonset, lunar phase anchors, cycle/month views, and a year rhythm view that
-shows marama boundaries plus dawn star and moon events.
+Matariki Calendar is an astronomy-backed calendar for exploring the maramataka
+year. It calculates moonrise-based mata, marama boundaries, dawn star markers,
+and the Matariki year rhythm from astronomical events for a selected location.
+
+The active calendar model is grounded in the **Living by the Stars 2021-2024
+calendar material**. The app uses that source material as the current source of
+truth for named marama, Pipiri/Ruhanui placement, and the year calculation,
+while keeping official public holiday dates as diagnostics rather than rule
+inputs.
 
 ## Requirements
 
@@ -68,17 +73,26 @@ npm run ci
 
 ## Calibration And Diagnostics
 
-Generate the official Matariki holiday and Tangaroa-period calibration report:
+The current year calculation is documented in
+[docs/maramataka-rules.md](docs/maramataka-rules.md).
+
+Compare generated dates with the official Matariki holiday schedule:
 
 ```sh
 npm run compare:matariki-holiday
 ```
 
-Focus that report on Pipiri, Matariki, Ruhanui, New Moon, and Full Moon
-visibility anchors:
+Inspect Pipiri, Matariki, Ruhanui, New Moon, and Full Moon anchors around the
+official schedule:
 
 ```sh
 npm run compare:matariki-holiday -- --focus=matariki-visibility
+```
+
+Check only the Living by the Stars 2021-2024 calendar source rows:
+
+```sh
+npm run compare:matariki-holiday -- --focus=source-calendar
 ```
 
 Inspect a specific maramataka or sky condition:
@@ -89,8 +103,8 @@ npm run diagnose:maramataka -- holiday-explorer --year 2041
 npm run diagnose:maramataka -- sky-position --at 2041-07-21T06:00 --marker all
 ```
 
-The diagnostic commands are for rule review. They do not use official holiday
-dates as inputs to the maramataka calculation.
+These commands are for rule review. They do not feed official holiday dates
+back into the calendar calculation.
 
 ## CI
 
