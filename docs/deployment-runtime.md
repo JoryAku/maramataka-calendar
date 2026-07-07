@@ -145,6 +145,15 @@ holiday marker logic. That fingerprint is currently used by in-memory
 month/year caches. It is not yet a persistent cache namespace because generated
 maramataka year/month outputs are not written to disk.
 
+The API logs the active raw astronomy, observational astronomy, and maramataka
+rule-set fingerprints with compact metadata summaries at startup under the
+`CacheFingerprint` logger. The full readable metadata can be inspected locally
+without starting the API:
+
+```sh
+npm run diagnose:maramataka -- cache-fingerprints
+```
+
 Recommended production behaviour:
 
 - Put the cache on persistent storage if the hosting platform supports it.

@@ -1,14 +1,18 @@
 import {
   AstronomyEngineProvider,
   CachedAstronomyProvider,
+  createCacheFingerprint,
   FileAstronomyCacheStore,
   formatIsoDateInTimezone,
   Location,
+  OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
   parseLocalDateTimeInTimezone,
   PersistentCachedAstronomyProvider,
+  RAW_ASTRONOMY_CACHE_METADATA,
   StarMarkerDefinition,
 } from '@maramataka-calendar/astronomy';
 import {
+  createMaramatakaRuleSetCacheMetadata,
   LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
   MaramatakaCycleDetails,
   MaramatakaMonth,
@@ -299,6 +303,27 @@ const TANGAROA_TARGET_MATA = new Set(
     'Tangaroa whāriki kio-kio',
   ],
 );
+
+function cacheFingerprintReport() {
+  const maramatakaRuleSetMetadata = createMaramatakaRuleSetCacheMetadata(
+    LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
+  );
+
+  return {
+    fingerprints: {
+      rawAstronomy: createCacheFingerprint(RAW_ASTRONOMY_CACHE_METADATA),
+      observationalAstronomy: createCacheFingerprint(
+        OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+      ),
+      maramatakaRules: createCacheFingerprint(maramatakaRuleSetMetadata),
+    },
+    metadata: {
+      rawAstronomy: RAW_ASTRONOMY_CACHE_METADATA,
+      observationalAstronomy: OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+      maramatakaRules: maramatakaRuleSetMetadata,
+    },
+  };
+}
 
 function parseArgs(argv: string[]): { command: string; options: CliOptions } {
   const [command = 'help', ...rest] = argv;
@@ -1228,6 +1253,7 @@ Commands:
   year-trace         --year 2026
   holiday-explorer   --year 2026
   event-placement    --at YYYY-MM-DDTHH:mm
+  cache-fingerprints
 
 Location options:
   --lat -41.2865 --lon 174.7762 --timezone Pacific/Auckland --location Wellington
@@ -1258,6 +1284,9 @@ async function main() {
       break;
     case 'event-placement':
       await explainEventPlacement(options);
+      break;
+    case 'cache-fingerprints':
+      console.log(JSON.stringify(cacheFingerprintReport(), null, 2));
       break;
     default:
       usage();

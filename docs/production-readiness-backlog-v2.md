@@ -5,6 +5,24 @@ visible without being treated as an implemented rule. The active calendar frame
 is astronomy-backed and grounded in the Living by the Stars 2021-2024 calendar
 material.
 
+## Recent Infrastructure
+
+### Cache Fingerprint Observability
+
+Cache fingerprint observability is now read-only and available without adding a
+database or persistent maramataka year/month output cache.
+
+Implemented:
+
+- log the active raw astronomy, observational astronomy, and maramataka rule-set
+  fingerprints with compact metadata summaries at API startup
+- include short fingerprints in the startup log line so cache namespace changes
+  are obvious during deploys
+- provide `npm run diagnose:maramataka -- cache-fingerprints` to print readable
+  metadata and fingerprints without requiring the API server to run
+- keep observability read-only; it does not clear, rewrite, or migrate cache
+  data
+
 ## Future Accuracy
 
 ### Extend Layered Cache Fingerprints
@@ -31,8 +49,6 @@ Remaining work:
 - add a persistent derived maramataka-rules namespace if/when year or month
   results become persistent rather than in-memory only
 - add stale namespace cleanup tooling after namespace invalidation is in place
-- log the active readable cache metadata and short fingerprint during startup
-  or diagnostics so cache invalidation can be reviewed
 
 ### Refine Dawn Star Marker Sampling
 
