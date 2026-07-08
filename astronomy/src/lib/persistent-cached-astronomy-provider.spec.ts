@@ -316,6 +316,82 @@ describe('PersistentCachedAstronomyProvider', () => {
     expect(provider.getStarFirstAppearances).toHaveBeenCalledTimes(2);
   });
 
+  it('persists star first appearance windows by marker dawn-rising config', async () => {
+    const provider = createProvider({
+      getStarFirstAppearancesForWindows: jest.fn().mockResolvedValue([
+        {
+          id: 'month:1:pipiri',
+          marker: {
+            id: 'pipiri',
+            name: 'Pipiri',
+            type: 'star',
+            description: 'Hamal.',
+            seasonalAssociation: 'First named month marker',
+            source: 'test',
+            confidence: 'confirmed',
+            observedAt: new Date('2026-05-26T17:54:00.000Z'),
+            altitudeDegrees: 4,
+            azimuthDegrees: 50,
+            direction: 'NE',
+            visibility: 'low',
+            calculation: 'test',
+          },
+        },
+      ]),
+    });
+    const store = createStore();
+    const marker = {
+      id: 'pipiri',
+      name: 'Pipiri',
+      type: 'star' as const,
+      description: 'Hamal.',
+      seasonalAssociation: 'First named month marker',
+      source: 'test',
+      confidence: 'confirmed' as const,
+      representative: {
+        kind: 'fixed-equatorial' as const,
+        rightAscensionHours: 2.1195,
+        declinationDegrees: 23.4624,
+      },
+      dawnRising: {
+        startSunAltitudeDegrees: -18,
+        endSunAltitudeDegrees: 0,
+        minimumMarkerAltitudeDegrees: 0,
+        minimumAzimuthDegrees: 0,
+        maximumAzimuthDegrees: 180,
+        sampleMinutes: 5,
+      },
+    };
+    const cached = new PersistentCachedAstronomyProvider(provider, store);
+
+    const first = await cached.getStarFirstAppearancesForWindows(
+      [
+        {
+          id: 'month:1:pipiri',
+          startDate: '2026-05-26',
+          endDate: '2026-06-24',
+          marker,
+        },
+      ],
+      location,
+    );
+    const second = await cached.getStarFirstAppearancesForWindows(
+      [
+        {
+          id: 'month:1:pipiri',
+          startDate: '2026-05-26',
+          endDate: '2026-06-24',
+          marker,
+        },
+      ],
+      location,
+    );
+
+    expect(provider.getStarFirstAppearancesForWindows).toHaveBeenCalledTimes(1);
+    expect(first[0]?.marker?.observedAt).toBeInstanceOf(Date);
+    expect(second[0]?.marker?.observedAt).toBeInstanceOf(Date);
+  });
+
   it('ignores raw astronomy cache entries from a different fingerprint namespace', async () => {
     const provider = createProvider({
       getNewMoons: jest.fn().mockResolvedValue([

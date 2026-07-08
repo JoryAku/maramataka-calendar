@@ -10,8 +10,10 @@ import {
   NewMoon,
   SolarSeasonEvent,
   StarMarker,
+  StarMarkerAppearanceWindow,
   StarMarkerDefinition,
   StarMarkerNightInvisibilityPeriod,
+  StarMarkerWindowAppearance,
 } from './astronomy-provider';
 
 const STAR_DAWN_SAMPLING_CACHE_VERSION = 'dawn-window-first-appearance-v1';
@@ -28,6 +30,10 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   private moonDetailsCache = new Map<string, Promise<MoonDetails>>();
   private starMarkerCache = new Map<string, Promise<StarMarker[]>>();
   private starFirstAppearanceCache = new Map<string, Promise<StarMarker[]>>();
+  private starFirstAppearanceWindowCache = new Map<
+    string,
+    Promise<StarMarkerWindowAppearance[]>
+  >();
   private starNightInvisibilityCache = new Map<
     string,
     Promise<StarMarkerNightInvisibilityPeriod[]>
@@ -233,6 +239,34 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     return request;
   }
 
+  async getStarFirstAppearancesForWindows(
+    windows: StarMarkerAppearanceWindow[],
+    location: Location,
+  ): Promise<StarMarkerWindowAppearance[]> {
+    const key = [
+      STAR_DAWN_SAMPLING_CACHE_VERSION,
+      'windows',
+      this.locationOnlyCacheKey(location),
+      this.starMarkerAppearanceWindowsCacheKey(windows),
+    ].join(':');
+
+    const cachedRequest = this.starFirstAppearanceWindowCache.get(key);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = this.getStarFirstAppearanceWindows(
+      windows,
+      location,
+    ).catch((error) => {
+      this.starFirstAppearanceWindowCache.delete(key);
+      throw error;
+    });
+
+    this.starFirstAppearanceWindowCache.set(key, request);
+    return request;
+  }
+
   async getStarNightInvisibilityPeriods(
     startDate: string,
     endDate: string,
@@ -270,8 +304,51 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     return request;
   }
 
+  private async getStarFirstAppearanceWindows(
+    windows: StarMarkerAppearanceWindow[],
+    location: Location,
+  ): Promise<StarMarkerWindowAppearance[]> {
+    if (this.provider.getStarFirstAppearancesForWindows) {
+      return this.provider.getStarFirstAppearancesForWindows(windows, location);
+    }
+
+    return Promise.all(
+      windows.map(async (window) => {
+        const [marker] =
+          (await this.provider.getStarFirstAppearances?.(
+            window.startDate,
+            window.endDate,
+            location,
+            [window.marker],
+          )) ?? [];
+
+        return {
+          id: window.id,
+          marker,
+        };
+      }),
+    );
+  }
+
   private locationCacheKey(date: string, location: Location): string {
     return `${date}:${location.latitude}:${location.longitude}:${location.timezone}`;
+  }
+
+  private locationOnlyCacheKey(location: Location): string {
+    return `${location.latitude}:${location.longitude}:${location.timezone}`;
+  }
+
+  private starMarkerAppearanceWindowsCacheKey(
+    windows: StarMarkerAppearanceWindow[],
+  ): string {
+    return JSON.stringify(
+      windows.map((window) => ({
+        id: window.id,
+        startDate: window.startDate,
+        endDate: window.endDate,
+        marker: JSON.parse(this.starMarkerCacheKey([window.marker])),
+      })),
+    );
   }
 
   private starMarkerCacheKey(markers?: StarMarkerDefinition[]): string {

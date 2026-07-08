@@ -29,6 +29,22 @@
     astronomical Full Moons, equinoxes, solstices, and the Matariki public
     holiday marker.
   </p>
+  @if (yearTimelineLoading()) {
+  <p
+    class="state compact year-timeline-loading"
+    data-testid="year-timeline-loading-state"
+  >
+    Loading celestial annotations...
+  </p>
+  }
+  @if (yearTimelineError()) {
+  <p
+    class="state compact error year-timeline-error"
+    data-testid="year-timeline-error-state"
+  >
+    {{ yearTimelineError() }}
+  </p>
+  }
   @if (year()!.diagnostics.length) {
   <div class="year-diagnostics" data-testid="year-diagnostics">
     <h3>Year timeline notes</h3>

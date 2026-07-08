@@ -10,9 +10,11 @@ import {
   NewMoon,
   SolarSeasonEvent,
   StarMarker,
+  StarMarkerAppearanceWindow,
   StarMarkerDawnRisingConfig,
   StarMarkerDefinition,
   StarMarkerNightInvisibilityPeriod,
+  StarMarkerWindowAppearance,
 } from './astronomy-provider';
 import {
   CacheFingerprintMetadata,
@@ -48,6 +50,7 @@ export const OBSERVATIONAL_ASTRONOMY_CACHE_METADATA = {
   operations: [
     'star-markers',
     'star-first-appearances',
+    'star-first-appearance-windows',
     'star-night-invisibility-periods',
   ],
   dawnMarkerSampling: {
@@ -262,6 +265,32 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     );
   }
 
+  async getStarFirstAppearancesForWindows(
+    windows: StarMarkerAppearanceWindow[],
+    location: Location,
+  ): Promise<StarMarkerWindowAppearance[]> {
+    return this.getOrSet(
+      this.observationalCacheKey(
+        [
+          'star-first-appearance-windows',
+          this.locationOnlyCacheKey(location),
+          this.starMarkerAppearanceWindowsCacheKey(windows),
+        ].join(':'),
+      ),
+      () => this.getStarFirstAppearanceWindows(windows, location),
+      (appearances) =>
+        appearances.map((appearance) => ({
+          ...appearance,
+          marker: appearance.marker
+            ? {
+                ...appearance.marker,
+                observedAt: new Date(appearance.marker.observedAt),
+              }
+            : undefined,
+        })),
+    );
+  }
+
   async getStarNightInvisibilityPeriods(
     startDate: string,
     endDate: string,
@@ -288,6 +317,32 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
           sunAltitudeThresholdDegrees,
         ) ?? Promise.resolve([]),
       (periods) => periods,
+    );
+  }
+
+  private async getStarFirstAppearanceWindows(
+    windows: StarMarkerAppearanceWindow[],
+    location: Location,
+  ): Promise<StarMarkerWindowAppearance[]> {
+    if (this.provider.getStarFirstAppearancesForWindows) {
+      return this.provider.getStarFirstAppearancesForWindows(windows, location);
+    }
+
+    return Promise.all(
+      windows.map(async (window) => {
+        const [marker] =
+          (await this.provider.getStarFirstAppearances?.(
+            window.startDate,
+            window.endDate,
+            location,
+            [window.marker],
+          )) ?? [];
+
+        return {
+          id: window.id,
+          marker,
+        };
+      }),
     );
   }
 
@@ -329,6 +384,23 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
       location.longitude,
       location.timezone,
     ].join(':');
+  }
+
+  private locationOnlyCacheKey(location: Location): string {
+    return [location.latitude, location.longitude, location.timezone].join(':');
+  }
+
+  private starMarkerAppearanceWindowsCacheKey(
+    windows: StarMarkerAppearanceWindow[],
+  ): string {
+    return createCacheFingerprint(
+      windows.map((window) => ({
+        id: window.id,
+        startDate: window.startDate,
+        endDate: window.endDate,
+        marker: this.starMarkerMetadata([window.marker]),
+      })),
+    );
   }
 
   private starMarkerCacheKey(markers?: StarMarkerDefinition[]): string {

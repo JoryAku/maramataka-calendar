@@ -241,4 +241,70 @@ describe('CachedAstronomyProvider', () => {
 
     expect(provider.getStarFirstAppearances).toHaveBeenCalledTimes(2);
   });
+
+  it('caches star first appearance windows by marker dawn-rising config', async () => {
+    const provider = createProvider({
+      getStarFirstAppearancesForWindows: jest.fn().mockResolvedValue([]),
+    });
+    const baseMarker = {
+      id: 'pipiri',
+      name: 'Pipiri',
+      type: 'star' as const,
+      description: 'Hamal.',
+      seasonalAssociation: 'First named month marker',
+      source: 'test',
+      confidence: 'confirmed' as const,
+      representative: {
+        kind: 'fixed-equatorial' as const,
+        rightAscensionHours: 2.1195,
+        declinationDegrees: 23.4624,
+      },
+    };
+    const cached = new CachedAstronomyProvider(provider);
+
+    await cached.getStarFirstAppearancesForWindows(
+      [
+        {
+          id: 'month:1:pipiri',
+          startDate: '2026-05-26',
+          endDate: '2026-06-24',
+          marker: {
+            ...baseMarker,
+            dawnRising: {
+              startSunAltitudeDegrees: -18,
+              endSunAltitudeDegrees: 0,
+              minimumMarkerAltitudeDegrees: 0,
+              minimumAzimuthDegrees: 0,
+              maximumAzimuthDegrees: 180,
+              sampleMinutes: 5,
+            },
+          },
+        },
+      ],
+      location,
+    );
+    await cached.getStarFirstAppearancesForWindows(
+      [
+        {
+          id: 'month:1:pipiri',
+          startDate: '2026-05-26',
+          endDate: '2026-06-24',
+          marker: {
+            ...baseMarker,
+            dawnRising: {
+              startSunAltitudeDegrees: -18,
+              endSunAltitudeDegrees: 0,
+              minimumMarkerAltitudeDegrees: 0,
+              minimumAzimuthDegrees: 0,
+              maximumAzimuthDegrees: 180,
+              sampleMinutes: 5,
+            },
+          },
+        },
+      ],
+      location,
+    );
+
+    expect(provider.getStarFirstAppearancesForWindows).toHaveBeenCalledTimes(1);
+  });
 });

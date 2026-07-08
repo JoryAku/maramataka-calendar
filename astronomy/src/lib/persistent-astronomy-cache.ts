@@ -22,7 +22,8 @@ interface CacheEntry {
 
 export class FileAstronomyCacheStore implements AstronomyCacheStore {
   private cacheFilePromise?: Promise<CacheFile>;
-  private writeQueue: Promise<void> = Promise.resolve();
+  private flushPromise?: Promise<void>;
+  private flushQueued = false;
 
   constructor(private readonly filePath: string) {}
 
@@ -45,10 +46,7 @@ export class FileAstronomyCacheStore implements AstronomyCacheStore {
       value,
     };
 
-    this.writeQueue = this.writeQueue.then(() =>
-      this.writeCacheFile(cacheFile),
-    );
-    await this.writeQueue;
+    await this.scheduleFlush();
   }
 
   private async loadCacheFile(): Promise<CacheFile> {
@@ -78,6 +76,24 @@ export class FileAstronomyCacheStore implements AstronomyCacheStore {
       }
 
       throw error;
+    }
+  }
+
+  private scheduleFlush(): Promise<void> {
+    this.flushQueued = true;
+    this.flushPromise ??= this.flushCacheFile().finally(() => {
+      this.flushPromise = undefined;
+    });
+
+    return this.flushPromise;
+  }
+
+  private async flushCacheFile(): Promise<void> {
+    await Promise.resolve();
+
+    while (this.flushQueued) {
+      this.flushQueued = false;
+      await this.writeCacheFile(await this.loadCacheFile());
     }
   }
 

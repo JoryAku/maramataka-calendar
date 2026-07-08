@@ -336,6 +336,7 @@ describe('MaramatakaController', () => {
       const [locationArg, dateArg] = getYearMock.mock.calls[0] as [
         { latitude: number; longitude: number; timezone: string },
         Date,
+        { includeTimelineEvents: boolean },
       ];
       expect(locationArg).toEqual({
         latitude: -41.2865,
@@ -343,6 +344,27 @@ describe('MaramatakaController', () => {
         timezone: 'Pacific/Auckland',
       });
       expect(dateArg.toISOString()).toBe('2026-01-01T23:00:00.000Z');
+      expect(getYearMock.mock.calls[0]?.[2]).toEqual({
+        includeTimelineEvents: true,
+      });
+    });
+
+    it('can omit expensive timeline events for progressive loading', async () => {
+      getYearMock.mockResolvedValue(createYearFixture());
+
+      const response = await axios.get(`${baseUrl}/maramataka/year`, {
+        params: {
+          date: '2026-01-02',
+          location: 'wellington',
+          includeTimelineEvents: 'false',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(getYearMock.mock.calls[0]?.[2]).toEqual({
+        includeTimelineEvents: false,
+      });
     });
   });
 

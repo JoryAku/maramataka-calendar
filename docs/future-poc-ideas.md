@@ -74,11 +74,21 @@ material.
 - Use readable cache fingerprints so rule or astronomy changes create cache
   misses instead of serving stale results.
 - Add stale namespace cleanup tooling for old cache entries.
+- Revisit the app data-loading shape so day, month, and year views can reuse
+  already-loaded cycle/month/year data when moving between adjacent days instead
+  of recalculating or refetching every layer from scratch.
 - Consider persistent derived maramataka year/month caches if generation cost
   becomes a production issue.
 - Revisit SQLite, Postgres, or object storage only when the app needs shared
   cache state, user data, saved locations, or generated calendar persistence.
 - Expose lightweight cache/rule-set status for operational review.
+
+## Language And Content
+
+- Make UI strings language-switchable, with te reo Maori as a first supported
+  language option.
+- Keep calculated names, source terms, and translated interface copy separated
+  so rule-set data remains traceable while the product UI can be localised.
 
 ## API And Documentation
 

@@ -60,6 +60,8 @@ export class MaramatakaPage implements OnInit {
   protected readonly moonDetailsError = signal<string | null>(null);
   protected readonly moonDetails = signal<MoonDetails | null>(null);
   protected readonly yearLoading = signal(true);
+  protected readonly yearTimelineLoading = signal(false);
+  protected readonly yearTimelineError = signal<string | null>(null);
   protected readonly yearError = signal<string | null>(null);
   protected readonly year = signal<MaramatakaYear | null>(null);
   protected readonly starMarkersLoading = signal(true);
@@ -180,6 +182,8 @@ export class MaramatakaPage implements OnInit {
           this.todayLoading.set(false);
           this.moonDetailsLoading.set(false);
           this.yearLoading.set(false);
+          this.yearTimelineLoading.set(false);
+          this.yearTimelineError.set(null);
           this.starMarkersLoading.set(false);
           this.monthError.set(
             'Unable to load maramataka month because locations could not be loaded.',
@@ -220,12 +224,15 @@ export class MaramatakaPage implements OnInit {
     this.todayLoading.set(true);
     this.moonDetailsLoading.set(true);
     this.yearLoading.set(true);
+    this.yearTimelineLoading.set(false);
+    this.yearTimelineError.set(null);
     this.starMarkersLoading.set(true);
     this.monthError.set(null);
     this.cycleError.set(null);
     this.todayError.set(null);
     this.moonDetailsError.set(null);
     this.yearError.set(null);
+    this.yearTimelineError.set(null);
     this.starMarkersError.set(null);
     this.month.set(null);
     this.cycle.set(null);
@@ -302,7 +309,7 @@ export class MaramatakaPage implements OnInit {
       });
 
     this.api
-      .getYear(locationId, requestDate)
+      .getYear(locationId, requestDate, { includeTimelineEvents: false })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (year) => {
@@ -312,6 +319,9 @@ export class MaramatakaPage implements OnInit {
 
           this.year.set(year);
           this.yearLoading.set(false);
+          this.yearTimelineLoading.set(true);
+          this.yearTimelineError.set(null);
+          this.loadYearTimeline(locationId, requestDate, generation);
         },
         error: (error: unknown) => {
           if (generation !== this.requestGeneration) {
@@ -320,8 +330,41 @@ export class MaramatakaPage implements OnInit {
 
           this.year.set(null);
           this.yearLoading.set(false);
+          this.yearTimelineLoading.set(false);
+          this.yearTimelineError.set(null);
           this.yearError.set(
-            `Unable to load maramataka year timeline.${this.formatRequestError(error)}`,
+            `Unable to load maramataka year.${this.formatRequestError(error)}`,
+          );
+        },
+      });
+  }
+
+  private loadYearTimeline(
+    locationId: string,
+    requestDate: Date,
+    generation: number,
+  ): void {
+    this.api
+      .getYear(locationId, requestDate, { includeTimelineEvents: true })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (year) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.year.set(year);
+          this.yearTimelineLoading.set(false);
+          this.yearTimelineError.set(null);
+        },
+        error: (error: unknown) => {
+          if (generation !== this.requestGeneration) {
+            return;
+          }
+
+          this.yearTimelineLoading.set(false);
+          this.yearTimelineError.set(
+            `Unable to load maramataka year annotations.${this.formatRequestError(error)}`,
           );
         },
       });

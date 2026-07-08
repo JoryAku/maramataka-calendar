@@ -15,7 +15,9 @@ import {
   PersistentCachedAstronomyProvider,
   parseLocalDateTimeInTimezone,
   StarMarker,
+  StarMarkerAppearanceWindow,
   StarMarkerDefinition,
+  StarMarkerWindowAppearance,
 } from '@maramataka-calendar/astronomy';
 import {
   DEFAULT_MARAMATAKA_RULE_SET,
@@ -224,6 +226,27 @@ export class StubAstronomyProvider implements AstronomyProvider {
     );
 
     return appearances.filter((marker): marker is StarMarker => Boolean(marker));
+  }
+
+  async getStarFirstAppearancesForWindows(
+    windows: StarMarkerAppearanceWindow[],
+    location: Location,
+  ): Promise<StarMarkerWindowAppearance[]> {
+    return Promise.all(
+      windows.map(async (window) => {
+        const [marker] = await this.getStarFirstAppearances(
+          window.startDate,
+          window.endDate,
+          location,
+          [window.marker],
+        );
+
+        return {
+          id: window.id,
+          marker,
+        };
+      }),
+    );
   }
 
   private stubDawnObservationTime(date: string, location: Location): Date {

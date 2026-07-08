@@ -25,6 +25,8 @@ export class MaramatakaYearView {
   protected readonly nzTimeZone = NZ_TIMEZONE;
 
   yearLoading = input.required<boolean>();
+  yearTimelineLoading = input(false);
+  yearTimelineError = input<string | null>(null);
   yearError = input<string | null>(null);
   year = input<MaramatakaYear | null>(null);
   selectedDate = input<Date | null>(null);
