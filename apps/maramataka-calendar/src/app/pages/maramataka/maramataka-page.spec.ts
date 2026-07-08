@@ -95,10 +95,11 @@ describe('MaramatakaPage', () => {
         req.url === '/api/maramataka/page' &&
         req.params.get('location') === locationId,
     );
-    const yearRequest = httpTestingController.expectOne(
+    const yearCoreRequest = httpTestingController.expectOne(
       (req) =>
         req.url === '/api/maramataka/year' &&
-        req.params.get('location') === locationId,
+        req.params.get('location') === locationId &&
+        req.params.get('includeTimelineEvents') === 'false',
     );
     const starMarkersRequest = httpTestingController.expectOne(
       (req) =>
@@ -108,9 +109,18 @@ describe('MaramatakaPage', () => {
 
     return {
       pageRequest,
-      yearRequest,
+      yearCoreRequest,
       starMarkersRequest,
     };
+  }
+
+  function expectYearTimelineRequest(locationId = 'wellington') {
+    return httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/year' &&
+        req.params.get('location') === locationId &&
+        req.params.get('includeTimelineEvents') === 'true',
+    );
   }
 
   function locationsFixture() {
@@ -590,7 +600,19 @@ describe('MaramatakaPage', () => {
       moonDetails,
     });
     requests.starMarkersRequest.flush(starMarkers);
-    requests.yearRequest.flush(year);
+    const yearEvents = year['events'] as { type: string }[];
+    requests.yearCoreRequest.flush({
+      ...year,
+      events: yearEvents.filter(
+        (event) =>
+          event.type === 'month-start' ||
+          event.type === 'new-moon' ||
+          event.type === 'full-moon',
+      ),
+    });
+    expectYearTimelineRequest(
+      requests.yearCoreRequest.request.params.get('location') ?? 'wellington',
+    ).flush(year);
   }
 
   it('shows loading states before data arrives', () => {
@@ -791,6 +813,49 @@ describe('MaramatakaPage', () => {
         element.classList.contains('seasonal-marker'),
       ),
     ).toBe(true);
+  });
+
+  it('keeps the year core visible when timeline annotations fail', () => {
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    const requests = flushMaramatakaRequests();
+    const year = yearFixture();
+    const yearEvents = year['events'] as { type: string }[];
+
+    requests.pageRequest.flush({
+      cycle: cycleFixture(),
+      moonDetails: moonDetailsFixture(),
+    });
+    requests.starMarkersRequest.flush(starMarkersFixture());
+    requests.yearCoreRequest.flush({
+      ...year,
+      events: yearEvents.filter(
+        (event) =>
+          event.type === 'month-start' ||
+          event.type === 'new-moon' ||
+          event.type === 'full-moon',
+      ),
+    });
+    expectYearTimelineRequest().flush('Failure', {
+      status: 503,
+      statusText: 'Service Unavailable',
+    });
+
+    fixture.detectChanges();
+
+    const content = fixture.nativeElement.textContent as string;
+    expect(content).toContain('Year rhythm');
+    expect(content).toContain('Te Tahi o Pipiri');
+    expect(
+      fixture.nativeElement.querySelector(
+        '[data-testid="year-timeline-error-state"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="year-error-state"]'),
+    ).toBeNull();
   });
 
   it('updates the next mata countdown while the page is open', () => {
@@ -1172,7 +1237,7 @@ describe('MaramatakaPage', () => {
 
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
-    const { pageRequest, yearRequest, starMarkersRequest } =
+    const { pageRequest, yearCoreRequest, starMarkersRequest } =
       flushMaramatakaRequests();
 
     pageRequest.flush('Failure', {
@@ -1180,7 +1245,8 @@ describe('MaramatakaPage', () => {
       statusText: 'Server Error',
     });
     starMarkersRequest.flush(starMarkersFixture());
-    yearRequest.flush(yearFixture());
+    yearCoreRequest.flush(yearFixture());
+    expectYearTimelineRequest().flush(yearFixture());
 
     fixture.detectChanges();
 

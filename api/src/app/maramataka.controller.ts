@@ -12,7 +12,7 @@ import {
   MaramatakaService,
   MaramatakaYear,
 } from '@maramataka-calendar/maramataka-domain';
-import { DateLocationQueryDto } from './api-query.dto';
+import { DateLocationQueryDto, YearQueryDto } from './api-query.dto';
 import {
   MaramatakaPageResponseDto,
   StarMarkerResponseDto,
@@ -58,13 +58,22 @@ export class MaramatakaController {
 
   @Get('year')
   @Header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600')
-  async getYear(@Query() query: DateLocationQueryDto): Promise<MaramatakaYear> {
-    const { date, location } = this.validateDateLocationQuery(query);
+  async getYear(@Query() query: YearQueryDto): Promise<MaramatakaYear> {
+    const { date, location, includeTimelineEvents } = Object.assign(
+      new YearQueryDto(),
+      query,
+    ).validate();
 
     return this.handleAstronomyErrors(
       'maramataka.year',
-      () => this.maramatakaService.getYear(location, date),
-      this.profileContext(query, date),
+      () =>
+        this.maramatakaService.getYear(location, date, {
+          includeTimelineEvents,
+        }),
+      {
+        ...this.profileContext(query, date),
+        includeTimelineEvents: String(includeTimelineEvents),
+      },
     );
   }
 

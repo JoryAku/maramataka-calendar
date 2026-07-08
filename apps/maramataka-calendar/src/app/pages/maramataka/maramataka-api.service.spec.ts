@@ -147,6 +147,7 @@ describe('MaramatakaApiService', () => {
     );
 
     expect(request.request.params.get('date')).toBe('2026-09-15');
+    expect(request.request.params.get('includeTimelineEvents')).toBe('true');
     request.flush({
       version: 'mita-te-tai-best',
       ruleSet,

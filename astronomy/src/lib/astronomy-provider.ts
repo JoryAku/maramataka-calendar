@@ -114,6 +114,18 @@ export interface StarMarkerNightInvisibilityPeriod {
   calculation: string;
 }
 
+export interface StarMarkerAppearanceWindow {
+  id: string;
+  startDate: string;
+  endDate: string;
+  marker: StarMarkerDefinition;
+}
+
+export interface StarMarkerWindowAppearance {
+  id: string;
+  marker?: StarMarker;
+}
+
 export interface FixedEquatorialStarMarkerRepresentative {
   kind: 'fixed-equatorial';
   rightAscensionHours: number;
@@ -178,6 +190,10 @@ export interface AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]>;
+  getStarFirstAppearancesForWindows?(
+    windows: StarMarkerAppearanceWindow[],
+    location: Location,
+  ): Promise<StarMarkerWindowAppearance[]>;
   getStarNightInvisibilityPeriods?(
     startDate: string,
     endDate: string,

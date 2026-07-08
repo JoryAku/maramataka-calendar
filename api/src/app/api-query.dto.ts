@@ -17,6 +17,10 @@ export interface DateLocationRequest {
   location: Location;
 }
 
+export interface YearRequest extends DateLocationRequest {
+  includeTimelineEvents: boolean;
+}
+
 export class DateLocationQueryDto {
   date?: string;
   location?: string;
@@ -32,6 +36,21 @@ export class DateLocationQueryDto {
     const date = parseLocalDateForTimezone(dateParts, location.timezone);
 
     return { date, location };
+  }
+}
+
+export class YearQueryDto extends DateLocationQueryDto {
+  includeTimelineEvents?: string;
+
+  override validate(): YearRequest {
+    return {
+      ...super.validate(),
+      includeTimelineEvents: parseOptionalBoolean(
+        this.includeTimelineEvents,
+        true,
+        'includeTimelineEvents',
+      ),
+    };
   }
 }
 
@@ -134,6 +153,26 @@ function parseNumber(value: string, field: 'lat' | 'lon'): number {
   }
 
   return parsed;
+}
+
+function parseOptionalBoolean(
+  value: string | undefined,
+  fallback: boolean,
+  field: string,
+): boolean {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  throw new BadRequestException(`${field} must be true or false`);
 }
 
 function validateLatitude(latitude: number): void {

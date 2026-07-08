@@ -54,6 +54,28 @@ describe('FileAstronomyCacheStore', () => {
     );
   });
 
+  it('persists concurrent cache entries from a coalesced flush', async () => {
+    const cachePath = join(tempDir, 'astronomy.json');
+    const store = new FileAstronomyCacheStore(cachePath);
+
+    await Promise.all([
+      store.set('moonrise:2026-01-01', { date: '2026-01-01' }),
+      store.set('moonrise:2026-01-02', { date: '2026-01-02' }),
+      store.set('moonrise:2026-01-03', { date: '2026-01-03' }),
+    ]);
+
+    const nextStore = new FileAstronomyCacheStore(cachePath);
+    await expect(nextStore.get('moonrise:2026-01-01')).resolves.toEqual({
+      date: '2026-01-01',
+    });
+    await expect(nextStore.get('moonrise:2026-01-02')).resolves.toEqual({
+      date: '2026-01-02',
+    });
+    await expect(nextStore.get('moonrise:2026-01-03')).resolves.toEqual({
+      date: '2026-01-03',
+    });
+  });
+
   it('starts fresh when the cache file has an unsupported shape', async () => {
     const cachePath = join(tempDir, 'astronomy.json');
     await new FileAstronomyCacheStore(cachePath).set('first', 'value');

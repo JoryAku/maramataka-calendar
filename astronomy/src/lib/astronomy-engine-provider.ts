@@ -10,10 +10,12 @@ import {
   MoonTransit,
   NewMoon,
   SolarSeasonEvent,
+  StarMarkerAppearanceWindow,
   StarMarkerDawnRisingConfig,
   StarMarker,
   StarMarkerDefinition,
   StarMarkerNightInvisibilityPeriod,
+  StarMarkerWindowAppearance,
   StarMarkerVisibility,
 } from './astronomy-provider';
 import { AstronomyProviderError } from './astronomy-provider-error';
@@ -46,6 +48,17 @@ interface StarEquatorResult {
   ra: number;
   dec: number;
 }
+
+interface DawnRisingObservationWindow {
+  startsAt: Date;
+  endsAt: Date;
+}
+
+type DawnRisingObservationWindowCache = Map<
+  string,
+  DawnRisingObservationWindow
+>;
+type StarEquatorCache = Map<string, StarEquatorResult>;
 
 const STAR_MARKER_SOURCE = 'Elsdon Best, The Maori Division of Time';
 
@@ -408,6 +421,9 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     markers = DEFAULT_STAR_MARKERS,
   ): Promise<StarMarker[]> {
     return this.calculate('star first appearances', async (engine) => {
+      const observer = this.observer(engine, location);
+      const dawnWindowCache: DawnRisingObservationWindowCache = new Map();
+      const starEquatorCache: StarEquatorCache = new Map();
       const appearances: StarMarker[] = [];
       const remainingMarkers = new Map(
         markers.map((marker) => [marker.id, marker]),
@@ -415,8 +431,6 @@ export class AstronomyEngineProvider implements AstronomyProvider {
       let date = startDate;
 
       while (date < endDate && remainingMarkers.size > 0) {
-        const observer = this.observer(engine, location);
-
         for (const marker of [...remainingMarkers.values()]) {
           const starMarker = this.findFirstDawnRisingAppearance(
             marker,
@@ -424,6 +438,8 @@ export class AstronomyEngineProvider implements AstronomyProvider {
             location,
             engine,
             observer,
+            dawnWindowCache,
+            starEquatorCache,
           );
 
           if (starMarker) {
@@ -438,6 +454,81 @@ export class AstronomyEngineProvider implements AstronomyProvider {
       return appearances.sort(
         (a, b) => a.observedAt.getTime() - b.observedAt.getTime(),
       );
+    });
+  }
+
+  async getStarFirstAppearancesForWindows(
+    windows: StarMarkerAppearanceWindow[],
+    location: Location,
+  ): Promise<StarMarkerWindowAppearance[]> {
+    if (!windows.length) {
+      return [];
+    }
+
+    return this.calculate('star first appearance windows', async (engine) => {
+      const observer = this.observer(engine, location);
+      const dawnWindowCache: DawnRisingObservationWindowCache = new Map();
+      const starEquatorCache: StarEquatorCache = new Map();
+      const appearances = new Map<string, StarMarker>();
+      const pendingWindows = windows
+        .filter((window) => window.startDate < window.endDate)
+        .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+      if (!pendingWindows.length) {
+        return windows.map((window) => ({ id: window.id }));
+      }
+
+      const activeWindows = new Map<string, StarMarkerAppearanceWindow>();
+      const startDate = pendingWindows[0].startDate;
+      const endDate = pendingWindows.reduce(
+        (latest, window) => (window.endDate > latest ? window.endDate : latest),
+        pendingWindows[0].endDate,
+      );
+      let date = startDate;
+      let nextWindowIndex = 0;
+
+      while (
+        date < endDate &&
+        (activeWindows.size > 0 || nextWindowIndex < pendingWindows.length)
+      ) {
+        while (
+          nextWindowIndex < pendingWindows.length &&
+          pendingWindows[nextWindowIndex].startDate <= date
+        ) {
+          const window = pendingWindows[nextWindowIndex];
+          activeWindows.set(window.id, window);
+          nextWindowIndex += 1;
+        }
+
+        for (const window of [...activeWindows.values()]) {
+          if (date >= window.endDate) {
+            activeWindows.delete(window.id);
+            continue;
+          }
+
+          const starMarker = this.findFirstDawnRisingAppearance(
+            window.marker,
+            date,
+            location,
+            engine,
+            observer,
+            dawnWindowCache,
+            starEquatorCache,
+          );
+
+          if (starMarker) {
+            appearances.set(window.id, starMarker);
+            activeWindows.delete(window.id);
+          }
+        }
+
+        date = this.addIsoDateDays(date, 1);
+      }
+
+      return windows.map((window) => ({
+        id: window.id,
+        marker: appearances.get(window.id),
+      }));
     });
   }
 
@@ -569,14 +660,17 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     location: Location,
     engine: AstronomyEngineModule,
     observer: InstanceType<AstronomyEngineModule['Observer']>,
+    dawnWindowCache?: DawnRisingObservationWindowCache,
+    starEquatorCache?: StarEquatorCache,
   ): StarMarker | undefined {
     const config = this.dawnRisingConfig(marker);
-    const dawnWindow = this.dawnRisingObservationWindow(
+    const dawnWindow = this.cachedDawnRisingObservationWindow(
       date,
       location,
       engine,
       observer,
       config,
+      dawnWindowCache,
     );
     const calculation = this.dawnRisingCalculation(config);
     let observedAt = dawnWindow.startsAt;
@@ -588,6 +682,7 @@ export class AstronomyEngineProvider implements AstronomyProvider {
         observer,
         observedAt,
         calculation,
+        starEquatorCache,
       );
 
       if (this.isDawnRisingAppearance(starMarker, config)) {
@@ -614,7 +709,7 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     engine: AstronomyEngineModule,
     observer: InstanceType<AstronomyEngineModule['Observer']>,
     config: StarMarkerDawnRisingConfig,
-  ): { startsAt: Date; endsAt: Date } {
+  ): DawnRisingObservationWindow {
     const localStart = this.localDateAtTime(date, location, 0, 0);
     const startsAt = engine.SearchAltitude(
       engine.Body.Sun,
@@ -640,6 +735,52 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     }
 
     return { startsAt, endsAt };
+  }
+
+  private cachedDawnRisingObservationWindow(
+    date: string,
+    location: Location,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    config: StarMarkerDawnRisingConfig,
+    cache?: DawnRisingObservationWindowCache,
+  ): DawnRisingObservationWindow {
+    if (!cache) {
+      return this.dawnRisingObservationWindow(
+        date,
+        location,
+        engine,
+        observer,
+        config,
+      );
+    }
+
+    const key = this.dawnRisingObservationWindowCacheKey(date, config);
+    const cachedWindow = cache.get(key);
+    if (cachedWindow) {
+      return cachedWindow;
+    }
+
+    const window = this.dawnRisingObservationWindow(
+      date,
+      location,
+      engine,
+      observer,
+      config,
+    );
+    cache.set(key, window);
+    return window;
+  }
+
+  private dawnRisingObservationWindowCacheKey(
+    date: string,
+    config: StarMarkerDawnRisingConfig,
+  ): string {
+    return [
+      date,
+      config.startSunAltitudeDegrees,
+      config.endSunAltitudeDegrees,
+    ].join(':');
   }
 
   private dawnRisingCalculation(config: StarMarkerDawnRisingConfig): string {
@@ -712,12 +853,25 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     engine: AstronomyEngineModule,
     observer: InstanceType<AstronomyEngineModule['Observer']>,
     observedAt: Date,
+    starEquatorCache?: StarEquatorCache,
   ): StarEquatorResult {
     if (marker.representative.kind === 'fixed-equatorial') {
-      return {
+      const key = [
+        marker.id,
+        marker.representative.rightAscensionHours,
+        marker.representative.declinationDegrees,
+      ].join(':');
+      const cachedCoordinates = starEquatorCache?.get(key);
+      if (cachedCoordinates) {
+        return cachedCoordinates;
+      }
+
+      const coordinates = {
         ra: marker.representative.rightAscensionHours,
         dec: marker.representative.declinationDegrees,
       };
+      starEquatorCache?.set(key, coordinates);
+      return coordinates;
     }
 
     const body = engine.Body[marker.representative.body];
@@ -736,12 +890,14 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     observer: InstanceType<AstronomyEngineModule['Observer']>,
     observedAt: Date,
     calculation: string,
+    starEquatorCache?: StarEquatorCache,
   ): StarMarker {
     const coordinates = this.markerCoordinates(
       marker,
       engine,
       observer,
       observedAt,
+      starEquatorCache,
     );
     const horizon = engine.Horizon(
       observedAt,

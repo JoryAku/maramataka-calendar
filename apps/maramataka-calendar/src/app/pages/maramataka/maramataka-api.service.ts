@@ -52,13 +52,21 @@ export class MaramatakaApiService {
     );
   }
 
-  getYear(locationId: string, date: Date): Observable<MaramatakaYear> {
+  getYear(
+    locationId: string,
+    date: Date,
+    options: { includeTimelineEvents?: boolean } = {},
+  ): Observable<MaramatakaYear> {
     const params = new HttpParams()
       .set('date', this.toYyyyMmDd(date))
-      .set('location', locationId);
+      .set('location', locationId)
+      .set(
+        'includeTimelineEvents',
+        String(options.includeTimelineEvents ?? true),
+      );
 
     return this.profileRequest(
-      `year ${locationId} ${this.toYyyyMmDd(date)}`,
+      `year ${locationId} ${this.toYyyyMmDd(date)} timeline=${options.includeTimelineEvents ?? true}`,
       this.http
         .get<ApiMaramatakaYear>(this.apiUrl('/maramataka/year'), { params })
         .pipe(map((response) => this.mapYear(response))),
