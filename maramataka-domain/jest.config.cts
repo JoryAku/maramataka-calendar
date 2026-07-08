@@ -7,4 +7,6 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../coverage/maramataka-domain',
+  maxWorkers: 1,
+  openHandlesTimeout: 5000,
 };
