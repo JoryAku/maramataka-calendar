@@ -180,26 +180,16 @@ is `Tangaroa-ā-mua`,
 
 Official public holiday dates are useful diagnostics, but they are not treated
 as authoritative inputs while the calendar source material is still being
-reconciled. Run `npm run compare:matariki-holiday` for the current
-official-date diagnostic summary.
+reconciled. The source-calendar golden tests are the primary automated
+calibration check for year placement.
 
 ## Calibration And Diagnostic Tools
 
 Terminal tools support rule review without changing the calculation:
 
-- `npm run compare:matariki-holiday` produces the full official Matariki
-  diagnostic report. It compares generated public holiday dates, generated
-  Tangaroa periods, official Tangaroa periods, selected marama, likely
-  difference categories, and Living by the Stars calendar source checks.
-- `npm run compare:matariki-holiday -- --focus=matariki-visibility` narrows
-  the report to the current Matariki/Ruhanui investigation. It prints Pipiri,
-  Matariki, and Ruhanui first-visibility dates against official Tangaroa
-  periods, then adds nearby New Moon and Full Moon anchors so proposed rules
-  can be checked against lunar events instead of raw day counts.
-- `npm run compare:matariki-holiday -- --focus=source-calendar` ignores the
-  official holiday schedule and reports only the Living by the Stars 2021-2024
-  calendar source rows, including expected Whiro dates, generated Whiro dates,
-  Pipiri/Ruhanui/Matariki first appearances, and the current Ruhanui signal.
+- `npm exec -- nx test maramataka-domain` runs the Living by the Stars
+  source-calendar golden fixtures. These assert Pipiri placement, Ruhanui
+  placement, and the generated month count for the 2021-2024 calendar rows.
 - `npm run diagnose:maramataka -- <command>` provides targeted astronomy and
   maramataka inspection. Current commands are `sky-position`,
   `dawn-visibility`, `first-appearance`, `marama-boundary`, `year-trace`,
@@ -208,8 +198,7 @@ Terminal tools support rule review without changing the calculation:
 Useful examples:
 
 ```sh
-npm run compare:matariki-holiday -- --focus=matariki-visibility
-npm run compare:matariki-holiday -- --focus=source-calendar
+npm exec -- nx test maramataka-domain
 npm run diagnose:maramataka -- year-trace --year 2041
 npm run diagnose:maramataka -- holiday-explorer --year 2041
 npm run diagnose:maramataka -- sky-position --at 2041-07-21T06:00 --marker all
@@ -264,7 +253,7 @@ The active default config is now source-specific:
   2021-2024 calendar material as the active source of truth. It supplies the
   current mata sequence, phase groups, named marama, named-marama star
   associations, the Ruhanui source note, and the three known calendar
-  year-placement rows used by `--focus=source-calendar`. Its marama names are
+  year-placement rows covered by the source-calendar golden tests. Its marama names are
   `Te Tahi o Pipiri`, `Te Rua o Takurua`,
   `Te Toru Here o Pipiri`, `Te Whā o Mahuru`, `Te Rima o Kōpū`,
   `Te Ono o Whitiānaunau`, `Te Whitu o Hakihea`, `Te Waru o Rehua`,

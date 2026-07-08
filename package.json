@@ -22,7 +22,6 @@
     "test": "env -u NO_COLOR nx run-many -t test",
     "build": "env -u NO_COLOR nx run-many -t build",
     "e2e": "env -u NO_COLOR nx run-many -t e2e",
-    "compare:matariki-holiday": "TS_NODE_PROJECT=tsconfig.base.json TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node -r tsconfig-paths/register tools/compare-matariki-holiday.ts",
     "diagnose:maramataka": "TS_NODE_PROJECT=tsconfig.base.json TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ts-node -r tsconfig-paths/register tools/maramataka-diagnostics.ts",
     "check": "env -u NO_COLOR nx run-many -t lint test build",
     "verify:fast": "env -u NO_COLOR npm exec -- nx run-many -t test build -p api,maramataka-domain,astronomy,location --skipNxCache --outputStyle=static && git diff --check",

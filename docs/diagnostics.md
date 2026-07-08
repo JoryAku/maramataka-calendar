@@ -4,12 +4,11 @@ The diagnostic commands are for rule review and development. They do not feed
 official holiday dates or source-calendar examples back into the calendar
 calculation.
 
-Generated marama, mata, and year comparison rows are read through the API
-endpoints so the reports exercise the same composition layer as the app. Start
-the API server first, or set `MARAMATAKA_API_BASE_URL` if you are pointing at a
-different host. Lower-level sky-position and first-appearance probes still use
-the astronomy provider directly because they inspect raw body positions and
-visibility rules.
+Year and holiday probes are read through the API endpoints so the reports
+exercise the same composition layer as the app. Start the API server first, or
+set `MARAMATAKA_API_BASE_URL` if you are pointing at a different host.
+Lower-level sky-position and first-appearance probes still use the astronomy
+provider directly because they inspect raw body positions and visibility rules.
 
 ## Quick Checks
 
@@ -49,25 +48,18 @@ Inspect a marama boundary around a date:
 npm run diagnose:maramataka -- marama-boundary --at 2041-07-21T12:00
 ```
 
-## Matariki Comparison Reports
+## Source Calendar Checks
 
-Run the full official-date comparison:
-
-```sh
-npm run compare:matariki-holiday
-```
-
-Focus on Matariki visibility data:
+The Living by the Stars 2021-2024 source calendar rows are covered by domain
+golden tests rather than a long-running report script:
 
 ```sh
-npm run compare:matariki-holiday -- --focus=matariki-visibility
+npm exec -- nx test maramataka-domain
 ```
 
-Check only the Living by the Stars 2021-2024 calendar source rows:
-
-```sh
-npm run compare:matariki-holiday -- --focus=source-calendar
-```
+These fixtures assert the expected Pipiri/Ruhanui placement and month count for
+the source calendar years we have. Official public holiday dates remain useful
+context, but they are not an automated source of truth for the current rule set.
 
 ## Location Options
 

@@ -1,6 +1,52 @@
-import { AstronomyProvider, MoonRise } from '@maramataka-calendar/astronomy';
+import {
+  AstronomyEngineProvider,
+  AstronomyProvider,
+  CachedAstronomyProvider,
+  Location,
+  MoonRise,
+  formatIsoDateInTimezone,
+} from '@maramataka-calendar/astronomy';
+import { LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET } from './living-by-the-stars';
 import { GOLDEN_DATE_FIXTURES, GoldenDateFixture } from './golden-date-fixtures';
 import { MaramatakaService } from './maramataka-service';
+
+interface SourceCalendarFixture {
+  label: string;
+  date: string;
+  pipiriStartsOn: string;
+  ruhanuiStartsOn: string;
+  monthCount: number;
+}
+
+const SOURCE_CALENDAR_FIXTURES: SourceCalendarFixture[] = [
+  {
+    label: '2021/2022',
+    date: '2021-07-01',
+    pipiriStartsOn: '2021-06-10',
+    ruhanuiStartsOn: 'none',
+    monthCount: 12,
+  },
+  {
+    label: '2022/2023',
+    date: '2022-07-01',
+    pipiriStartsOn: '2022-05-30',
+    ruhanuiStartsOn: 'none',
+    monthCount: 12,
+  },
+  {
+    label: '2023/2024',
+    date: '2023-07-01',
+    pipiriStartsOn: '2023-05-20',
+    ruhanuiStartsOn: '2023-06-18',
+    monthCount: 13,
+  },
+];
+
+const WELLINGTON: Location = {
+  latitude: -41.2865,
+  longitude: 174.7762,
+  timezone: 'Pacific/Auckland',
+};
 
 function createGoldenFixtureProvider(
   fixture: GoldenDateFixture,
@@ -202,3 +248,42 @@ describe('MaramatakaService golden date fixtures', () => {
     expect(cycle?.nights).toHaveLength(fixture.expected.nightCount);
   });
 });
+
+describe('MaramatakaService Living by the Stars source-calendar fixtures', () => {
+  const service = new MaramatakaService({
+    astronomyProvider: new CachedAstronomyProvider(
+      new AstronomyEngineProvider(),
+    ),
+    ruleSet: LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
+  });
+
+  it.each(SOURCE_CALENDAR_FIXTURES)(
+    '$label: resolves Pipiri and Ruhanui placement from source calendar dates',
+    async (fixture) => {
+      const year = await service.getYear(
+        WELLINGTON,
+        new Date(`${fixture.date}T00:00:00.000Z`),
+        { includeTimelineEvents: false },
+      );
+      const pipiri = year.months.find(
+        (month) =>
+          month.name === 'Te Tahi o Pipiri' ||
+          month.starMonth?.note?.sequence === 1,
+      );
+      const ruhanui = year.months.find((month) => month.name === 'Ruhanui');
+
+      expect(year.months).toHaveLength(fixture.monthCount);
+      expect(formatSourceCalendarDate(pipiri?.startsAt)).toBe(
+        fixture.pipiriStartsOn,
+      );
+      expect(formatSourceCalendarDate(ruhanui?.startsAt)).toBe(
+        fixture.ruhanuiStartsOn,
+      );
+    },
+    10_000,
+  );
+});
+
+function formatSourceCalendarDate(date: Date | undefined): string {
+  return date ? formatIsoDateInTimezone(date, WELLINGTON.timezone) : 'none';
+}

@@ -84,13 +84,8 @@ fully production accurate across years.
 
 The repo now includes terminal diagnostics for rule review:
 
-- `npm run compare:matariki-holiday` generates an official holiday and
-  Tangaroa-period diagnostic report.
-- `npm run compare:matariki-holiday -- --focus=matariki-visibility` focuses on
-  Pipiri, Matariki, Ruhanui, New Moon, and Full Moon anchors around the
-  official schedule.
-- `npm run compare:matariki-holiday -- --focus=source-calendar` checks only
-  the Living by the Stars 2021-2024 calendar month-placement rows.
+- `npm exec -- nx test maramataka-domain` runs the Living by the Stars
+  source-calendar golden fixtures for the 2021-2024 calendar rows.
 - `npm run diagnose:maramataka -- <command>` inspects specific sky positions,
   dawn visibility windows, first appearances, marama boundaries, year traces,
   holiday candidates, and event placement.
@@ -110,7 +105,7 @@ inserts the regulating marama. The Friday is treated as a local solar-day
 interval and compared to the exact generated start/end instants of that
 Tangaroa period.
 Official holiday dates are diagnostics only. Run
-`npm run compare:matariki-holiday` for the current comparison against the
+targeted diagnostics when reviewing a specific generated year against the
 official 2022-2052 schedule.
 
 Known limitations:
