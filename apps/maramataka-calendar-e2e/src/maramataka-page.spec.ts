@@ -161,13 +161,13 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
       ? [
           {
             mata: { index: 14, name: 'Atua', version: 'mita-te-tai-best' },
-            startsAt: '2026-06-26T04:30:00.000Z',
-            endsAt: '2026-06-26T05:30:00.000Z',
+            startsAt: '2026-06-25T12:00:00.000Z',
+            endsAt: '2026-06-26T12:00:00.000Z',
           },
           {
             mata: { index: 15, name: 'Ohua', version: 'mita-te-tai-best' },
-            startsAt: '2026-06-26T05:30:00.000Z',
-            endsAt: '2026-06-26T06:30:00.000Z',
+            startsAt: '2026-06-26T12:00:00.000Z',
+            endsAt: '2026-06-27T12:00:00.000Z',
           },
         ]
       : isAuckland
@@ -206,10 +206,10 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
       currentNight: {
         mata,
         startsAt: isDemoDate
-          ? '2026-06-26T04:30:00.000Z'
+          ? '2026-06-25T12:00:00.000Z'
           : '2026-06-25T04:30:00.000Z',
         endsAt: isDemoDate
-          ? '2026-06-26T05:30:00.000Z'
+          ? '2026-06-26T12:00:00.000Z'
           : '2026-06-25T05:30:00.000Z',
       },
       anchors: {
@@ -308,6 +308,27 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
         timezone: 'Pacific/Auckland',
         startsAt: '2025-12-31T11:00:00.000Z',
         endsAt: '2026-12-31T11:00:00.000Z',
+        diagnostics: [],
+        events: [
+          {
+            type: 'star-appearance',
+            name: 'Matariki appears',
+            occursAt: '2026-06-25T04:45:00.000Z',
+            monthSequence: 1,
+            monthName: 'Marama 1',
+            description:
+              'Matariki first appears in the configured dawn sky window.',
+            source: 'stub star marker',
+          },
+          {
+            type: 'new-moon',
+            name: 'New Moon',
+            occursAt: '2026-06-25T05:00:00.000Z',
+            monthSequence: 1,
+            monthName: 'Marama 1',
+            source: 'stub',
+          },
+        ],
         months: [
           {
             sequence: 1,
@@ -396,10 +417,9 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByTestId('moon-details-panel')).toContainText(
     '2.5 days',
   );
-  await expect(page.getByTestId('star-marker-layer')).toContainText('Matariki');
-  await expect(page.getByTestId('star-marker-layer')).not.toContainText(
-    'Rigel',
-  );
+  await expect(page.getByTestId('dawn-sky-panel')).toContainText('Matariki');
+  await expect(page.getByTestId('dawn-sky-panel')).toContainText('Whakaahu');
+  await expect(page.getByTestId('dawn-sky-panel')).not.toContainText('Rigel');
   await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
     'Star month: Te Tahi o Pipiri',
   );
