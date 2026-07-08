@@ -15,13 +15,23 @@ export interface LocationSummary {
 }
 
 export const LOCATIONS: LocationData[] = [
+  // Representative observing locations. The rohe labels provide local context
+  // for users; the coordinates are town/city points, not iwi boundary models.
   {
-    id: 'wellington',
-    name: 'Wellington',
-    latitude: -41.2865,
-    longitude: 174.7762,
+    id: 'kaitaia',
+    name: 'Kaitaia',
+    latitude: -35.1149,
+    longitude: 173.2621,
     timezone: 'Pacific/Auckland',
-    rohe: 'Te Whanganui-a-Tara',
+    rohe: 'Te Hiku o te Ika',
+  },
+  {
+    id: 'whangarei',
+    name: 'Whangārei',
+    latitude: -35.7251,
+    longitude: 174.3237,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Te Tai Tokerau',
   },
   {
     id: 'auckland',
@@ -32,12 +42,44 @@ export const LOCATIONS: LocationData[] = [
     rohe: 'Tamaki Makaurau',
   },
   {
-    id: 'christchurch',
-    name: 'Christchurch',
-    latitude: -43.5321,
-    longitude: 172.6362,
+    id: 'thames',
+    name: 'Thames',
+    latitude: -37.1383,
+    longitude: 175.5402,
     timezone: 'Pacific/Auckland',
-    rohe: 'Otautahi',
+    rohe: 'Hauraki',
+  },
+  {
+    id: 'tauranga',
+    name: 'Tauranga',
+    latitude: -37.6878,
+    longitude: 176.1651,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Tauranga Moana',
+  },
+  {
+    id: 'hamilton',
+    name: 'Hamilton',
+    latitude: -37.787,
+    longitude: 175.2793,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Waikato',
+  },
+  {
+    id: 'whakatane',
+    name: 'Whakatāne',
+    latitude: -37.9534,
+    longitude: 176.9908,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Mataatua',
+  },
+  {
+    id: 'rotorua',
+    name: 'Rotorua',
+    latitude: -38.1368,
+    longitude: 176.2497,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Te Arawa',
   },
   {
     id: 'gisborne',
@@ -46,6 +88,94 @@ export const LOCATIONS: LocationData[] = [
     longitude: 178.0097,
     timezone: 'Pacific/Auckland',
     rohe: 'Turanganui-a-Kiwa',
+  },
+  {
+    id: 'new-plymouth',
+    name: 'New Plymouth',
+    latitude: -39.0556,
+    longitude: 174.0752,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Taranaki',
+  },
+  {
+    id: 'napier',
+    name: 'Napier',
+    latitude: -39.4928,
+    longitude: 176.912,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Te Matau-a-Māui',
+  },
+  {
+    id: 'whanganui',
+    name: 'Whanganui',
+    latitude: -39.9301,
+    longitude: 175.0479,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Whanganui',
+  },
+  {
+    id: 'palmerston-north',
+    name: 'Palmerston North',
+    latitude: -40.3523,
+    longitude: 175.6082,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Manawatū',
+  },
+  {
+    id: 'nelson',
+    name: 'Nelson',
+    latitude: -41.2706,
+    longitude: 173.284,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Whakatū / Te Tauihu',
+  },
+  {
+    id: 'wellington',
+    name: 'Wellington',
+    latitude: -41.2865,
+    longitude: 174.7762,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Te Whanganui-a-Tara',
+  },
+  {
+    id: 'greymouth',
+    name: 'Greymouth',
+    latitude: -42.4504,
+    longitude: 171.2108,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Te Tai Poutini',
+  },
+  {
+    id: 'christchurch',
+    name: 'Christchurch',
+    latitude: -43.5321,
+    longitude: 172.6362,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Otautahi',
+  },
+  {
+    id: 'waitangi-chatham-islands',
+    name: 'Waitangi, Chatham Islands',
+    latitude: -43.9535,
+    longitude: -176.5597,
+    timezone: 'Pacific/Chatham',
+    rohe: 'Rēkohu / Wharekauri',
+  },
+  {
+    id: 'dunedin',
+    name: 'Dunedin',
+    latitude: -45.8788,
+    longitude: 170.5028,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Ōtepoti',
+  },
+  {
+    id: 'invercargill',
+    name: 'Invercargill',
+    latitude: -46.4132,
+    longitude: 168.3538,
+    timezone: 'Pacific/Auckland',
+    rohe: 'Waihōpai',
   },
 ];
 
@@ -81,6 +211,15 @@ export function validateLocationRegistry(
       !location.timezone
     ) {
       throw new Error(`Invalid location data: ${JSON.stringify(location)}`);
+    }
+
+    if (
+      location.latitude < -90 ||
+      location.latitude > 90 ||
+      location.longitude < -180 ||
+      location.longitude > 180
+    ) {
+      throw new Error(`Invalid location coordinates: ${location.id}`);
     }
 
     validateIanaTimezone(location.timezone);

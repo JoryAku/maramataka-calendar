@@ -20,112 +20,6 @@
     No maramataka night is available for this day.
   </p>
   } @else {
-  @if (starMarkersLoading()) {
-  <p class="state compact" data-testid="star-markers-loading-state">
-    Loading dawn sky...
-  </p>
-  } @else if (starMarkersError()) {
-  <p class="state error compact" data-testid="star-markers-error-state">
-    {{ starMarkersError() }}
-  </p>
-  } @else if (
-    dawnVisibleMarkers().length ||
-    dawnHiddenMarkerCount() ||
-    dawnOutOfViewMarkerCount() ||
-    moonDetails()
-  ) {
-  <section class="star-layer dawn-sky-layer" data-testid="dawn-sky-panel">
-    <div class="dawn-sky-heading">
-      <div>
-        <p class="guidance-title">Dawn sky</p>
-        @if (dawnObservationTime()) {
-        <p class="dawn-sky-time">
-          Sampled {{ dawnObservationTime()! | date: 'h:mm a' : nzTimeZone }}
-        </p>
-        }
-        <p class="dawn-sky-scope">
-          Dawn is sampled while the Sun is 12° to 18° below the horizon.
-        </p>
-      </div>
-      <span class="dawn-sky-count">{{ dawnVisibleMarkers().length }} visible</span>
-    </div>
-    @if (dawnVisibleMarkers().length) {
-    <div class="dawn-horizon" data-testid="dawn-horizon">
-      <div class="horizon-sky" aria-label="Schematic dawn horizon">
-        <span class="horizon-line" aria-hidden="true"></span>
-        @for (altitude of horizonAltitudeGuideLines; track altitude) {
-        <span
-          class="horizon-altitude-line"
-          [style.bottom.%]="horizonAltitudeBottom(altitude)"
-          aria-hidden="true"
-        >
-          <span>{{ altitude }}°</span>
-        </span>
-        }
-        @for (marker of dawnVisibleMarkers(); track marker.id) {
-        <span
-          [class]="horizonMarkerClass(marker)"
-          [style.left.%]="horizonMarkerLeft(marker)"
-          [style.bottom.%]="horizonMarkerBottom(marker)"
-          [attr.aria-label]="
-            marker.name + ', ' + starMarkerAltitudeLabel(marker)
-          "
-          role="img"
-        >
-          <span class="horizon-dot" aria-hidden="true"></span>
-          <span class="horizon-label">{{ marker.name }}</span>
-          @if (isHorizonMarkerClamped(marker)) {
-          <span class="horizon-high-label">high</span>
-          }
-        </span>
-        }
-      </div>
-      <div class="horizon-compass" aria-hidden="true">
-        <span>N</span>
-        <span>NE</span>
-        <span>E</span>
-        <span>SE</span>
-        <span>S</span>
-      </div>
-    </div>
-    <ul class="dawn-sky-list">
-      @for (marker of dawnVisibleMarkers(); track marker.id) {
-      <li>
-        <span>{{ starMarkerVisibilityLabel(marker) }}</span>
-        <strong>{{ marker.name }}</strong>
-        <em>{{ starMarkerMetaLabel(marker) }}</em>
-        <small>{{ starMarkerAltitudeLabel(marker) }}</small>
-      </li>
-      }
-    </ul>
-    } @else {
-    <p class="state compact">
-      No configured bodies are above the horizon in the sampled dawn sky.
-    </p>
-    }
-    @if (dawnMoonSummary()) {
-    <p class="dawn-sky-moon">
-      <span>Moon phase</span>
-      <strong>{{ dawnMoonSummary() }}</strong>
-    </p>
-    }
-    @if (dawnHiddenMarkerCount()) {
-    <p class="dawn-sky-hidden">
-      {{ dawnHiddenMarkerCount() }} configured
-      {{ dawnHiddenMarkerCount() === 1 ? 'body is' : 'bodies are' }}
-      below the horizon at dawn.
-    </p>
-    }
-    @if (dawnOutOfViewMarkerCount()) {
-    <p class="dawn-sky-hidden">
-      {{ dawnOutOfViewMarkerCount() }} visible
-      {{ dawnOutOfViewMarkerCount() === 1 ? 'body is' : 'bodies are' }}
-      outside the north-to-south dawn field.
-    </p>
-    }
-  </section>
-  }
-
   <article class="moon-tracker" data-testid="today-card">
     <div class="moon-visual">
       @if (moonVisual()) {
@@ -247,5 +141,111 @@
       </div>
     </dl>
   </article>
+
+  @if (starMarkersLoading()) {
+  <p class="state compact" data-testid="star-markers-loading-state">
+    Loading dawn sky...
+  </p>
+  } @else if (starMarkersError()) {
+  <p class="state error compact" data-testid="star-markers-error-state">
+    {{ starMarkersError() }}
+  </p>
+  } @else if (
+    dawnVisibleMarkers().length ||
+    dawnHiddenMarkerCount() ||
+    dawnOutOfViewMarkerCount() ||
+    moonDetails()
+  ) {
+  <section class="star-layer dawn-sky-layer" data-testid="dawn-sky-panel">
+    <div class="dawn-sky-heading">
+      <div>
+        <p class="guidance-title">Dawn sky</p>
+        @if (dawnObservationTime()) {
+        <p class="dawn-sky-time">
+          Sampled {{ dawnObservationTime()! | date: 'h:mm a' : nzTimeZone }}
+        </p>
+        }
+        <p class="dawn-sky-scope">
+          Dawn is sampled while the Sun is 12° to 18° below the horizon.
+        </p>
+      </div>
+      <span class="dawn-sky-count">{{ dawnVisibleMarkers().length }} visible</span>
+    </div>
+    @if (dawnVisibleMarkers().length) {
+    <div class="dawn-horizon" data-testid="dawn-horizon">
+      <div class="horizon-sky" aria-label="Schematic dawn horizon">
+        <span class="horizon-line" aria-hidden="true"></span>
+        @for (altitude of horizonAltitudeGuideLines; track altitude) {
+        <span
+          class="horizon-altitude-line"
+          [style.bottom.%]="horizonAltitudeBottom(altitude)"
+          aria-hidden="true"
+        >
+          <span>{{ altitude }}°</span>
+        </span>
+        }
+        @for (marker of dawnVisibleMarkers(); track marker.id) {
+        <span
+          [class]="horizonMarkerClass(marker)"
+          [style.left.%]="horizonMarkerLeft(marker)"
+          [style.bottom.%]="horizonMarkerBottom(marker)"
+          [attr.aria-label]="
+            marker.name + ', ' + starMarkerAltitudeLabel(marker)
+          "
+          role="img"
+        >
+          <span class="horizon-dot" aria-hidden="true"></span>
+          <span class="horizon-label">{{ marker.name }}</span>
+          @if (isHorizonMarkerClamped(marker)) {
+          <span class="horizon-high-label">high</span>
+          }
+        </span>
+        }
+      </div>
+      <div class="horizon-compass" aria-hidden="true">
+        <span>N</span>
+        <span>NE</span>
+        <span>E</span>
+        <span>SE</span>
+        <span>S</span>
+      </div>
+    </div>
+    <ul class="dawn-sky-list">
+      @for (marker of dawnVisibleMarkers(); track marker.id) {
+      <li>
+        <span>{{ starMarkerVisibilityLabel(marker) }}</span>
+        <strong>{{ marker.name }}</strong>
+        <em>{{ starMarkerMetaLabel(marker) }}</em>
+        <small>{{ starMarkerAltitudeLabel(marker) }}</small>
+      </li>
+      }
+    </ul>
+    } @else {
+    <p class="state compact">
+      No configured bodies are above the horizon in the sampled dawn sky.
+    </p>
+    }
+    @if (dawnMoonSummary()) {
+    <p class="dawn-sky-moon">
+      <span>Moon phase</span>
+      <strong>{{ dawnMoonSummary() }}</strong>
+    </p>
+    }
+    @if (dawnHiddenMarkerCount()) {
+    <p class="dawn-sky-hidden">
+      {{ dawnHiddenMarkerCount() }} configured
+      {{ dawnHiddenMarkerCount() === 1 ? 'body is' : 'bodies are' }}
+      below the horizon at dawn.
+    </p>
+    }
+    @if (dawnOutOfViewMarkerCount()) {
+    <p class="dawn-sky-hidden">
+      {{ dawnOutOfViewMarkerCount() }} visible
+      {{ dawnOutOfViewMarkerCount() === 1 ? 'body is' : 'bodies are' }}
+      outside the north-to-south dawn field.
+    </p>
+    }
+  </section>
+  }
   }
 </section>

@@ -1,10 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { defer, finalize, map, Observable } from 'rxjs';
 import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { NZ_TIMEZONE } from './maramataka.constants';
 import {
   ApiMaramatakaCycleDetails,
+  ApiMaramatakaPageData,
   ApiMaramatakaYear,
   ApiMata,
   ApiMoonDetails,
@@ -12,8 +13,9 @@ import {
   LocationSummary,
   MaramatakaCycleDetails,
   MaramatakaNight,
+  MaramatakaPageData,
   MaramatakaStarMonth,
-  MaramatakaToday,
+  MaramatakaTodayMata,
   MaramatakaYear,
   MoonDetails,
   StarMarker,
@@ -29,7 +31,10 @@ export class MaramatakaApiService {
   }
 
   getLocations(): Observable<LocationSummary[]> {
-    return this.http.get<LocationSummary[]>(this.apiUrl('/locations'));
+    return this.profileRequest(
+      'locations',
+      this.http.get<LocationSummary[]>(this.apiUrl('/locations')),
+    );
   }
 
   getCycleDetails(
@@ -40,11 +45,29 @@ export class MaramatakaApiService {
       .set('date', this.toYyyyMmDd(date))
       .set('location', locationId);
 
-    return this.http
-      .get<ApiMaramatakaCycleDetails>(this.apiUrl('/maramataka/cycle'), {
-        params,
-      })
-      .pipe(map((response) => this.mapCycleDetails(response)));
+    return this.profileRequest(
+      `cycle ${locationId} ${this.toYyyyMmDd(date)}`,
+      this.http
+        .get<ApiMaramatakaCycleDetails>(this.apiUrl('/maramataka/cycle'), {
+          params,
+        })
+        .pipe(map((response) => this.mapCycleDetails(response))),
+    );
+  }
+
+  getPageData(locationId: string, date: Date): Observable<MaramatakaPageData> {
+    const params = new HttpParams()
+      .set('date', this.toYyyyMmDd(date))
+      .set('location', locationId);
+
+    return this.profileRequest(
+      `page ${locationId} ${this.toYyyyMmDd(date)}`,
+      this.http
+        .get<ApiMaramatakaPageData>(this.apiUrl('/maramataka/page'), {
+          params,
+        })
+        .pipe(map((response) => this.mapPageData(response))),
+    );
   }
 
   getYear(locationId: string, date: Date): Observable<MaramatakaYear> {
@@ -52,21 +75,12 @@ export class MaramatakaApiService {
       .set('date', this.toYyyyMmDd(date))
       .set('location', locationId);
 
-    return this.http
-      .get<ApiMaramatakaYear>(this.apiUrl('/maramataka/year'), { params })
-      .pipe(map((response) => this.mapYear(response)));
-  }
-
-  getToday(locationId: string, date: Date): Observable<MaramatakaToday> {
-    const params = new HttpParams()
-      .set('dateTime', this.toNzLocalDateTime(date))
-      .set('location', locationId);
-
-    return this.http
-      .get<MaramatakaToday<string>>(this.apiUrl('/maramataka/today'), {
-        params,
-      })
-      .pipe(map((response) => this.mapToday(response)));
+    return this.profileRequest(
+      `year ${locationId} ${this.toYyyyMmDd(date)}`,
+      this.http
+        .get<ApiMaramatakaYear>(this.apiUrl('/maramataka/year'), { params })
+        .pipe(map((response) => this.mapYear(response))),
+    );
   }
 
   getMoonDetails(locationId: string, date: Date): Observable<MoonDetails> {
@@ -74,9 +88,14 @@ export class MaramatakaApiService {
       .set('date', this.toYyyyMmDd(date))
       .set('location', locationId);
 
-    return this.http
-      .get<ApiMoonDetails>(this.apiUrl('/maramataka/moon-details'), { params })
-      .pipe(map((response) => this.mapMoonDetails(response)));
+    return this.profileRequest(
+      `moon-details ${locationId} ${this.toYyyyMmDd(date)}`,
+      this.http
+        .get<ApiMoonDetails>(this.apiUrl('/maramataka/moon-details'), {
+          params,
+        })
+        .pipe(map((response) => this.mapMoonDetails(response))),
+    );
   }
 
   getStarMarkers(locationId: string, date: Date): Observable<StarMarker[]> {
@@ -84,30 +103,54 @@ export class MaramatakaApiService {
       .set('date', this.toYyyyMmDd(date))
       .set('location', locationId);
 
-    return this.http
-      .get<ApiStarMarker[]>(this.apiUrl('/maramataka/star-markers'), {
-        params,
-      })
-      .pipe(
-        map((response) => response.map((marker) => this.mapStarMarker(marker))),
-      );
+    return this.profileRequest(
+      `star-markers ${locationId} ${this.toYyyyMmDd(date)}`,
+      this.http
+        .get<ApiStarMarker[]>(this.apiUrl('/maramataka/star-markers'), {
+          params,
+        })
+        .pipe(
+          map((response) =>
+            response.map((marker) => this.mapStarMarker(marker)),
+          ),
+        ),
+    );
   }
 
   private apiUrl(path: string): string {
     return `${this.config.apiBaseUrl}${path}`;
   }
 
-  private mapToday(apiToday: MaramatakaToday<string>): MaramatakaToday {
+  private profileRequest<T>(label: string, request: Observable<T>): Observable<T> {
+    if (!this.profileEnabled()) {
+      return request;
+    }
+
+    return defer(() => {
+      const startedAt = performance.now();
+
+      return request.pipe(
+        finalize(() => {
+          console.debug(
+            `[maramataka profile] ${label}: ${Math.round((performance.now() - startedAt) * 10) / 10}ms`,
+          );
+        }),
+      );
+    });
+  }
+
+  private profileEnabled(): boolean {
+    try {
+      return localStorage.getItem('maramataka:profile') === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private mapPageData(apiPageData: ApiMaramatakaPageData): MaramatakaPageData {
     return {
-      ruleSet: apiToday.ruleSet,
-      mata: apiToday.mata,
-      overlappingMata: apiToday.overlappingMata?.map((overlap) => ({
-        mata: overlap.mata,
-        cycleStartsAt: new Date(overlap.cycleStartsAt),
-        reason: overlap.reason,
-      })),
-      startsAt: new Date(apiToday.startsAt),
-      endsAt: new Date(apiToday.endsAt),
+      cycle: this.mapCycleDetails(apiPageData.cycle),
+      moonDetails: this.mapMoonDetails(apiPageData.moonDetails),
     };
   }
 
@@ -214,16 +257,37 @@ export class MaramatakaApiService {
   private mapNight(
     night: ApiMaramatakaCycleDetails['nights'][number],
   ): MaramatakaNight {
+    const mataDetails =
+      typeof night.mata === 'string'
+        ? undefined
+        : this.mapMataDetails(night.mata);
+
     return {
       mata: this.mataName(night.mata),
+      mataDetails,
       phaseGroup: this.mataPhaseGroup(night.mata),
       overlappingMata: night.overlappingMata?.map((overlap) => ({
         mata: this.mataName(overlap.mata),
+        mataDetails:
+          typeof overlap.mata === 'string'
+            ? undefined
+            : this.mapMataDetails(overlap.mata),
         cycleStartsAt: new Date(overlap.cycleStartsAt),
         reason: overlap.reason,
       })),
       startsAt: new Date(night.startsAt),
       endsAt: new Date(night.endsAt),
+    };
+  }
+
+  private mapMataDetails(
+    mata: ApiMata | MaramatakaTodayMata,
+  ): MaramatakaTodayMata {
+    return {
+      index: mata.index,
+      name: mata.name,
+      version: mata.version,
+      contentLayers: mata.contentLayers,
     };
   }
 
@@ -305,32 +369,4 @@ export class MaramatakaApiService {
     return `${year}-${month}-${day}`;
   }
 
-  private toNzLocalDateTime(date: Date): string {
-    const formatter = new Intl.DateTimeFormat('en-NZ', {
-      timeZone: NZ_TIMEZONE,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23',
-    });
-
-    const parts = formatter.formatToParts(date);
-    const year = parts.find((part) => part.type === 'year')?.value;
-    const month = parts.find((part) => part.type === 'month')?.value;
-    const day = parts.find((part) => part.type === 'day')?.value;
-    const hour = parts.find((part) => part.type === 'hour')?.value;
-    const minute = parts.find((part) => part.type === 'minute')?.value;
-    const second = parts.find((part) => part.type === 'second')?.value;
-
-    if (!year || !month || !day || !hour || !minute || !second) {
-      return `${this.toYyyyMmDd(date)}T00:00:00`;
-    }
-
-    const normalizedHour = hour === '24' ? '00' : hour;
-
-    return `${year}-${month}-${day}T${normalizedHour}:${minute}:${second}`;
-  }
 }

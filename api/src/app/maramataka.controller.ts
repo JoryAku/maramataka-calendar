@@ -17,6 +17,7 @@ import {
   DateTimeLocationQueryDto,
 } from './api-query.dto';
 import {
+  MaramatakaPageResponseDto,
   MoonDetailsResponseDto,
   StarMarkerResponseDto,
   TodayMaramatakaNightResponseDto,
@@ -31,13 +32,44 @@ export class MaramatakaController {
 
   constructor(private readonly maramatakaService: MaramatakaService) {}
 
+  @Get('page')
+  async getPage(
+    @Query() query: DateLocationQueryDto,
+  ): Promise<MaramatakaPageResponseDto> {
+    const { date, location } = this.validateDateLocationQuery(query);
+
+    return this.handleAstronomyErrors(
+      'maramataka.page',
+      async () => {
+        const [cycle, moonDetails] = await Promise.all([
+          this.maramatakaService.getCycleDetails(location, date),
+          this.maramatakaService.getMoonDetails(location, date),
+        ]);
+
+        if (!cycle) {
+          throw new BadRequestException(
+            'No Maramataka cycle found for supplied date and location',
+          );
+        }
+
+        return {
+          cycle,
+          moonDetails: toMoonDetailsResponse(moonDetails),
+        };
+      },
+      this.profileContext(query, date),
+    );
+  }
+
   @Get('cycle')
   async getCycle(
     @Query() query: DateLocationQueryDto,
   ): Promise<MaramatakaCycleDetails> {
     const { date, location } = this.validateDateLocationQuery(query);
-    const cycle = await this.handleAstronomyErrors('maramataka.cycle', () =>
-      this.maramatakaService.getCycleDetails(location, date),
+    const cycle = await this.handleAstronomyErrors(
+      'maramataka.cycle',
+      () => this.maramatakaService.getCycleDetails(location, date),
+      this.profileContext(query, date),
     );
 
     if (!cycle) {
@@ -53,8 +85,10 @@ export class MaramatakaController {
   async getYear(@Query() query: DateLocationQueryDto): Promise<MaramatakaYear> {
     const { date, location } = this.validateDateLocationQuery(query);
 
-    return this.handleAstronomyErrors('maramataka.year', () =>
-      this.maramatakaService.getYear(location, date),
+    return this.handleAstronomyErrors(
+      'maramataka.year',
+      () => this.maramatakaService.getYear(location, date),
+      this.profileContext(query, date),
     );
   }
 
@@ -66,6 +100,7 @@ export class MaramatakaController {
     const currentNight = await this.handleAstronomyErrors(
       'maramataka.today',
       () => this.maramatakaService.getCurrentNight(location, date),
+      this.profileContext(query, date),
     );
 
     if (!currentNight) {
@@ -85,6 +120,7 @@ export class MaramatakaController {
     const details = await this.handleAstronomyErrors(
       'maramataka.moon-details',
       () => this.maramatakaService.getMoonDetails(location, date),
+      this.profileContext(query, date),
     );
 
     return toMoonDetailsResponse(details);
@@ -98,6 +134,7 @@ export class MaramatakaController {
     const markers = await this.handleAstronomyErrors(
       'maramataka.star-markers',
       () => this.maramatakaService.getStarMarkers(location, date),
+      this.profileContext(query, date),
     );
 
     return toStarMarkersResponse(markers);
@@ -118,10 +155,18 @@ export class MaramatakaController {
   private async handleAstronomyErrors<T>(
     operationName: string,
     operation: () => Promise<T>,
+    context: Record<string, string>,
   ): Promise<T> {
+    const startedAt = performance.now();
+
     try {
-      return await operation();
+      const result = await operation();
+      this.logProfile(operationName, 'completed', startedAt, context);
+
+      return result;
     } catch (error) {
+      this.logProfile(operationName, 'failed', startedAt, context);
+
       const astronomyError = findAstronomyProviderError(error);
       if (astronomyError) {
         this.logger.error(
@@ -144,5 +189,39 @@ export class MaramatakaController {
 
       throw error;
     }
+  }
+
+  private profileContext(
+    query: DateLocationQueryDto | DateTimeLocationQueryDto,
+    requestedAt: Date,
+  ): Record<string, string> {
+    return {
+      location: query.location ?? 'coordinates',
+      latitude: query.lat ?? '',
+      longitude: query.lon ?? '',
+      timezone: query.timezone ?? '',
+      requestedAt: requestedAt.toISOString(),
+    };
+  }
+
+  private logProfile(
+    operation: string,
+    status: 'completed' | 'failed',
+    startedAt: number,
+    context: Record<string, string>,
+  ): void {
+    if (process.env.MARAMATAKA_PROFILE !== '1') {
+      return;
+    }
+
+    this.logger.log(
+      JSON.stringify({
+        event: 'maramataka_profile',
+        operation,
+        status,
+        durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+        ...context,
+      }),
+    );
   }
 }

@@ -26,7 +26,7 @@ describe('calculateWhiroStart', () => {
     expect(result).toEqual(new Date('2026-01-01T18:31:00+13:00'));
   });
 
-  it('does not borrow the previous civil date when the local New Moon date has a moonrise', () => {
+  it('does not borrow the previous local solar date when the local New Moon date has a moonrise', () => {
     const result = calculateWhiroStart({
       newMoonAt: new Date('2026-01-01T22:00:00+13:00'),
       newMoonLocalDate: '2026-01-01',

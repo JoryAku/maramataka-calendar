@@ -1,5 +1,6 @@
 export interface MaramatakaNight {
   mata: string;
+  mataDetails?: MaramatakaTodayMata;
   phaseGroup?: MataPhaseGroup;
   overlappingMata?: MaramatakaNightOverlap[];
   startsAt: Date;
@@ -8,6 +9,7 @@ export interface MaramatakaNight {
 
 export interface MaramatakaNightOverlap {
   mata: string;
+  mataDetails?: MaramatakaTodayMata;
   cycleStartsAt: Date;
   reason: 'new-moon-anchor';
 }
@@ -290,6 +292,16 @@ export type ApiMaramatakaCycleDetails = Omit<
   currentNight: ApiMaramatakaNight;
   nights: ApiMaramatakaNight[];
 };
+
+export interface MaramatakaPageData {
+  cycle: MaramatakaCycleDetails;
+  moonDetails: MoonDetails;
+}
+
+export interface ApiMaramatakaPageData {
+  cycle: ApiMaramatakaCycleDetails;
+  moonDetails: ApiMoonDetails;
+}
 
 export type ApiMoonDetails = MoonDetails<string>;
 export type ApiMaramatakaYear = MaramatakaYear<string>;

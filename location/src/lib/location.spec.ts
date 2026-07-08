@@ -9,8 +9,8 @@ import {
 
 describe('locations', () => {
   describe('LOCATIONS registry', () => {
-    it('contains supported MVP locations', () => {
-      expect(LOCATIONS).toHaveLength(4);
+    it('contains representative Aotearoa locations', () => {
+      expect(LOCATIONS.length).toBeGreaterThanOrEqual(17);
       expect(LOCATIONS).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -37,6 +37,36 @@ describe('locations', () => {
             timezone: 'Pacific/Auckland',
             rohe: 'Turanganui-a-Kiwa',
           }),
+          expect.objectContaining({
+            id: 'kaitaia',
+            name: 'Kaitaia',
+            timezone: 'Pacific/Auckland',
+            rohe: 'Te Hiku o te Ika',
+          }),
+          expect.objectContaining({
+            id: 'whangarei',
+            name: 'Whangārei',
+            timezone: 'Pacific/Auckland',
+            rohe: 'Te Tai Tokerau',
+          }),
+          expect.objectContaining({
+            id: 'tauranga',
+            name: 'Tauranga',
+            timezone: 'Pacific/Auckland',
+            rohe: 'Tauranga Moana',
+          }),
+          expect.objectContaining({
+            id: 'whakatane',
+            name: 'Whakatāne',
+            timezone: 'Pacific/Auckland',
+            rohe: 'Mataatua',
+          }),
+          expect.objectContaining({
+            id: 'waitangi-chatham-islands',
+            name: 'Waitangi, Chatham Islands',
+            timezone: 'Pacific/Chatham',
+            rohe: 'Rēkohu / Wharekauri',
+          }),
         ]),
       );
     });
@@ -46,6 +76,14 @@ describe('locations', () => {
       const uniqueIds = new Set(ids);
 
       expect(uniqueIds.size).toBe(ids.length);
+    });
+
+    it('is ordered from north to south', () => {
+      for (let index = 1; index < LOCATIONS.length; index += 1) {
+        expect(LOCATIONS[index].latitude).toBeLessThanOrEqual(
+          LOCATIONS[index - 1].latitude,
+        );
+      }
     });
   });
 
@@ -75,7 +113,7 @@ describe('locations', () => {
     it('returns id, name, and extension-ready rohe metadata only', () => {
       const summaries = getLocationSummaries();
 
-      expect(summaries).toHaveLength(4);
+      expect(summaries).toHaveLength(LOCATIONS.length);
       summaries.forEach((summary: LocationSummary) => {
         expect(Object.keys(summary).sort()).toEqual(['id', 'name', 'rohe']);
         expect(summary).not.toHaveProperty('latitude');
@@ -127,6 +165,22 @@ describe('locations', () => {
       expect(() => validateLocationRegistry(invalidTimezoneLocations)).toThrow(
         'Invalid IANA timezone: Pacific/NotARealTimezone',
       );
+    });
+
+    it('throws for out-of-range coordinates', () => {
+      const invalidCoordinateLocations: LocationData[] = [
+        {
+          id: 'bad-latitude',
+          name: 'Bad Latitude',
+          latitude: -91,
+          longitude: 174.7762,
+          timezone: 'Pacific/Auckland',
+        },
+      ];
+
+      expect(() =>
+        validateLocationRegistry(invalidCoordinateLocations),
+      ).toThrow('Invalid location coordinates: bad-latitude');
     });
   });
 });

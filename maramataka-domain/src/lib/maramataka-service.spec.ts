@@ -487,7 +487,7 @@ describe('MaramatakaService', () => {
         },
       ],
     };
-    jest
+    const getMonthSpy = jest
       .spyOn(service, 'getMonth')
       .mockImplementation(async (_location, date) => {
         if (date.toISOString().startsWith('2026-06-15')) {
@@ -497,11 +497,20 @@ describe('MaramatakaService', () => {
         return secondMonth;
       });
 
+    const lightYear = await service.getYear(
+      location,
+      new Date('2026-07-10T12:00:00Z'),
+      { includeTimelineEvents: false },
+    );
     const year = await service.getYear(
       location,
       new Date('2026-07-10T12:00:00Z'),
     );
 
+    expect(lightYear.events.some((event) => event.type === 'star-marker')).toBe(
+      false,
+    );
+    expect(getMonthSpy).toHaveBeenCalledTimes(2);
     expect(year.year).toBe(2026);
     expect(year.startsAt).toEqual(new Date('2026-06-15T05:00:00.000Z'));
     expect(year.endsAt).toEqual(new Date('2027-06-04T00:00:00.000Z'));

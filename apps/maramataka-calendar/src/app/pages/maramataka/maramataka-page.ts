@@ -237,18 +237,22 @@ export class MaramatakaPage implements OnInit {
     const generation = ++this.requestGeneration;
 
     this.api
-      .getCycleDetails(locationId, requestDate)
+      .getPageData(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (cycle) => {
+        next: (pageData) => {
           if (generation !== this.requestGeneration) {
             return;
           }
 
-          this.cycle.set(cycle);
-          this.month.set(this.monthFromCycle(cycle));
+          this.cycle.set(pageData.cycle);
+          this.month.set(this.monthFromCycle(pageData.cycle));
+          this.today.set(this.todayFromCycle(pageData.cycle));
+          this.moonDetails.set(pageData.moonDetails);
           this.monthLoading.set(false);
           this.cycleLoading.set(false);
+          this.todayLoading.set(false);
+          this.moonDetailsLoading.set(false);
         },
         error: () => {
           if (generation !== this.requestGeneration) {
@@ -257,60 +261,43 @@ export class MaramatakaPage implements OnInit {
 
           this.month.set(null);
           this.cycle.set(null);
+          this.today.set(null);
+          this.moonDetails.set(null);
           this.monthLoading.set(false);
           this.cycleLoading.set(false);
+          this.todayLoading.set(false);
+          this.moonDetailsLoading.set(false);
           this.monthError.set(
             'Unable to load maramataka month. Please try again.',
           );
           this.cycleError.set('Unable to load maramataka cycle anchors.');
-        },
-      });
-
-    this.api
-      .getToday(locationId, requestDate)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (today) => {
-          if (generation !== this.requestGeneration) {
-            return;
-          }
-
-          this.today.set(today);
-          this.todayLoading.set(false);
-        },
-        error: () => {
-          if (generation !== this.requestGeneration) {
-            return;
-          }
-
-          this.today.set(null);
-          this.todayLoading.set(false);
           this.todayError.set(
             'Unable to load the selected day. Please try again.',
           );
+          this.moonDetailsError.set('Unable to load moon details.');
         },
       });
 
     this.api
-      .getMoonDetails(locationId, requestDate)
+      .getStarMarkers(locationId, requestDate)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (details) => {
+        next: (markers) => {
           if (generation !== this.requestGeneration) {
             return;
           }
 
-          this.moonDetails.set(details);
-          this.moonDetailsLoading.set(false);
+          this.starMarkers.set(markers);
+          this.starMarkersLoading.set(false);
         },
         error: () => {
           if (generation !== this.requestGeneration) {
             return;
           }
 
-          this.moonDetails.set(null);
-          this.moonDetailsLoading.set(false);
-          this.moonDetailsError.set('Unable to load moon details.');
+          this.starMarkers.set([]);
+          this.starMarkersLoading.set(false);
+          this.starMarkersError.set('Unable to load dawn sky.');
         },
       });
 
@@ -338,29 +325,6 @@ export class MaramatakaPage implements OnInit {
           );
         },
       });
-
-    this.api
-      .getStarMarkers(locationId, requestDate)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (markers) => {
-          if (generation !== this.requestGeneration) {
-            return;
-          }
-
-          this.starMarkers.set(markers);
-          this.starMarkersLoading.set(false);
-        },
-        error: () => {
-          if (generation !== this.requestGeneration) {
-            return;
-          }
-
-          this.starMarkers.set([]);
-          this.starMarkersLoading.set(false);
-          this.starMarkersError.set('Unable to load star markers.');
-        },
-      });
   }
 
   private refreshIfDateChanged(): void {
@@ -386,6 +350,26 @@ export class MaramatakaPage implements OnInit {
       whiroStartsAt: cycle.anchors.whiro.occursAt,
       starMonthSequence: cycle.starMonth?.note?.sequence,
       nights: cycle.nights,
+    };
+  }
+
+  private todayFromCycle(cycle: MaramatakaCycleDetails): MaramatakaToday {
+    return {
+      ruleSet: cycle.ruleSet,
+      mata: cycle.currentNight.mataDetails ?? {
+        index: cycle.currentMataIndex,
+        name: cycle.currentNight.mata,
+      },
+      overlappingMata: cycle.currentNight.overlappingMata?.map((overlap) => ({
+        mata: overlap.mataDetails ?? {
+          index: 0,
+          name: overlap.mata,
+        },
+        cycleStartsAt: overlap.cycleStartsAt,
+        reason: overlap.reason,
+      })),
+      startsAt: cycle.currentNight.startsAt,
+      endsAt: cycle.currentNight.endsAt,
     };
   }
 
