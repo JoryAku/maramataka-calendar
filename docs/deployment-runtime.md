@@ -191,6 +191,23 @@ rm "$MARAMATAKA_ASTRONOMY_CACHE_PATH"
 
 The API will recreate the cache file on the next successful astronomy fetch.
 
+Prefer namespace cleanup when only the active cache fingerprint changed:
+
+```sh
+npm run diagnose:maramataka -- cache-namespaces
+npm run diagnose:maramataka -- cache-namespaces --prune
+```
+
+The namespace cleanup command removes stale `raw:*` and `observational:*`
+namespaces while leaving active and unknown entries untouched.
+
+Unknown entries are pre-fingerprint legacy entries. They can be removed after
+confirming the app is reading and writing active namespaces:
+
+```sh
+npm run diagnose:maramataka -- cache-namespaces --prune --prune-unknown
+```
+
 When to reset:
 
 - Astronomy provider calculation changes.
@@ -198,9 +215,8 @@ When to reset:
 - A bad provider response was cached.
 - The `Location` or timezone contract changes in a way that affects cache keys.
 
-Future cache hardening should add explicit invalidation tooling, stale
-namespace cleanup, startup logging for active fingerprints, and a persistent
-derived maramataka-rules namespace if year/month outputs become persistent.
+Future cache hardening should add a persistent derived maramataka-rules
+namespace if year/month outputs become persistent.
 
 ## Frontend Hosting
 

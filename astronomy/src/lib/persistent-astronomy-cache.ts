@@ -9,6 +9,31 @@ export interface AstronomyCacheStore {
   set<T>(key: string, value: T): Promise<void>;
 }
 
+export interface AstronomyCacheNamespaceSummary {
+  namespace: string;
+  entries: number;
+  cachedAtMin?: string;
+  cachedAtMax?: string;
+  status: 'active' | 'stale' | 'unknown';
+}
+
+export interface AstronomyCacheInspection {
+  path: string;
+  entries: number;
+  activeNamespaces: string[];
+  namespaces: AstronomyCacheNamespaceSummary[];
+  staleEntries: number;
+  unknownEntries: number;
+}
+
+export interface AstronomyCachePruneResult extends AstronomyCacheInspection {
+  removedEntries: number;
+}
+
+export interface AstronomyCachePruneOptions {
+  includeUnknown?: boolean;
+}
+
 interface CacheFile {
   version: typeof ASTRONOMY_CACHE_FILE_VERSION;
   entries: Record<string, CacheEntry>;
@@ -47,6 +72,45 @@ export class FileAstronomyCacheStore implements AstronomyCacheStore {
     };
 
     await this.scheduleFlush();
+  }
+
+  async inspectNamespaces(
+    activeNamespaces: string[],
+  ): Promise<AstronomyCacheInspection> {
+    const cacheFile = await this.loadCacheFile();
+    return this.inspectCacheFile(cacheFile, activeNamespaces);
+  }
+
+  async pruneStaleNamespaces(
+    activeNamespaces: string[],
+    options: AstronomyCachePruneOptions = {},
+  ): Promise<AstronomyCachePruneResult> {
+    const cacheFile = await this.loadCacheFile();
+    const activeNamespaceSet = new Set(activeNamespaces);
+    let removedEntries = 0;
+
+    for (const key of Object.keys(cacheFile.entries)) {
+      const namespace = this.namespaceForKey(key);
+      if (namespace && activeNamespaceSet.has(namespace)) {
+        continue;
+      }
+
+      if (!namespace && !options.includeUnknown) {
+        continue;
+      }
+
+      delete cacheFile.entries[key];
+      removedEntries += 1;
+    }
+
+    if (removedEntries > 0) {
+      await this.scheduleFlush();
+    }
+
+    return {
+      ...this.inspectCacheFile(cacheFile, activeNamespaces),
+      removedEntries,
+    };
   }
 
   private async loadCacheFile(): Promise<CacheFile> {
@@ -113,6 +177,80 @@ export class FileAstronomyCacheStore implements AstronomyCacheStore {
       version: ASTRONOMY_CACHE_FILE_VERSION,
       entries: {},
     };
+  }
+
+  private inspectCacheFile(
+    cacheFile: CacheFile,
+    activeNamespaces: string[],
+  ): AstronomyCacheInspection {
+    const activeNamespaceSet = new Set(activeNamespaces);
+    const summaries = new Map<string, AstronomyCacheNamespaceSummary>();
+    let unknownEntries = 0;
+
+    for (const [key, entry] of Object.entries(cacheFile.entries)) {
+      const namespace = this.namespaceForKey(key);
+      if (!namespace) {
+        unknownEntries += 1;
+        continue;
+      }
+
+      const summary =
+        summaries.get(namespace) ??
+        this.createNamespaceSummary(namespace, activeNamespaceSet);
+      summary.entries += 1;
+      summary.cachedAtMin = this.minIsoDate(summary.cachedAtMin, entry.cachedAt);
+      summary.cachedAtMax = this.maxIsoDate(summary.cachedAtMax, entry.cachedAt);
+      summaries.set(namespace, summary);
+    }
+
+    const namespaces = [...summaries.values()].sort((a, b) =>
+      a.namespace.localeCompare(b.namespace),
+    );
+    const staleEntries = namespaces
+      .filter((namespace) => namespace.status === 'stale')
+      .reduce((total, namespace) => total + namespace.entries, 0);
+
+    return {
+      path: this.filePath,
+      entries: Object.keys(cacheFile.entries).length,
+      activeNamespaces,
+      namespaces,
+      staleEntries,
+      unknownEntries,
+    };
+  }
+
+  private createNamespaceSummary(
+    namespace: string,
+    activeNamespaceSet: Set<string>,
+  ): AstronomyCacheNamespaceSummary {
+    return {
+      namespace,
+      entries: 0,
+      status: activeNamespaceSet.has(namespace) ? 'active' : 'stale',
+    };
+  }
+
+  private namespaceForKey(key: string): string | undefined {
+    const parts = key.split(':');
+    if (parts.length < 3) {
+      return undefined;
+    }
+
+    const [layer, fingerprint] = parts;
+    if (!['raw', 'observational'].includes(layer) || !fingerprint) {
+      return undefined;
+    }
+
+    return `${layer}:${fingerprint}`;
+  }
+
+  private minIsoDate(current: string | undefined, candidate: string): string {
+    return !current || candidate < current ? candidate : current;
+  }
+
+  private maxIsoDate(current: string | undefined, candidate: string): string {
+    return !current || candidate > current ? candidate : current;
   }
 
   private isMissingFileError(error: unknown): boolean {

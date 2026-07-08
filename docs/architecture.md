@@ -84,6 +84,12 @@ The Angular app presents the same calculated data in focused views:
 UI views should not duplicate calendar rules. They should render the rule-set
 and astronomy data returned by the API.
 
+The maramataka page uses a page-scoped data store/facade for frontend loading
+orchestration. That store owns selected date/location state, request
+cancellation, shared page data, year core loading, and timeline enrichment. The
+page component stays mostly responsible for user interactions and passes signal
+state into child views.
+
 ## Extension Points
 
 - Add a new calendar by registering another `MaramatakaRuleSet`.
@@ -93,4 +99,3 @@ and astronomy data returned by the API.
   production issue.
 - Add user-facing rule-set selection after there is more than one reviewed
   calendar model ready for use.
-

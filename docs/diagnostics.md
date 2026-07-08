@@ -18,6 +18,25 @@ Print active cache fingerprints and full readable metadata:
 npm run diagnose:maramataka -- cache-fingerprints
 ```
 
+Inspect cache namespaces and stale entry counts:
+
+```sh
+npm run diagnose:maramataka -- cache-namespaces
+```
+
+Prune stale raw/observational astronomy namespaces after inspecting them:
+
+```sh
+npm run diagnose:maramataka -- cache-namespaces --prune
+```
+
+Remove pre-fingerprint legacy entries only after confirming the app is using
+active `raw:*` and `observational:*` namespaces:
+
+```sh
+npm run diagnose:maramataka -- cache-namespaces --prune --prune-unknown
+```
+
 Inspect the generated year around a local date:
 
 ```sh

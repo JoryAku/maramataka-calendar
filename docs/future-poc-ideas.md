@@ -74,8 +74,8 @@ material.
 - Use readable cache fingerprints so rule or astronomy changes create cache
   misses instead of serving stale results.
 - Add stale namespace cleanup tooling for old cache entries.
-- Revisit the app data-loading shape so day, month, and year views can reuse
-  already-loaded cycle/month/year data when moving between adjacent days instead
+- Extend the page data-loading store so adjacent-day and adjacent-month
+  navigation can reuse or prefetch already-loaded cycle/month/year data instead
   of recalculating or refetching every layer from scratch.
 - Consider persistent derived maramataka year/month caches if generation cost
   becomes a production issue.

@@ -123,4 +123,88 @@ describe('FileAstronomyCacheStore', () => {
     await expect(store.set('new', { ok: true })).resolves.toBeUndefined();
     await expect(store.get('new')).resolves.toEqual({ ok: true });
   });
+
+  it('reports active, stale, and unknown cache namespaces', async () => {
+    const cachePath = join(tempDir, 'astronomy.json');
+    const store = new FileAstronomyCacheStore(cachePath);
+    await store.set('raw:active:moonrise:2026-01-01', { ok: true });
+    await store.set('raw:old:moonrise:2025-01-01', { stale: true });
+    await store.set('observational:active:star-markers:2026-01-01', {
+      ok: true,
+    });
+    await store.set('legacy-entry', { unknown: true });
+
+    const inspection = await store.inspectNamespaces([
+      'raw:active',
+      'observational:active',
+    ]);
+
+    expect(inspection.entries).toBe(4);
+    expect(inspection.staleEntries).toBe(1);
+    expect(inspection.unknownEntries).toBe(1);
+    expect(inspection.namespaces).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          namespace: 'raw:active',
+          entries: 1,
+          status: 'active',
+        }),
+        expect.objectContaining({
+          namespace: 'raw:old',
+          entries: 1,
+          status: 'stale',
+        }),
+        expect.objectContaining({
+          namespace: 'observational:active',
+          entries: 1,
+          status: 'active',
+        }),
+      ]),
+    );
+  });
+
+  it('prunes stale namespaced entries without removing active or unknown entries', async () => {
+    const cachePath = join(tempDir, 'astronomy.json');
+    const store = new FileAstronomyCacheStore(cachePath);
+    await store.set('raw:active:moonrise:2026-01-01', { ok: true });
+    await store.set('raw:old:moonrise:2025-01-01', { stale: true });
+    await store.set('observational:old:star-markers:2025-01-01', {
+      stale: true,
+    });
+    await store.set('legacy-entry', { unknown: true });
+
+    const result = await store.pruneStaleNamespaces(['raw:active']);
+
+    expect(result.removedEntries).toBe(2);
+    expect(result.entries).toBe(2);
+    await expect(store.get('raw:active:moonrise:2026-01-01')).resolves.toEqual({
+      ok: true,
+    });
+    await expect(store.get('raw:old:moonrise:2025-01-01')).resolves.toBeUndefined();
+    await expect(
+      store.get('observational:old:star-markers:2025-01-01'),
+    ).resolves.toBeUndefined();
+    await expect(store.get('legacy-entry')).resolves.toEqual({
+      unknown: true,
+    });
+  });
+
+  it('prunes unknown entries only when explicitly requested', async () => {
+    const cachePath = join(tempDir, 'astronomy.json');
+    const store = new FileAstronomyCacheStore(cachePath);
+    await store.set('raw:active:moonrise:2026-01-01', { ok: true });
+    await store.set('legacy-entry', { unknown: true });
+
+    const result = await store.pruneStaleNamespaces(['raw:active'], {
+      includeUnknown: true,
+    });
+
+    expect(result.removedEntries).toBe(1);
+    expect(result.entries).toBe(1);
+    expect(result.unknownEntries).toBe(0);
+    await expect(store.get('raw:active:moonrise:2026-01-01')).resolves.toEqual({
+      ok: true,
+    });
+    await expect(store.get('legacy-entry')).resolves.toBeUndefined();
+  });
 });

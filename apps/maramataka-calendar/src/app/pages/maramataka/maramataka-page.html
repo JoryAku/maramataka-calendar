@@ -7,22 +7,22 @@
     <div class="controls">
       <section class="control-panel" aria-label="Location">
         <label class="control-label" for="location-select">Location</label>
-        @if (locationsLoading()) {
+        @if (store.locationsLoading()) {
         <p class="state compact" data-testid="locations-loading-state">
           Loading locations...
         </p>
-        } @else if (locationsError()) {
+        } @else if (store.locationsError()) {
         <p class="state error compact" data-testid="locations-error-state">
-          {{ locationsError() }}
+          {{ store.locationsError() }}
         </p>
         } @else {
         <select
           id="location-select"
           class="control-input"
-          [value]="selectedLocationId()"
+          [value]="store.selectedLocationId()"
           (change)="onLocationChange($any($event.target).value)"
         >
-          @for (location of locations(); track location.id) {
+          @for (location of store.locations(); track location.id) {
           <option [value]="location.id">{{ location.name }}</option>
           }
         </select>
@@ -35,7 +35,7 @@
           id="date-select"
           class="control-input"
           type="date"
-          [value]="selectedDate()"
+          [value]="store.selectedDate()"
           (change)="onDateChange($any($event.target).value)"
         />
       </section>
@@ -44,7 +44,7 @@
         <button
           class="secondary-button"
           type="button"
-          [disabled]="useLiveDate()"
+          [disabled]="store.useLiveDate()"
           (click)="resetDateToToday()"
         >
           Use today
@@ -54,39 +54,39 @@
   </header>
 
   <app-maramataka-today-view
-    [selectedLocationName]="selectedLocationName()"
-    [todayLoading]="todayLoading()"
-    [todayError]="todayError()"
-    [today]="today()"
-    [now]="now()"
-    [moonDetailsLoading]="moonDetailsLoading()"
-    [moonDetailsError]="moonDetailsError()"
-    [moonDetails]="moonDetails()"
-    [starMarkersLoading]="starMarkersLoading()"
-    [starMarkersError]="starMarkersError()"
-    [starMarkers]="starMarkers()"
+    [selectedLocationName]="store.selectedLocationName()"
+    [todayLoading]="store.todayLoading()"
+    [todayError]="store.todayError()"
+    [today]="store.today()"
+    [now]="store.now()"
+    [moonDetailsLoading]="store.moonDetailsLoading()"
+    [moonDetailsError]="store.moonDetailsError()"
+    [moonDetails]="store.moonDetails()"
+    [starMarkersLoading]="store.starMarkersLoading()"
+    [starMarkersError]="store.starMarkersError()"
+    [starMarkers]="store.starMarkers()"
   ></app-maramataka-today-view>
 
   <app-maramataka-cycle-view
-    [selectedLocationName]="selectedLocationName()"
-    [monthLoading]="monthLoading()"
-    [monthError]="monthError()"
-    [month]="month()"
-    [cycleLoading]="cycleLoading()"
-    [cycleError]="cycleError()"
-    [cycle]="cycle()"
-    [yearEvents]="year()?.events ?? []"
-    [now]="now()"
+    [selectedLocationName]="store.selectedLocationName()"
+    [monthLoading]="store.monthLoading()"
+    [monthError]="store.monthError()"
+    [month]="store.month()"
+    [cycleLoading]="store.cycleLoading()"
+    [cycleError]="store.cycleError()"
+    [cycle]="store.cycle()"
+    [yearEvents]="store.year()?.events ?? []"
+    [now]="store.now()"
     (nightSelected)="selectNight($event)"
   ></app-maramataka-cycle-view>
 
   <app-maramataka-year-view
-    [yearLoading]="yearLoading()"
-    [yearTimelineLoading]="yearTimelineLoading()"
-    [yearTimelineError]="yearTimelineError()"
-    [yearError]="yearError()"
-    [year]="year()"
-    [selectedDate]="now()"
+    [yearLoading]="store.yearLoading()"
+    [yearTimelineLoading]="store.yearTimelineLoading()"
+    [yearTimelineError]="store.yearTimelineError()"
+    [yearError]="store.yearError()"
+    [year]="store.year()"
+    [selectedDate]="store.now()"
     (monthSelected)="selectYearMonth($event)"
   ></app-maramataka-year-view>
 </section>

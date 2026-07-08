@@ -9,8 +9,8 @@ material.
 
 ### Cache Fingerprint Observability
 
-Cache fingerprint observability is now read-only and available without adding a
-database or persistent maramataka year/month output cache.
+Cache fingerprint observability and stale namespace cleanup are available
+without adding a database or persistent maramataka year/month output cache.
 
 Implemented:
 
@@ -20,8 +20,11 @@ Implemented:
   are obvious during deploys
 - provide `npm run diagnose:maramataka -- cache-fingerprints` to print readable
   metadata and fingerprints without requiring the API server to run
-- keep observability read-only; it does not clear, rewrite, or migrate cache
-  data
+- provide `npm run diagnose:maramataka -- cache-namespaces` to inspect active
+  and stale raw/observational astronomy namespaces
+- provide `npm run diagnose:maramataka -- cache-namespaces --prune` to remove
+  stale raw/observational namespaces while leaving active and unknown entries
+  untouched
 
 ## Future Accuracy
 
@@ -39,16 +42,16 @@ The cache work now has three layers defined:
   month markers, and Matariki public holiday logic
 
 Fingerprint mismatches are treated as cache misses. Old entries can remain in
-the file until cleanup tooling exists, but they will not be served through the
-new namespace. Raw and observational astronomy fingerprints are persistent
-cache namespaces; the maramataka rule-set fingerprint is currently used for
-in-memory cache keys and future persistence metadata.
+the file, but they will not be served through the new namespace and can be
+removed with the cache namespace cleanup diagnostic. Raw and observational
+astronomy fingerprints are persistent cache namespaces; the maramataka rule-set
+fingerprint is currently used for in-memory cache keys and future persistence
+metadata.
 
 Remaining work:
 
 - add a persistent derived maramataka-rules namespace if/when year or month
   results become persistent rather than in-memory only
-- add stale namespace cleanup tooling after namespace invalidation is in place
 
 ### Refine Dawn Star Marker Sampling
 
