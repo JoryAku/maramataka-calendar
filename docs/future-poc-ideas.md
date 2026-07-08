@@ -60,9 +60,9 @@ material.
 
 ## Calibration And Research Tools
 
-- Keep the Matariki holiday comparison report as a review-facing calibration
-  tool, not a source of truth.
-- Keep source-calendar comparison focused on the Living by the Stars calendar
+- If a Matariki holiday comparison report is reintroduced, keep it as a
+  review-facing calibration tool, not a source of truth.
+- Keep source-calendar calibration focused on the Living by the Stars calendar
   rows we have evidence for.
 - Add reports that compare Whiro, Pipiri, Ruhanui, Matariki appearance,
   Tangaroa periods, New Moons, Full Moons, and dawn visibility in one place.

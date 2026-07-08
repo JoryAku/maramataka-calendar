@@ -32,6 +32,7 @@ export default defineConfig({
     command: `npx nx run maramataka-calendar:serve --port=${e2ePort}`,
     url: baseURL,
     reuseExistingServer: true,
+    timeout: 120_000,
     cwd: workspaceRoot,
     env: {
       MARAMATAKA_ASTRONOMY_MODE: 'stub',

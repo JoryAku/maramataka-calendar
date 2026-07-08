@@ -4,7 +4,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AddressInfo } from 'node:net';
 import { StarMarker } from '@maramataka-calendar/astronomy';
 import {
-  CurrentMaramatakaNight,
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaYear,
@@ -18,36 +17,12 @@ import { ApiExceptionFilter } from './api-exception.filter';
 describe('MaramatakaController', () => {
   let app: INestApplication;
   let baseUrl: string;
-  let getMonthMock: jest.Mock;
-  let getCurrentNightMock: jest.Mock;
   let getCycleDetailsMock: jest.Mock;
   let getYearMock: jest.Mock;
   let getMoonDetailsMock: jest.Mock;
   let getStarMarkersMock: jest.Mock;
 
-  const useMonthBackedCurrentNightMock = () => {
-    getCurrentNightMock.mockImplementation(async (location, date: Date) => {
-      const month = (await getMonthMock(location, date)) as MaramatakaMonth;
-      const night = month.nights.find(
-        (candidate) =>
-          candidate.startsAt.getTime() <= date.getTime() &&
-          date.getTime() < candidate.endsAt.getTime(),
-      );
-
-      return night
-        ? ({
-            version: month.version,
-            ruleSet: month.ruleSet,
-            night,
-          } satisfies CurrentMaramatakaNight)
-        : undefined;
-    });
-  };
-
   beforeAll(async () => {
-    getMonthMock = jest.fn();
-    getCurrentNightMock = jest.fn();
-    useMonthBackedCurrentNightMock();
     getCycleDetailsMock = jest.fn();
     getYearMock = jest.fn();
     getMoonDetailsMock = jest.fn();
@@ -59,8 +34,6 @@ describe('MaramatakaController', () => {
         {
           provide: MaramatakaService,
           useValue: {
-            getMonth: getMonthMock,
-            getCurrentNight: getCurrentNightMock,
             getCycleDetails: getCycleDetailsMock,
             getYear: getYearMock,
             getMoonDetails: getMoonDetailsMock,
@@ -80,13 +53,10 @@ describe('MaramatakaController', () => {
   });
 
   afterEach(() => {
-    getMonthMock.mockReset();
-    getCurrentNightMock.mockReset();
     getCycleDetailsMock.mockReset();
     getYearMock.mockReset();
     getMoonDetailsMock.mockReset();
     getStarMarkersMock.mockReset();
-    useMonthBackedCurrentNightMock();
   });
 
   afterAll(async () => {
@@ -275,6 +245,9 @@ describe('MaramatakaController', () => {
       });
 
       expect(response.status).toBe(200);
+      expect(response.headers['cache-control']).toBe(
+        'public, max-age=900, stale-while-revalidate=3600',
+      );
       expect(response.data).toMatchObject({
         cycle: {
           version: 'mita-te-tai-best',
@@ -323,110 +296,6 @@ describe('MaramatakaController', () => {
     });
   });
 
-  describe('GET /maramataka/cycle', () => {
-    it('returns cycle metadata and anchor points for the selected date', async () => {
-      getCycleDetailsMock.mockResolvedValue(createCycleFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/cycle`, {
-        params: {
-          date: '2026-01-02',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data).toMatchObject({
-        version: 'mita-te-tai-best',
-        ruleSet,
-        timezone: 'Pacific/Auckland',
-        currentMataIndex: 2,
-        currentNight: {
-          mata: {
-            index: 2,
-            name: 'Tirea',
-            version: 'mita-te-tai-best',
-          },
-          startsAt: '2026-01-02T07:46:00.000Z',
-          endsAt: '2026-01-03T07:45:00.000Z',
-        },
-        anchors: {
-          whiro: {
-            type: 'whiro',
-            label: 'Whiro / Kohititanga',
-            occursAt: '2026-01-01T07:47:00.000Z',
-            localDate: '2026-01-01',
-            localTime: '20:47:00',
-            timezone: 'Pacific/Auckland',
-            source: 'astronomy-engine moonrise',
-            mata: {
-              index: 1,
-              name: 'Whiro',
-              version: 'mita-te-tai-best',
-            },
-          },
-          fullMoon: {
-            type: 'full-moon',
-            label: 'Rākaunui / Full Moon',
-            occursAt: '2026-01-02T08:00:00.000Z',
-            localDate: '2026-01-02',
-            localTime: '21:00:00',
-            timezone: 'Pacific/Auckland',
-            source: 'astronomy-engine',
-            mata: {
-              index: 2,
-              name: 'Tirea',
-              version: 'mita-te-tai-best',
-            },
-          },
-          nextWhiro: {
-            type: 'next-whiro',
-            label: 'Next Whiro / Kohititanga',
-            occursAt: '2026-01-04T07:44:00.000Z',
-            localDate: '2026-01-04',
-            localTime: '20:44:00',
-            timezone: 'Pacific/Auckland',
-            source: 'astronomy-engine moonrise',
-            mata: {
-              index: 1,
-              name: 'Whiro',
-              version: 'mita-te-tai-best',
-            },
-          },
-        },
-      });
-      expect(getCycleDetailsMock).toHaveBeenCalledTimes(1);
-
-      const [locationArg, dateArg] = getCycleDetailsMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezone: string },
-        Date,
-      ];
-      expect(locationArg).toEqual({
-        latitude: -41.2865,
-        longitude: 174.7762,
-        timezone: 'Pacific/Auckland',
-      });
-      expect(dateArg.toISOString()).toBe('2026-01-01T23:00:00.000Z');
-    });
-
-    it('returns HTTP 400 when no cycle is available', async () => {
-      getCycleDetailsMock.mockResolvedValue(undefined);
-
-      const response = await axios.get(`${baseUrl}/maramataka/cycle`, {
-        params: {
-          date: '2026-01-02',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(400);
-      expect(response.data.message).toBe(
-        'No Maramataka cycle found for supplied date and location',
-      );
-    });
-  });
-
   describe('GET /maramataka/year', () => {
     it('returns year timeline months for the selected date', async () => {
       getYearMock.mockResolvedValue(createYearFixture());
@@ -440,6 +309,9 @@ describe('MaramatakaController', () => {
       });
 
       expect(response.status).toBe(200);
+      expect(response.headers['cache-control']).toBe(
+        'public, max-age=900, stale-while-revalidate=3600',
+      );
       expect(response.data).toMatchObject({
         version: 'mita-te-tai-best',
         ruleSet,
@@ -471,476 +343,6 @@ describe('MaramatakaController', () => {
         timezone: 'Pacific/Auckland',
       });
       expect(dateArg.toISOString()).toBe('2026-01-01T23:00:00.000Z');
-    });
-  });
-
-  describe('GET /maramataka/today', () => {
-    it('returns HTTP 200 for a valid request', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-01T21:00:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        ruleSet,
-        mata: {
-          index: 1,
-          name: 'Whiro',
-        },
-        startsAt: '2026-01-01T07:47:00.000Z',
-        endsAt: '2026-01-02T07:46:00.000Z',
-      });
-    });
-
-    it('returns Whiro without overlap at the next Whiro boundary', async () => {
-      getCurrentNightMock.mockResolvedValue({
-        version: 'mita-te-tai-best',
-        ruleSet,
-        night: {
-          mata: {
-            index: 1,
-            name: 'Whiro',
-            version: 'mita-te-tai-best',
-          },
-          startsAt: new Date('2026-01-02T07:46:00.000Z'),
-          endsAt: new Date('2026-01-03T07:45:00.000Z'),
-        },
-      });
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-02T20:46:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        ruleSet,
-        mata: {
-          index: 1,
-          name: 'Whiro',
-        },
-        startsAt: '2026-01-02T07:46:00.000Z',
-        endsAt: '2026-01-03T07:45:00.000Z',
-      });
-    });
-
-    it('returns HTTP 400 for invalid query parameters', async () => {
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: 'bad-date',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(400);
-      expect(response.data.message).toBe(
-        'dateTime must be in YYYY-MM-DDTHH:mm:ss format',
-      );
-      expect(getMonthMock).not.toHaveBeenCalled();
-    });
-
-    it('returns the correct Maramataka night for the supplied date-time', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-03T21:00:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data.mata).toEqual({
-        index: 3,
-        name: 'Hoata',
-      });
-    });
-
-    it('returns the current night exactly at startsAt', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-01T20:47:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data.mata).toEqual({
-        index: 1,
-        name: 'Whiro',
-      });
-    });
-
-    it('returns the current night exactly before endsAt', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-02T20:45:59',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data.mata).toEqual({
-        index: 1,
-        name: 'Whiro',
-      });
-    });
-
-    it('returns the next night exactly at endsAt', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-02T20:46:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data.mata).toEqual({
-        index: 2,
-        name: 'Tirea',
-      });
-    });
-
-    it('returns HTTP 400 when no Maramataka night matches the supplied date-time', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-04T20:44:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(400);
-      expect(response.data.message).toBe(
-        'No Maramataka night found for supplied date and location',
-      );
-      expect(getMonthMock).toHaveBeenCalledTimes(1);
-    });
-
-    it('calls service with expected date-time and location for today endpoint', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-01T20:47:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(getCurrentNightMock).toHaveBeenCalledTimes(1);
-
-      const [locationArg, dateArg] = getCurrentNightMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezone: string },
-        Date,
-      ];
-
-      expect(locationArg).toEqual({
-        latitude: -41.2865,
-        longitude: 174.7762,
-        timezone: 'Pacific/Auckland',
-      });
-      expect(dateArg).toBeInstanceOf(Date);
-      expect(dateArg.toISOString()).toBe('2026-01-01T07:47:00.000Z');
-    });
-
-    it('propagates service failures as HTTP 500', async () => {
-      getMonthMock.mockRejectedValue(new Error('upstream failure'));
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-01T21:00:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-          timezone: 'Pacific/Auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(500);
-      expect(response.data.message).toBe('Internal server error');
-    });
-
-    it('resolves named location and returns correct night', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-01T20:47:00',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data.mata).toEqual({
-        index: 1,
-        name: 'Whiro',
-      });
-      expect(getMonthMock).toHaveBeenCalledTimes(1);
-
-      const [locationArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezone: string },
-        Date,
-      ];
-
-      expect(locationArg).toEqual({
-        latitude: -41.2865,
-        longitude: 174.7762,
-        timezone: 'Pacific/Auckland',
-      });
-    });
-
-    it('resolves auckland location correctly', async () => {
-      getMonthMock.mockResolvedValue(createMonthFixture());
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-01T20:47:00',
-          location: 'auckland',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(getMonthMock).toHaveBeenCalledTimes(1);
-
-      const [locationArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezone: string },
-        Date,
-      ];
-
-      expect(locationArg).toEqual({
-        latitude: -37.0082,
-        longitude: 174.6645,
-        timezone: 'Pacific/Auckland',
-      });
-    });
-
-    it('parses winter named-location requests using the location timezone', async () => {
-      getMonthMock.mockResolvedValue({
-        version: 'mita-te-tai-best',
-        whiroStartsAt: new Date('2026-06-01T07:00:00.000Z'),
-        nights: [
-          {
-            mata: {
-              index: 1,
-              name: 'Whiro',
-              version: 'mita-te-tai-best',
-            },
-            startsAt: new Date('2026-06-01T07:00:00.000Z'),
-            endsAt: new Date('2026-06-02T06:59:00.000Z'),
-          },
-        ],
-      });
-
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-06-01T20:00:00',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(getMonthMock).toHaveBeenCalledTimes(1);
-
-      const [locationArg, dateArg] = getMonthMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezone: string },
-        Date,
-      ];
-
-      expect(locationArg).toEqual({
-        latitude: -41.2865,
-        longitude: 174.7762,
-        timezone: 'Pacific/Auckland',
-      });
-      expect(dateArg.toISOString()).toBe('2026-06-01T08:00:00.000Z');
-    });
-
-    it('returns HTTP 400 for invalid local datetime in DST spring-forward gap', async () => {
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-09-27T02:30:00',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(400);
-      expect(response.data.message).toBe(
-        'date must be a valid local date-time',
-      );
-      expect(getMonthMock).not.toHaveBeenCalled();
-    });
-
-    it('returns HTTP 404 for unknown location', async () => {
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-01T20:47:00',
-          location: 'unknown-place',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(404);
-      expect(response.data.message).toBe('Unknown location: unknown-place');
-      expect(getMonthMock).not.toHaveBeenCalled();
-    });
-
-    it('requires either location or all coordinates', async () => {
-      const response = await axios.get(`${baseUrl}/maramataka/today`, {
-        params: {
-          dateTime: '2026-01-01T20:47:00',
-          lat: '-41.2865',
-          lon: '174.7762',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(400);
-      expect(response.data.message).toBe(
-        'Either location parameter or all of lat, lon, and timezone parameters are required',
-      );
-      expect(getMonthMock).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('GET /maramataka/moon-details', () => {
-    it('returns moon tracker details for a valid request', async () => {
-      getMoonDetailsMock.mockResolvedValue({
-        date: '2026-01-01',
-        phase: 'Waxing Gibbous',
-        fractionIlluminated: 0.91,
-        lunarAgeDays: 11.89,
-        lunarAgeSource: 'astronomy-engine moon phases',
-        closestPhase: {
-          phase: 'Full Moon',
-          occursAt: new Date('2026-01-03T10:03:00.000Z'),
-          source: 'astronomy-engine',
-        },
-        moonrise: {
-          date: '2026-01-01',
-          risesAt: new Date('2026-01-01T05:57:00.000Z'),
-          source: 'astronomy-engine',
-        },
-        moonset: {
-          date: '2026-01-01',
-          setsAt: new Date('2025-12-31T13:50:00.000Z'),
-          source: 'astronomy-engine',
-        },
-        transit: {
-          date: '2026-01-01',
-          transitsAt: new Date('2026-01-01T10:21:00.000Z'),
-          source: 'astronomy-engine',
-        },
-        source: 'astronomy-engine',
-      });
-
-      const response = await axios.get(`${baseUrl}/maramataka/moon-details`, {
-        params: {
-          date: '2026-01-01',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({
-        date: '2026-01-01',
-        phase: 'Waxing Gibbous',
-        fractionIlluminated: 0.91,
-        lunarAgeDays: 11.89,
-        lunarAgeSource: 'astronomy-engine moon phases',
-        distanceKm: null,
-        closestPhase: {
-          phase: 'Full Moon',
-          occursAt: '2026-01-03T10:03:00.000Z',
-          source: 'astronomy-engine',
-        },
-        moonrise: {
-          occursAt: '2026-01-01T05:57:00.000Z',
-          source: 'astronomy-engine',
-        },
-        moonset: {
-          occursAt: '2025-12-31T13:50:00.000Z',
-          source: 'astronomy-engine',
-        },
-        transit: {
-          occursAt: '2026-01-01T10:21:00.000Z',
-          source: 'astronomy-engine',
-        },
-        unavailable: ['distanceKm'],
-        source: 'astronomy-engine',
-      });
-      expect(getMoonDetailsMock).toHaveBeenCalledTimes(1);
-
-      const [locationArg, dateArg] = getMoonDetailsMock.mock.calls[0] as [
-        { latitude: number; longitude: number; timezone: string },
-        Date,
-      ];
-
-      expect(locationArg).toEqual({
-        latitude: -41.2865,
-        longitude: 174.7762,
-        timezone: 'Pacific/Auckland',
-      });
-      expect(dateArg.toISOString()).toBe('2025-12-31T23:00:00.000Z');
-    });
-
-    it('returns HTTP 400 for invalid moon details date', async () => {
-      const response = await axios.get(`${baseUrl}/maramataka/moon-details`, {
-        params: {
-          date: 'bad-date',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(400);
-      expect(response.data.message).toBe('date must be in YYYY-MM-DD format');
-      expect(getMoonDetailsMock).not.toHaveBeenCalled();
     });
   });
 
@@ -978,6 +380,9 @@ describe('MaramatakaController', () => {
       });
 
       expect(response.status).toBe(200);
+      expect(response.headers['cache-control']).toBe(
+        'public, max-age=900, stale-while-revalidate=3600',
+      );
       expect(response.data).toEqual([
         {
           ...starMarkers[0],

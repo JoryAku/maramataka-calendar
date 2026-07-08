@@ -339,6 +339,18 @@ export class AstronomyEngineProvider implements AstronomyProvider {
       const illumination = engine.Illumination(engine.Body.Moon, detailsAt);
       const phases = await this.getMoonPhasesForSurroundingYears(detailsAt);
       const lunarAgeDays = calculateLunarAgeDays(detailsAt, phases);
+      const [moonrise, moonset, transit] = await Promise.all([
+        this.optional(() => this.getMoonRise(date, location)),
+        this.optional(async () => {
+          const moonRiseSet = await this.getMoonRiseSet(date, location);
+          return {
+            date,
+            setsAt: moonRiseSet.setsAt,
+            source: moonRiseSet.source,
+          };
+        }),
+        this.optional(() => this.getMoonTransit(date, location)),
+      ]);
 
       return {
         date,
@@ -351,16 +363,9 @@ export class AstronomyEngineProvider implements AstronomyProvider {
             }
           : {}),
         closestPhase: this.closestPhase(detailsAt, phases),
-        moonrise: await this.optional(() => this.getMoonRise(date, location)),
-        moonset: await this.optional(async () => {
-          const moonRiseSet = await this.getMoonRiseSet(date, location);
-          return {
-            date,
-            setsAt: moonRiseSet.setsAt,
-            source: moonRiseSet.source,
-          };
-        }),
-        transit: await this.optional(() => this.getMoonTransit(date, location)),
+        moonrise,
+        moonset,
+        transit,
         source: ASTRONOMY_ENGINE_SOURCE,
       };
     });

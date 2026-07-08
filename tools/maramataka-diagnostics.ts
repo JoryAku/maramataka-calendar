@@ -16,10 +16,10 @@ import {
   LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
   MaramatakaCycleDetails,
   MaramatakaMonth,
-  MaramatakaService,
   MaramatakaYearMonth,
 } from '@maramataka-calendar/maramataka-domain';
 import { join } from 'node:path';
+import { MaramatakaApiClient } from './maramataka-api-client';
 
 type AstronomyEngineModule = typeof import('astronomy-engine');
 
@@ -862,19 +862,16 @@ function provider() {
   );
 }
 
-function service() {
-  return new MaramatakaService({
-    astronomyProvider: provider(),
-    ruleSet: LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
-  });
+function maramatakaApi() {
+  return new MaramatakaApiClient();
 }
 
 async function detailedMonthForYearMonth(
-  svc: MaramatakaService,
+  api: MaramatakaApiClient,
   location: Location,
   yearMonth: MaramatakaYearMonth,
 ): Promise<MaramatakaMonth> {
-  const cycle = await svc.getCycleDetails(
+  const cycle = await api.getCycleDetails(
     location,
     yearMonth.anchors.whiro.astronomicalOccursAt ??
       yearMonth.anchors.whiro.occursAt,
@@ -888,11 +885,11 @@ async function detailedMonthForYearMonth(
 }
 
 async function detailedMonthForDate(
-  svc: MaramatakaService,
+  api: MaramatakaApiClient,
   location: Location,
   at: Date,
 ): Promise<MaramatakaMonth> {
-  const cycle = await svc.getCycleDetails(location, at);
+  const cycle = await api.getCycleDetails(location, at);
 
   if (!cycle) {
     throw new Error(
@@ -1045,8 +1042,8 @@ async function inspectMaramaBoundary(options: CliOptions) {
       : `${localDateFromOptions(options, location)}T12:00:00`,
     location,
   );
-  const svc = service();
-  const month = await detailedMonthForDate(svc, location, at);
+  const api = maramatakaApi();
+  const month = await detailedMonthForDate(api, location, at);
   const night = findNight(month, at);
 
   console.log(
@@ -1087,8 +1084,8 @@ async function inspectMaramaBoundary(options: CliOptions) {
 async function traceYear(options: CliOptions) {
   const location = locationFromOptions(options);
   const year = numberOption(options, 'year');
-  const svc = service();
-  const maramatakaYear = await svc.getYear(
+  const api = maramatakaApi();
+  const maramatakaYear = await api.getYear(
     location,
     parseDateTime(`${year}-07-01T12:00:00`, location),
   );
@@ -1138,15 +1135,15 @@ async function exploreHoliday(options: CliOptions) {
   const location = locationFromOptions(options);
   const year = numberOption(options, 'year');
   const official = OFFICIAL_MATARIKI_DATES.get(year);
-  const svc = service();
-  const maramatakaYear = await svc.getYear(
+  const api = maramatakaApi();
+  const maramatakaYear = await api.getYear(
     location,
     parseDateTime(`${year}-07-01T12:00:00`, location),
   );
   const rows = [];
 
   for (const yearMonth of maramatakaYear.months) {
-    const month = await detailedMonthForYearMonth(svc, location, yearMonth);
+    const month = await detailedMonthForYearMonth(api, location, yearMonth);
     const tangaroaNights = month.nights.filter((night) =>
       TANGAROA_TARGET_MATA.has(night.mata.name),
     );
@@ -1202,16 +1199,16 @@ async function exploreHoliday(options: CliOptions) {
 async function explainEventPlacement(options: CliOptions) {
   const location = locationFromOptions(options);
   const at = parseDateTime(stringOption(options, 'at'), location);
-  const svc = service();
-  const maramatakaYear = await svc.getYear(location, at);
+  const api = maramatakaApi();
+  const maramatakaYear = await api.getYear(location, at);
   const yearMonth = maramatakaYear.months.find(
     (month) =>
       month.startsAt.getTime() <= at.getTime() &&
       month.endsAt.getTime() > at.getTime(),
   );
   const month = yearMonth
-    ? await detailedMonthForYearMonth(svc, location, yearMonth)
-    : await detailedMonthForDate(svc, location, at);
+    ? await detailedMonthForYearMonth(api, location, yearMonth)
+    : await detailedMonthForDate(api, location, at);
   const night = findNight(month, at);
 
   console.log(`Event placement: ${formatLocal(at, location.timezone)}`);

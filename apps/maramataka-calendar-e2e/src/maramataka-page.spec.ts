@@ -161,13 +161,13 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
       ? [
           {
             mata: { index: 14, name: 'Atua', version: 'mita-te-tai-best' },
-            startsAt: '2026-06-26T04:30:00.000Z',
-            endsAt: '2026-06-26T05:30:00.000Z',
+            startsAt: '2026-06-25T12:00:00.000Z',
+            endsAt: '2026-06-26T12:00:00.000Z',
           },
           {
             mata: { index: 15, name: 'Ohua', version: 'mita-te-tai-best' },
-            startsAt: '2026-06-26T05:30:00.000Z',
-            endsAt: '2026-06-26T06:30:00.000Z',
+            startsAt: '2026-06-26T12:00:00.000Z',
+            endsAt: '2026-06-27T12:00:00.000Z',
           },
         ]
       : isAuckland
@@ -206,10 +206,10 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
       currentNight: {
         mata,
         startsAt: isDemoDate
-          ? '2026-06-26T04:30:00.000Z'
+          ? '2026-06-25T12:00:00.000Z'
           : '2026-06-25T04:30:00.000Z',
         endsAt: isDemoDate
-          ? '2026-06-26T05:30:00.000Z'
+          ? '2026-06-26T12:00:00.000Z'
           : '2026-06-25T05:30:00.000Z',
       },
       anchors: {
@@ -298,173 +298,6 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     });
   });
 
-  await page.route('**/api/maramataka/cycle**', async (route) => {
-    const url = new URL(route.request().url());
-    const location = url.searchParams.get('location');
-    const date = url.searchParams.get('date');
-    const isAuckland = location === 'auckland';
-    const isDemoDate = date === '2026-06-26';
-    const mata = {
-      index: isDemoDate ? 14 : 1,
-      name: isDemoDate ? 'Atua' : isAuckland ? 'Mako' : 'Whiro',
-      version: 'mita-te-tai-best',
-      contentLayers: [
-        {
-          id: 'fishing-guidance',
-          name: 'Fishing guidance',
-          source:
-            'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-          sourceUrl:
-            'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
-          version: '1',
-          status: 'available',
-          description:
-            'Fishing activity guidance encoded from the Mita Te Tai / Best source phrases for this mata.',
-          recommendations: isDemoDate
-            ? ['He marama pai']
-            : isAuckland
-              ? ['Mo te rama']
-              : ['Mo te hi', 'Mo te rama'],
-        },
-      ],
-    };
-    const nights = isDemoDate
-      ? [
-          {
-            mata: { index: 14, name: 'Atua', version: 'mita-te-tai-best' },
-            startsAt: '2026-06-26T04:30:00.000Z',
-            endsAt: '2026-06-26T05:30:00.000Z',
-          },
-          {
-            mata: { index: 15, name: 'Ohua', version: 'mita-te-tai-best' },
-            startsAt: '2026-06-26T05:30:00.000Z',
-            endsAt: '2026-06-26T06:30:00.000Z',
-          },
-        ]
-      : isAuckland
-        ? [
-            {
-              mata: { index: 1, name: 'Mako', version: 'mita-te-tai-best' },
-              startsAt: '2026-06-25T04:30:00.000Z',
-              endsAt: '2026-06-25T05:30:00.000Z',
-            },
-          ]
-        : [
-            {
-              mata: {
-                index: 1,
-                name: 'Whiro',
-                version: 'mita-te-tai-best',
-              },
-              startsAt: '2026-06-25T04:30:00.000Z',
-              endsAt: '2026-06-25T05:30:00.000Z',
-            },
-            {
-              mata: {
-                index: 2,
-                name: 'Tirea',
-                version: 'mita-te-tai-best',
-              },
-              startsAt: '2026-06-25T05:30:00.000Z',
-              endsAt: '2026-06-25T06:30:00.000Z',
-            },
-          ];
-
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        version: 'mita-te-tai-best',
-        ruleSet,
-        timezone: 'Pacific/Auckland',
-        currentMataIndex: mata.index,
-        currentNight: {
-          mata,
-          startsAt: '2026-06-25T04:30:00.000Z',
-          endsAt: '2026-06-25T05:30:00.000Z',
-        },
-        anchors: {
-          whiro: {
-            type: 'whiro',
-            label: 'Whiro / Kohititanga',
-            occursAt: '2026-06-25T04:30:00.000Z',
-            localDate: '2026-06-25',
-            localTime: '16:30:00',
-            timezone: 'Pacific/Auckland',
-            source: 'stub moonrise',
-            mata,
-          },
-          fullMoon: {
-            type: 'full-moon',
-            label: 'Rakaunui / Full Moon',
-            occursAt: '2026-06-25T05:00:00.000Z',
-            localDate: '2026-06-25',
-            localTime: '17:00:00',
-            timezone: 'Pacific/Auckland',
-            source: 'stub',
-            mata,
-          },
-          nextWhiro: {
-            type: 'next-whiro',
-            label: 'Next Whiro / Kohititanga',
-            occursAt: '2026-06-25T06:30:00.000Z',
-            localDate: '2026-06-25',
-            localTime: '18:30:00',
-            timezone: 'Pacific/Auckland',
-            source: 'stub moonrise',
-            mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
-          },
-        },
-        starMonth: {
-          name: 'Te Tahi o Pipiri',
-          marker: starMarker,
-          rule: ruleSet.starMonthNaming.strategy,
-          source: ruleSet.starMonthNaming.source,
-          note: ruleSet.starMonthNaming.months[0],
-        },
-        starMarkers: [starMarker],
-        nights,
-        events: [
-          {
-            type: 'month-start',
-            name: 'Te Tahi o Pipiri',
-            occursAt: '2026-06-25T04:30:00.000Z',
-            monthSequence: 1,
-            monthName: 'Te Tahi o Pipiri',
-            description: 'Maramataka month begins at Whiro.',
-            source: 'stub moonrise',
-          },
-          {
-            type: 'star-marker',
-            name: 'Matariki',
-            occursAt: '2026-06-25T18:00:00.000Z',
-            monthSequence: 1,
-            monthName: 'Te Tahi o Pipiri',
-            description: 'Year-start ariki for Te Tahi o Pipiri',
-            source: 'Elsdon Best, The Maori Division of Time',
-          },
-          {
-            type: 'new-moon',
-            name: 'New Moon',
-            occursAt: '2026-06-25T03:30:00.000Z',
-            monthSequence: 1,
-            monthName: 'Te Tahi o Pipiri',
-            description: 'Astronomical New Moon anchor for Whiro.',
-            source: 'stub',
-          },
-          {
-            type: 'full-moon',
-            name: 'Full Moon',
-            occursAt: '2026-07-09T04:30:00.000Z',
-            monthSequence: 1,
-            monthName: 'Te Tahi o Pipiri',
-            description: 'Astronomical Full Moon anchor for Rakaunui / Ohua.',
-            source: 'stub',
-          },
-        ],
-      }),
-    });
-  });
-
   await page.route('**/api/maramataka/year**', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
@@ -475,6 +308,27 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
         timezone: 'Pacific/Auckland',
         startsAt: '2025-12-31T11:00:00.000Z',
         endsAt: '2026-12-31T11:00:00.000Z',
+        diagnostics: [],
+        events: [
+          {
+            type: 'star-appearance',
+            name: 'Matariki appears',
+            occursAt: '2026-06-25T04:45:00.000Z',
+            monthSequence: 1,
+            monthName: 'Marama 1',
+            description:
+              'Matariki first appears in the configured dawn sky window.',
+            source: 'stub star marker',
+          },
+          {
+            type: 'new-moon',
+            name: 'New Moon',
+            occursAt: '2026-06-25T05:00:00.000Z',
+            monthSequence: 1,
+            monthName: 'Marama 1',
+            source: 'stub',
+          },
+        ],
         months: [
           {
             sequence: 1,
@@ -531,52 +385,6 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     });
   });
 
-  await page.route('**/api/maramataka/moon-details**', async (route) => {
-    const url = new URL(route.request().url());
-    const location = url.searchParams.get('location');
-    const date = url.searchParams.get('date');
-    const isDemoDate = date === '2026-06-26';
-
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        date: isDemoDate ? '2026-06-26' : '2026-06-25',
-        phase: isDemoDate
-          ? 'Full Moon'
-          : location === 'auckland'
-            ? 'First Quarter'
-            : 'Waxing Crescent',
-        fractionIlluminated: isDemoDate
-          ? 0.99
-          : location === 'auckland'
-            ? 0.5
-            : 0.25,
-        lunarAgeDays: isDemoDate ? 14 : location === 'auckland' ? 7.1 : 2.5,
-        distanceKm: null,
-        lunarAgeSource: 'stub',
-        closestPhase: {
-          phase: 'Full Moon',
-          occursAt: '2026-06-25T05:00:00.000Z',
-          source: 'stub',
-        },
-        moonrise: {
-          occursAt: '2026-06-25T04:30:00.000Z',
-          source: 'stub',
-        },
-        moonset: {
-          occursAt: '2026-06-25T18:15:00.000Z',
-          source: 'stub',
-        },
-        transit: {
-          occursAt: '2026-06-25T12:00:00.000Z',
-          source: 'stub',
-        },
-        unavailable: ['distanceKm'],
-        source: 'stub',
-      }),
-    });
-  });
-
   await page.route('**/api/maramataka/star-markers**', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
@@ -609,10 +417,9 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
   await expect(page.getByTestId('moon-details-panel')).toContainText(
     '2.5 days',
   );
-  await expect(page.getByTestId('star-marker-layer')).toContainText('Matariki');
-  await expect(page.getByTestId('star-marker-layer')).not.toContainText(
-    'Rigel',
-  );
+  await expect(page.getByTestId('dawn-sky-panel')).toContainText('Matariki');
+  await expect(page.getByTestId('dawn-sky-panel')).toContainText('Whakaahu');
+  await expect(page.getByTestId('dawn-sky-panel')).not.toContainText('Rigel');
   await expect(page.getByTestId('cycle-star-marker-layer')).toContainText(
     'Star month: Te Tahi o Pipiri',
   );

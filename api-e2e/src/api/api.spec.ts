@@ -8,8 +8,8 @@ describe('GET /api', () => {
     expect(res.data).toEqual({ message: 'Hello API' });
   });
 
-  it('returns a Maramataka cycle payload', async () => {
-    const res = await axios.get('/api/maramataka/cycle', {
+  it('returns a Maramataka page payload', async () => {
+    const res = await axios.get('/api/maramataka/page', {
       params: {
         date: '2026-01-01',
         location: 'wellington',
@@ -17,12 +17,15 @@ describe('GET /api', () => {
     });
 
     expect(res.status).toBe(200);
-    expect(res.data.version).toBe('mita-te-tai-best');
-    expect(typeof res.data.anchors.whiro.occursAt).toBe('string');
-    expect(Array.isArray(res.data.nights)).toBe(true);
-    expect(res.data.nights.length).toBeGreaterThan(0);
+    expect(res.data.cycle.version).toBe('mita-te-tai-best');
+    expect(typeof res.data.cycle.anchors.whiro.occursAt).toBe('string');
+    expect(Array.isArray(res.data.cycle.nights)).toBe(true);
+    expect(res.data.cycle.nights.length).toBeGreaterThan(0);
+    expect(res.data.moonDetails).toMatchObject({
+      source: expect.any(String),
+    });
 
-    const firstNight = res.data.nights[0];
+    const firstNight = res.data.cycle.nights[0];
     expect(firstNight).toMatchObject({
       mata: expect.objectContaining({
         version: 'mita-te-tai-best',
