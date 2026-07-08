@@ -1,30 +1,5 @@
 import { MoonDetails, StarMarker } from '@maramataka-calendar/astronomy';
-import {
-  CurrentMaramatakaNight,
-  MaramatakaCycleDetails,
-  MaramatakaRuleSetSummary,
-  MataContentLayer,
-} from '@maramataka-calendar/maramataka-domain';
-
-export interface TodayMaramatakaNightResponseDto {
-  ruleSet: MaramatakaRuleSetSummary;
-  mata: {
-    index: number;
-    name: string;
-    contentLayers?: MataContentLayer[];
-  };
-  overlappingMata?: {
-    mata: {
-      index: number;
-      name: string;
-      contentLayers?: MataContentLayer[];
-    };
-    cycleStartsAt: Date;
-    reason: 'new-moon-anchor';
-  }[];
-  startsAt: Date;
-  endsAt: Date;
-}
+import { MaramatakaCycleDetails } from '@maramataka-calendar/maramataka-domain';
 
 export interface MoonDetailsResponseDto {
   date: string;
@@ -59,32 +34,6 @@ export type StarMarkerResponseDto = StarMarker;
 export interface MaramatakaPageResponseDto {
   cycle: MaramatakaCycleDetails;
   moonDetails: MoonDetailsResponseDto;
-}
-
-export function toTodayMaramatakaNightResponse(
-  currentNight: CurrentMaramatakaNight,
-): TodayMaramatakaNightResponseDto {
-  const { night } = currentNight;
-
-  return {
-    ruleSet: currentNight.ruleSet,
-    mata: {
-      index: night.mata.index,
-      name: night.mata.name,
-      contentLayers: night.mata.contentLayers,
-    },
-    overlappingMata: night.overlappingMata?.map((overlap) => ({
-      mata: {
-        index: overlap.mata.index,
-        name: overlap.mata.name,
-        contentLayers: overlap.mata.contentLayers,
-      },
-      cycleStartsAt: overlap.cycleStartsAt,
-      reason: overlap.reason,
-    })),
-    startsAt: night.startsAt,
-    endsAt: night.endsAt,
-  };
 }
 
 export function toMoonDetailsResponse(

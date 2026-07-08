@@ -138,7 +138,15 @@ function createGoldenFixtureProvider(
     }),
     getMoonRiseSet: jest.fn(),
     getMoonTransit: jest.fn(),
-    getMoonDetails: jest.fn(),
+    getMoonDetails: jest.fn().mockResolvedValue({
+      date: fixture.requestDate,
+      phase: 'Waxing Crescent',
+      fractionIlluminated: 0.25,
+      lunarAgeDays: 2.5,
+      lunarAgeSource: 'golden fixture',
+      source: 'golden fixture',
+    }),
+    getStarMarkers: jest.fn(),
   };
 }
 
@@ -156,15 +164,17 @@ describe('MaramatakaController golden date fixtures', () => {
         date: fixture.requestDate,
         location: fixture.locationId,
       });
-      const response = await controller.getCycle(query);
-      const mataNames = response.nights.map((night) => night.mata.name);
+      const response = await controller.getPage(query);
+      const mataNames = response.cycle.nights.map((night) => night.mata.name);
 
-      expect(response.anchors.whiro.occursAt.toISOString()).toBe(
+      expect(response.cycle.anchors.whiro.occursAt.toISOString()).toBe(
         fixture.expected.whiroStartsAt,
       );
-      expect(response.nights).toHaveLength(fixture.expected.nightCount);
+      expect(response.cycle.nights).toHaveLength(fixture.expected.nightCount);
       expect(
-        response.nights[response.nights.length - 1].endsAt.toISOString(),
+        response.cycle.nights[
+          response.cycle.nights.length - 1
+        ].endsAt.toISOString(),
       ).toBe(fixture.expected.nextWhiroStartsAt);
       expect(mataNames.slice(0, 5)).toEqual(fixture.expected.firstFiveMata);
       expect(mataNames.slice(-5)).toEqual(fixture.expected.lastFiveMata);

@@ -2,28 +2,22 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Header,
   Logger,
   Query,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { findAstronomyProviderError } from '@maramataka-calendar/astronomy';
 import {
-  MaramatakaCycleDetails,
   MaramatakaService,
   MaramatakaYear,
 } from '@maramataka-calendar/maramataka-domain';
-import {
-  DateLocationQueryDto,
-  DateTimeLocationQueryDto,
-} from './api-query.dto';
+import { DateLocationQueryDto } from './api-query.dto';
 import {
   MaramatakaPageResponseDto,
-  MoonDetailsResponseDto,
   StarMarkerResponseDto,
-  TodayMaramatakaNightResponseDto,
   toMoonDetailsResponse,
   toStarMarkersResponse,
-  toTodayMaramatakaNightResponse,
 } from './maramataka-response.dto';
 
 @Controller('maramataka')
@@ -33,6 +27,7 @@ export class MaramatakaController {
   constructor(private readonly maramatakaService: MaramatakaService) {}
 
   @Get('page')
+  @Header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600')
   async getPage(
     @Query() query: DateLocationQueryDto,
   ): Promise<MaramatakaPageResponseDto> {
@@ -61,27 +56,8 @@ export class MaramatakaController {
     );
   }
 
-  @Get('cycle')
-  async getCycle(
-    @Query() query: DateLocationQueryDto,
-  ): Promise<MaramatakaCycleDetails> {
-    const { date, location } = this.validateDateLocationQuery(query);
-    const cycle = await this.handleAstronomyErrors(
-      'maramataka.cycle',
-      () => this.maramatakaService.getCycleDetails(location, date),
-      this.profileContext(query, date),
-    );
-
-    if (!cycle) {
-      throw new BadRequestException(
-        'No Maramataka cycle found for supplied date and location',
-      );
-    }
-
-    return cycle;
-  }
-
   @Get('year')
+  @Header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600')
   async getYear(@Query() query: DateLocationQueryDto): Promise<MaramatakaYear> {
     const { date, location } = this.validateDateLocationQuery(query);
 
@@ -92,41 +68,8 @@ export class MaramatakaController {
     );
   }
 
-  @Get('today')
-  async getToday(
-    @Query() query: DateTimeLocationQueryDto,
-  ): Promise<TodayMaramatakaNightResponseDto> {
-    const { date, location } = this.validateDateTimeLocationQuery(query);
-    const currentNight = await this.handleAstronomyErrors(
-      'maramataka.today',
-      () => this.maramatakaService.getCurrentNight(location, date),
-      this.profileContext(query, date),
-    );
-
-    if (!currentNight) {
-      throw new BadRequestException(
-        'No Maramataka night found for supplied date and location',
-      );
-    }
-
-    return toTodayMaramatakaNightResponse(currentNight);
-  }
-
-  @Get('moon-details')
-  async getMoonDetails(
-    @Query() query: DateLocationQueryDto,
-  ): Promise<MoonDetailsResponseDto> {
-    const { date, location } = this.validateDateLocationQuery(query);
-    const details = await this.handleAstronomyErrors(
-      'maramataka.moon-details',
-      () => this.maramatakaService.getMoonDetails(location, date),
-      this.profileContext(query, date),
-    );
-
-    return toMoonDetailsResponse(details);
-  }
-
   @Get('star-markers')
+  @Header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600')
   async getStarMarkers(
     @Query() query: DateLocationQueryDto,
   ): Promise<StarMarkerResponseDto[]> {
@@ -144,12 +87,6 @@ export class MaramatakaController {
     query: DateLocationQueryDto,
   ): ReturnType<DateLocationQueryDto['validate']> {
     return Object.assign(new DateLocationQueryDto(), query).validate();
-  }
-
-  private validateDateTimeLocationQuery(
-    query: DateTimeLocationQueryDto,
-  ): ReturnType<DateTimeLocationQueryDto['validate']> {
-    return Object.assign(new DateTimeLocationQueryDto(), query).validate();
   }
 
   private async handleAstronomyErrors<T>(
@@ -192,7 +129,7 @@ export class MaramatakaController {
   }
 
   private profileContext(
-    query: DateLocationQueryDto | DateTimeLocationQueryDto,
+    query: DateLocationQueryDto,
     requestedAt: Date,
   ): Record<string, string> {
     return {

@@ -4,6 +4,13 @@ The diagnostic commands are for rule review and development. They do not feed
 official holiday dates or source-calendar examples back into the calendar
 calculation.
 
+Generated marama, mata, and year comparison rows are read through the API
+endpoints so the reports exercise the same composition layer as the app. Start
+the API server first, or set `MARAMATAKA_API_BASE_URL` if you are pointing at a
+different host. Lower-level sky-position and first-appearance probes still use
+the astronomy provider directly because they inspect raw body positions and
+visibility rules.
+
 ## Quick Checks
 
 Print active cache fingerprints and full readable metadata:
@@ -87,8 +94,7 @@ Each Maramataka endpoint writes a structured `maramataka_profile` log with the
 operation, requested location/date, status, and duration in milliseconds. This
 is useful for comparing the fast `page` payload with the lazy-loaded
 `star-markers` dawn sky and heavier `year` timeline. The app derives the
-selected-day panel from the `page.cycle` response, so normal page reloads do
-not call `maramataka.today`.
+selected-day panel from the `page.cycle` response.
 
 Turn on browser request timings from DevTools for the frontend fan-out:
 

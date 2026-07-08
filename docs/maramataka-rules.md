@@ -152,6 +152,15 @@ The displayed year begins at the resolved `Te Tahi o Pipiri` Whiro and ends
 immediately before the next resolved `Te Tahi o Pipiri` Whiro. If Ruhanui is
 inserted, it sits inside that displayed year after Pipiri and before Takurua.
 
+The implementation keeps these concerns in separate internal steps:
+
+1. Build a star-year plan from Pipiri/Hamal, Matariki visibility, Ruhanui, and
+   the resolved start/end Whiro anchors.
+2. Derive ordered marama plans from the Whiro/New Moon anchors inside that
+   star-year plan, including the named-marama sequence number.
+3. Generate each marama's mata from moonrise-to-moonrise intervals.
+4. Attach timeline events to the stable year/marama/mata scaffold.
+
 This is the clearest current astronomy-only reading of the Living by the Stars
 2021-2024 calendar evidence. The focused calendar-source comparison currently
 matches all 3 of 3 known calendar month placements.

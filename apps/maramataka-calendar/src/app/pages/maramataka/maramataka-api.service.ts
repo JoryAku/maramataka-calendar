@@ -37,24 +37,6 @@ export class MaramatakaApiService {
     );
   }
 
-  getCycleDetails(
-    locationId: string,
-    date: Date,
-  ): Observable<MaramatakaCycleDetails> {
-    const params = new HttpParams()
-      .set('date', this.toYyyyMmDd(date))
-      .set('location', locationId);
-
-    return this.profileRequest(
-      `cycle ${locationId} ${this.toYyyyMmDd(date)}`,
-      this.http
-        .get<ApiMaramatakaCycleDetails>(this.apiUrl('/maramataka/cycle'), {
-          params,
-        })
-        .pipe(map((response) => this.mapCycleDetails(response))),
-    );
-  }
-
   getPageData(locationId: string, date: Date): Observable<MaramatakaPageData> {
     const params = new HttpParams()
       .set('date', this.toYyyyMmDd(date))
@@ -80,21 +62,6 @@ export class MaramatakaApiService {
       this.http
         .get<ApiMaramatakaYear>(this.apiUrl('/maramataka/year'), { params })
         .pipe(map((response) => this.mapYear(response))),
-    );
-  }
-
-  getMoonDetails(locationId: string, date: Date): Observable<MoonDetails> {
-    const params = new HttpParams()
-      .set('date', this.toYyyyMmDd(date))
-      .set('location', locationId);
-
-    return this.profileRequest(
-      `moon-details ${locationId} ${this.toYyyyMmDd(date)}`,
-      this.http
-        .get<ApiMoonDetails>(this.apiUrl('/maramataka/moon-details'), {
-          params,
-        })
-        .pipe(map((response) => this.mapMoonDetails(response))),
     );
   }
 

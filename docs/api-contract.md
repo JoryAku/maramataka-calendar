@@ -5,12 +5,10 @@
 Maramataka endpoints validate query strings through explicit DTO classes:
 
 - `DateLocationQueryDto` for date plus location/coordinates requests.
-- `DateTimeLocationQueryDto` for local date-time plus location/coordinates requests.
 
 Validation keeps the current public behaviour:
 
 - `date` must be `YYYY-MM-DD`.
-- `dateTime` must be `YYYY-MM-DDTHH:mm:ss`.
 - Requests must provide either `location` or all of `lat`, `lon`, and
   `timezone`.
 - Latitude, longitude, and IANA timezone values are validated before reaching
@@ -26,8 +24,7 @@ The app shell uses `GET /maramataka/page` for the fast part of the normal page
 load. It composes the cycle and moon details into one payload so the
 selected-day and month views can render quickly when the location or date
 changes. Dawn sky markers load separately from `GET /maramataka/star-markers`,
-and the heavier `GET /maramataka/year` timeline also loads separately. The
-focused endpoints remain available for diagnostics and smaller integrations.
+and the heavier `GET /maramataka/year` timeline also loads separately.
 
 ## Error Shape
 
@@ -38,7 +35,7 @@ The API uses a global exception filter. Error responses use this shape:
   "statusCode": 400,
   "error": "Bad Request",
   "message": "date must be in YYYY-MM-DD format",
-  "path": "/maramataka/cycle?date=bad",
+  "path": "/maramataka/page?date=bad",
   "timestamp": "2026-01-01T00:00:00.000Z"
 }
 ```

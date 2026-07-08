@@ -298,7 +298,7 @@ For a production smoke test after deployment:
 curl https://your-domain.example/api/health
 curl https://your-domain.example/api/health/live
 curl https://your-domain.example/api/health/ready
-curl "https://your-domain.example/api/maramataka/today?dateTime=2026-06-28T12:00:00&location=wellington"
+curl "https://your-domain.example/api/maramataka/page?date=2026-06-28&location=wellington"
 ```
 
 Use a supported location id from the API locations endpoint.

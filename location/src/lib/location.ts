@@ -179,16 +179,22 @@ export const LOCATIONS: LocationData[] = [
   },
 ];
 
+const LOCATION_SUMMARIES = Object.freeze(
+  LOCATIONS.map((location) =>
+    Object.freeze({
+      id: location.id,
+      name: location.name,
+      rohe: location.rohe,
+    }),
+  ),
+);
+
 export function findLocationById(id: string): LocationData | undefined {
   return LOCATIONS.find((location) => location.id === id);
 }
 
-export function getLocationSummaries(): LocationSummary[] {
-  return LOCATIONS.map((location) => ({
-    id: location.id,
-    name: location.name,
-    rohe: location.rohe,
-  }));
+export function getLocationSummaries(): readonly LocationSummary[] {
+  return LOCATION_SUMMARIES;
 }
 
 export function validateLocationRegistry(

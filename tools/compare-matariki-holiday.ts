@@ -15,11 +15,12 @@ import {
   LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
   MaramatakaCycleDetails,
   MaramatakaMonth,
-  MaramatakaService,
+  MaramatakaYear,
   MaramatakaYearMonth,
 } from '@maramataka-calendar/maramataka-domain';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { MaramatakaApiClient } from './maramataka-api-client';
 
 type AstronomyEngineModule = typeof import('astronomy-engine');
 
@@ -319,7 +320,7 @@ type DetailedMonthEntry = {
 type OfficialYearContext = {
   year: number;
   official: OfficialDate;
-  maramatakaYear: Awaited<ReturnType<MaramatakaService['getYear']>>;
+  maramatakaYear: MaramatakaYear;
   detailedMonths: DetailedMonthEntry[];
   calculatedHoliday: string;
   holidayYearMonth: MaramatakaYearMonth | undefined;
@@ -875,7 +876,7 @@ function countBy<T extends string>(values: T[]): Record<T, number> {
 }
 
 async function detailedMonthForYearMonth(
-  service: MaramatakaService,
+  api: MaramatakaApiClient,
   yearMonth: {
     anchors: {
       whiro: {
@@ -885,7 +886,7 @@ async function detailedMonthForYearMonth(
     };
   },
 ): Promise<MaramatakaMonth> {
-  const cycle = await service.getCycleDetails(
+  const cycle = await api.getCycleDetails(
     location,
     yearMonth.anchors.whiro.astronomicalOccursAt ??
       yearMonth.anchors.whiro.occursAt,
@@ -909,30 +910,28 @@ function monthFromCycle(cycle: MaramatakaCycleDetails): MaramatakaMonth {
 }
 
 async function detailedMonthsForYear(
-  service: MaramatakaService,
+  api: MaramatakaApiClient,
   months: MaramatakaYearMonth[],
 ): Promise<DetailedMonthEntry[]> {
   return Promise.all(
     months.map(async (yearMonth) => ({
       yearMonth,
-      month: await detailedMonthForYearMonth(service, yearMonth),
+      month: await detailedMonthForYearMonth(api, yearMonth),
     })),
   );
 }
 
 async function officialYearContexts(
-  service: MaramatakaService,
+  api: MaramatakaApiClient,
 ): Promise<OfficialYearContext[]> {
   const entries = [...officialDates.entries()];
 
   return mapWithConcurrency(entries, 4, async ([year, official]) => {
     const maramatakaYear = await timed(`year ${year} getYear`, () =>
-      service.getYear(location, new Date(`${year}-07-01T12:00:00+12:00`), {
-        includeTimelineEvents: false,
-      }),
+      api.getYear(location, new Date(`${year}-07-01T12:00:00+12:00`)),
     );
     const detailedMonths = await timed(`year ${year} detailedMonths`, () =>
-      detailedMonthsForYear(service, maramatakaYear.months),
+      detailedMonthsForYear(api, maramatakaYear.months),
     );
     const holiday = maramatakaYear.events.find(
       (event) =>
@@ -1579,7 +1578,7 @@ async function officialMatarikiBehaviourRows(
   return rows;
 }
 
-async function sourceCalendarRows(service: MaramatakaService): Promise<
+async function sourceCalendarRows(api: MaramatakaApiClient): Promise<
   Array<{
     label: string;
     expectedPipiri: string;
@@ -1594,10 +1593,9 @@ async function sourceCalendarRows(service: MaramatakaService): Promise<
   const rows = [];
 
   for (const fixture of sourceCalendarFixtures) {
-    const maramatakaYear = await service.getYear(
+    const maramatakaYear = await api.getYear(
       location,
       new Date(`${fixture.date}T12:00:00+12:00`),
-      { includeTimelineEvents: false },
     );
     const pipiri = maramatakaYear.months.find(
       (month) =>
@@ -1633,7 +1631,7 @@ async function sourceCalendarRows(service: MaramatakaService): Promise<
 }
 
 async function sourceCalendarEvidenceRows(
-  service: MaramatakaService,
+  api: MaramatakaApiClient,
   provider: AstronomyProvider,
 ): Promise<
   Array<{
@@ -1686,10 +1684,9 @@ async function sourceCalendarEvidenceRows(
 
   for (const fixture of sourceCalendarFixtures) {
     const sourceYear = Number.parseInt(fixture.label.slice(0, 4), 10);
-    const maramatakaYear = await service.getYear(
+    const maramatakaYear = await api.getYear(
       location,
       new Date(`${fixture.date}T12:00:00+12:00`),
-      { includeTimelineEvents: false },
     );
     const pipiri = maramatakaYear.months.find(
       (month) =>
@@ -1804,11 +1801,11 @@ async function main(): Promise<void> {
     ),
   );
   try {
-    const service = new MaramatakaService({ astronomyProvider: provider });
+    const api = new MaramatakaApiClient();
 
     if (focus === 'source-calendar') {
       const sourceRows = await timed('sourceCalendarEvidenceRows', () =>
-        sourceCalendarEvidenceRows(service, provider),
+        sourceCalendarEvidenceRows(api, provider),
       );
       console.log('Living by the Stars 2021-2024 calendar source evidence');
       console.table(sourceRows);
@@ -1822,7 +1819,7 @@ async function main(): Promise<void> {
     }
 
     const yearContexts = await timed('officialYearContexts', () =>
-      officialYearContexts(service),
+      officialYearContexts(api),
     );
     const matarikiBehaviourRows = await timed(
       'officialMatarikiBehaviourRows',
@@ -1960,7 +1957,7 @@ async function main(): Promise<void> {
 
     const officialReport = officialComparisonRows(yearContexts);
     const officialRows = officialReport.rows;
-    const sourceRows = await sourceCalendarRows(service);
+    const sourceRows = await sourceCalendarRows(api);
 
     console.log('Official Matariki calibration report');
     console.table(officialRows);

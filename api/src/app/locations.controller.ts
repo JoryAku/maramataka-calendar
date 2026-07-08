@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Header } from '@nestjs/common';
 import {
   LocationSummary,
   getLocationSummaries,
@@ -7,7 +7,8 @@ import {
 @Controller('locations')
 export class LocationsController {
   @Get()
-  getLocations(): LocationSummary[] {
+  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
+  getLocations(): readonly LocationSummary[] {
     return getLocationSummaries();
   }
 }

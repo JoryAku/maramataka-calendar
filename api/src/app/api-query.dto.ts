@@ -6,15 +6,6 @@ import {
 } from '@maramataka-calendar/astronomy';
 import { findLocationById } from '@maramataka-calendar/location';
 
-interface LocalDateTimeParts {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-  second: number;
-}
-
 interface LocalDateParts {
   year: number;
   month: number;
@@ -22,11 +13,6 @@ interface LocalDateParts {
 }
 
 export interface DateLocationRequest {
-  date: Date;
-  location: Location;
-}
-
-export interface DateTimeLocationRequest {
   date: Date;
   location: Location;
 }
@@ -44,23 +30,6 @@ export class DateLocationQueryDto {
       ? parseNamedLocation(this.location)
       : parseCoordinatesOrThrow(this.lat, this.lon, this.timezone);
     const date = parseLocalDateForTimezone(dateParts, location.timezone);
-
-    return { date, location };
-  }
-}
-
-export class DateTimeLocationQueryDto {
-  dateTime?: string;
-  location?: string;
-  lat?: string;
-  lon?: string;
-  timezone?: string;
-
-  validate(): DateTimeLocationRequest {
-    const location = this.location
-      ? parseNamedLocation(this.location)
-      : parseCoordinatesOrThrow(this.lat, this.lon, this.timezone);
-    const date = parseDateTimeForTimezone(this.dateTime, location.timezone);
 
     return { date, location };
   }
@@ -104,18 +73,6 @@ function parseNamedLocation(locationInput: string): Location {
   };
 }
 
-function parseDateTimeForTimezone(
-  dateTimeInput: string | undefined,
-  timezone: string,
-): Date {
-  const dateTimeParts = parseDateTimeParts(dateTimeInput);
-  try {
-    return parseLocalDateTimeInTimezone(dateTimeParts, timezone);
-  } catch {
-    throw new BadRequestException('date must be a valid local date-time');
-  }
-}
-
 function parseLocalDateForTimezone(
   dateParts: LocalDateParts,
   timezone: string,
@@ -133,31 +90,6 @@ function parseLocalDateForTimezone(
   } catch {
     throw new BadRequestException('date must be a valid local date');
   }
-}
-
-function parseDateTimeParts(
-  dateTimeInput: string | undefined,
-): LocalDateTimeParts {
-  if (!dateTimeInput) {
-    throw new BadRequestException('dateTime query parameter is required');
-  }
-
-  const datePattern = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/;
-  const match = dateTimeInput.match(datePattern);
-  if (!match) {
-    throw new BadRequestException(
-      'dateTime must be in YYYY-MM-DDTHH:mm:ss format',
-    );
-  }
-
-  return {
-    year: Number(match[1]),
-    month: Number(match[2]),
-    day: Number(match[3]),
-    hour: Number(match[4]),
-    minute: Number(match[5]),
-    second: Number(match[6]),
-  };
 }
 
 function parseDateParts(dateInput: string | undefined): LocalDateParts {
