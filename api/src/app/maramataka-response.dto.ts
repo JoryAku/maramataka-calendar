@@ -1,6 +1,7 @@
 import { MoonDetails, StarMarker } from '@maramataka-calendar/astronomy';
 import {
   CurrentMaramatakaNight,
+  MaramatakaCycleDetails,
   MaramatakaRuleSetSummary,
   MataContentLayer,
 } from '@maramataka-calendar/maramataka-domain';
@@ -54,6 +55,11 @@ export interface MoonDetailsResponseDto {
 }
 
 export type StarMarkerResponseDto = StarMarker;
+
+export interface MaramatakaPageResponseDto {
+  cycle: MaramatakaCycleDetails;
+  moonDetails: MoonDetailsResponseDto;
+}
 
 export function toTodayMaramatakaNightResponse(
   currentNight: CurrentMaramatakaNight,

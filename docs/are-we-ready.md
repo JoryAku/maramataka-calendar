@@ -106,7 +106,7 @@ astronomy-derived maramataka model by finding the Friday within the selected
 holiday marama that is closest to the four-night Tangaroa period from
 `Tangaroa-ā-mua` through `Tangaroa whāriki kio-kio`. The selected marama is Te
 Tahi o Pipiri by default, or Ruhanui when the Living by the Stars calendar rule
-inserts the regulating marama. The Friday is treated as a local civil-day
+inserts the regulating marama. The Friday is treated as a local solar-day
 interval and compared to the exact generated start/end instants of that
 Tangaroa period.
 Official holiday dates are diagnostics only. Run

@@ -131,7 +131,7 @@ function parseLocalDateForTimezone(
       timezone,
     );
   } catch {
-    throw new BadRequestException('date must be a valid calendar date');
+    throw new BadRequestException('date must be a valid local date');
   }
 }
 
@@ -181,7 +181,7 @@ function parseDateParts(dateInput: string | undefined): LocalDateParts {
     date.getUTCMonth() !== month - 1 ||
     date.getUTCDate() !== day
   ) {
-    throw new BadRequestException('date must be a valid calendar date');
+    throw new BadRequestException('date must be a valid local date');
   }
 
   return {

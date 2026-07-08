@@ -22,6 +22,13 @@ Controller responses that need shaping are mapped through explicit response DTO
 functions instead of inline object literals. This keeps nullable/unavailable
 fields, such as `distanceKm`, stable even when provider data changes.
 
+The app shell uses `GET /maramataka/page` for the fast part of the normal page
+load. It composes the cycle and moon details into one payload so the
+selected-day and month views can render quickly when the location or date
+changes. Dawn sky markers load separately from `GET /maramataka/star-markers`,
+and the heavier `GET /maramataka/year` timeline also loads separately. The
+focused endpoints remain available for diagnostics and smaller integrations.
+
 ## Error Shape
 
 The API uses a global exception filter. Error responses use this shape:

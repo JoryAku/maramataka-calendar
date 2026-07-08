@@ -212,6 +212,117 @@ describe('MaramatakaController', () => {
     ],
   });
 
+  const createMoonDetailsFixture = () => ({
+    date: '2026-01-02',
+    phase: 'Waxing Crescent',
+    fractionIlluminated: 0.17,
+    lunarAgeDays: 2.5,
+    lunarAgeSource: 'astronomy-engine moon phases',
+    closestPhase: {
+      phase: 'New Moon',
+      occursAt: new Date('2026-01-01T18:03:00.000Z'),
+      source: 'astronomy-engine',
+    },
+    moonrise: {
+      date: '2026-01-02',
+      risesAt: new Date('2026-01-02T07:46:00.000Z'),
+      source: 'astronomy-engine',
+    },
+    moonset: {
+      date: '2026-01-02',
+      setsAt: new Date('2026-01-01T19:12:00.000Z'),
+      source: 'astronomy-engine',
+    },
+    transit: {
+      date: '2026-01-02',
+      transitsAt: new Date('2026-01-02T12:41:00.000Z'),
+      source: 'astronomy-engine',
+    },
+    source: 'astronomy-engine',
+  });
+
+  const createStarMarkersFixture = (): StarMarker[] => [
+    {
+      id: 'matariki',
+      name: 'Matariki',
+      type: 'asterism',
+      englishName: 'Pleiades',
+      description: 'Pleiades; year-start marker.',
+      seasonalAssociation: 'Year-start marker',
+      source: 'Living by the Stars',
+      confidence: 'confirmed',
+      observedAt: new Date('2026-01-02T17:00:00.000Z'),
+      altitudeDegrees: 18,
+      azimuthDegrees: 72,
+      direction: 'ENE',
+      visibility: 'visible',
+      calculation: 'Dawn visibility window.',
+    },
+  ];
+
+  describe('GET /maramataka/page', () => {
+    it('returns the page payload for the selected date', async () => {
+      getCycleDetailsMock.mockResolvedValue(createCycleFixture());
+      getMoonDetailsMock.mockResolvedValue(createMoonDetailsFixture());
+      getStarMarkersMock.mockResolvedValue(createStarMarkersFixture());
+
+      const response = await axios.get(`${baseUrl}/maramataka/page`, {
+        params: {
+          date: '2026-01-02',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data).toMatchObject({
+        cycle: {
+          version: 'mita-te-tai-best',
+          currentMataIndex: 2,
+          currentNight: {
+            mata: {
+              index: 2,
+              name: 'Tirea',
+              version: 'mita-te-tai-best',
+            },
+          },
+        },
+        moonDetails: {
+          date: '2026-01-02',
+          phase: 'Waxing Crescent',
+          lunarAgeDays: 2.5,
+          distanceKm: null,
+          moonrise: {
+            occursAt: '2026-01-02T07:46:00.000Z',
+          },
+        },
+      });
+      expect(getCycleDetailsMock).toHaveBeenCalledTimes(1);
+      expect(getMoonDetailsMock).toHaveBeenCalledTimes(1);
+      expect(getYearMock).not.toHaveBeenCalled();
+      expect(getStarMarkersMock).not.toHaveBeenCalled();
+    });
+
+    it('returns HTTP 400 when no cycle is available', async () => {
+      getCycleDetailsMock.mockResolvedValue(undefined);
+      getMoonDetailsMock.mockResolvedValue(createMoonDetailsFixture());
+      getStarMarkersMock.mockResolvedValue(createStarMarkersFixture());
+
+      const response = await axios.get(`${baseUrl}/maramataka/page`, {
+        params: {
+          date: '2026-01-02',
+          location: 'wellington',
+        },
+        validateStatus: () => true,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.data.message).toBe(
+        'No Maramataka cycle found for supplied date and location',
+      );
+    });
+  });
+
   describe('GET /maramataka/cycle', () => {
     it('returns cycle metadata and anchor points for the selected date', async () => {
       getCycleDetailsMock.mockResolvedValue(createCycleFixture());

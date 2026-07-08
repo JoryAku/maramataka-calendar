@@ -130,15 +130,15 @@ The model separates three concepts:
 The year calculation is:
 
 1. Find the first provider-backed dawn-window appearance of Pipiri / Hamal for
-   the civil year.
+   the solar year.
 2. Find the first Whiro/New Moon on or after that local date. This is the
    candidate `Te Tahi o Pipiri`.
 3. Find Matariki's first provider-backed dawn-window appearance for the same
-   civil year.
+   solar year.
 4. If Matariki has already appeared by the candidate Pipiri Whiro, keep the
    candidate as `Te Tahi o Pipiri` and keep the regular month sequence.
 5. If Matariki has not appeared by the candidate Pipiri Whiro, count New Moon
-   anchors from the candidate Whiro up to, but not including, the next civil
+   anchors from the candidate Whiro up to, but not including, the next solar
    year's Pipiri / Hamal candidate Whiro.
 6. If that candidate year contains 13 New Moon anchors, shift `Te Tahi o
    Pipiri` to the next Whiro. This treats the original candidate as belonging
@@ -163,7 +163,7 @@ four-night Tangaroa period in the selected holiday marama. That marama is Te
 Tahi o Pipiri by default, or Ruhanui when the Living by the Stars calendar rule
 inserts the regulating marama. Candidate Fridays are local dates within the
 selected marama, but the comparison uses exact instants: each Friday is treated
-as a local civil-day interval and compared to the exact start/end instants of
+as a local solar-day interval and compared to the exact start/end instants of
 the generated Tangaroa period. For this rule set, the current Tangaroa target
 is `Tangaroa-ā-mua`,
 `Tangaroa-ā-roto`, `Tangaroa-whakapau`, and

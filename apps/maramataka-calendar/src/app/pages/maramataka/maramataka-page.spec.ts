@@ -9,6 +9,11 @@ import { MaramatakaPage } from './maramataka-page';
 
 describe('MaramatakaPage', () => {
   let httpTestingController: HttpTestingController;
+  type CycleFixture = Record<string, unknown> & {
+    currentMataIndex: number;
+    currentNight: unknown;
+    nights: unknown[];
+  };
   const ruleSet = {
     id: 'mita-te-tai-best-observational-v1',
     name: 'Mita Te Tai / Best observational maramataka',
@@ -85,19 +90,9 @@ describe('MaramatakaPage', () => {
   }
 
   function flushMaramatakaRequests(locationId = 'wellington') {
-    const todayRequest = httpTestingController.expectOne(
+    const pageRequest = httpTestingController.expectOne(
       (req) =>
-        req.url === '/api/maramataka/today' &&
-        req.params.get('location') === locationId,
-    );
-    const cycleRequest = httpTestingController.expectOne(
-      (req) =>
-        req.url === '/api/maramataka/cycle' &&
-        req.params.get('location') === locationId,
-    );
-    const moonDetailsRequest = httpTestingController.expectOne(
-      (req) =>
-        req.url === '/api/maramataka/moon-details' &&
+        req.url === '/api/maramataka/page' &&
         req.params.get('location') === locationId,
     );
     const yearRequest = httpTestingController.expectOne(
@@ -112,9 +107,7 @@ describe('MaramatakaPage', () => {
     );
 
     return {
-      cycleRequest,
-      todayRequest,
-      moonDetailsRequest,
+      pageRequest,
       yearRequest,
       starMarkersRequest,
     };
@@ -138,40 +131,33 @@ describe('MaramatakaPage', () => {
     };
   }
 
-  function todayFixture(): Record<string, unknown> {
-    return {
-      mata: {
-        index: 1,
-        name: 'Whiro',
-        contentLayers: [
-          {
-            id: 'fishing-guidance',
-            name: 'Fishing guidance',
-            source:
-              'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
-            sourceUrl:
-              'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
-            version: '1',
-            status: 'available',
-            description:
-              'Fishing activity guidance encoded from the Mita Te Tai / Best source phrases for this mata.',
-            recommendations: ['Mo te hi', 'Mo te rama'],
-          },
-        ],
-      },
-      startsAt: '2026-01-10T06:45:00.000Z',
-      endsAt: '2026-01-11T06:45:00.000Z',
-    };
-  }
-
-  function cycleFixture(nights: unknown[] = []) {
+  function cycleFixture(nights: unknown[] = []): CycleFixture {
     return {
       version: 'mita-te-tai-best',
       ruleSet,
       timezone: 'Pacific/Auckland',
       currentMataIndex: 1,
       currentNight: {
-        mata: { index: 1, name: 'Whiro', version: 'mita-te-tai-best' },
+        mata: {
+          index: 1,
+          name: 'Whiro',
+          version: 'mita-te-tai-best',
+          contentLayers: [
+            {
+              id: 'fishing-guidance',
+              name: 'Fishing guidance',
+              source:
+                'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
+              sourceUrl:
+                'https://ndhadeliver.natlib.govt.nz/webarchive/20260627031905/https://nzetc.victoria.ac.nz/tm/scholarly/tei-BesFish-t1-body-d8-d1.html',
+              version: '1',
+              status: 'available',
+              description:
+                'Fishing activity guidance encoded from the Mita Te Tai / Best source phrases for this mata.',
+              recommendations: ['Mo te hi', 'Mo te rama'],
+            },
+          ],
+        },
         startsAt: '2026-01-10T06:45:00.000Z',
         endsAt: '2026-01-11T06:45:00.000Z',
       },
@@ -238,6 +224,27 @@ describe('MaramatakaPage', () => {
       },
       starMarkers: starMarkersFixture(),
       nights,
+    };
+  }
+
+  function cycleFixtureForMonth(
+    month: ReturnType<typeof monthFixture>,
+    currentNight?: unknown,
+  ): CycleFixture {
+    const selectedNight =
+      currentNight ?? month.nights[0] ?? cycleFixture().currentNight;
+    return {
+      ...cycleFixture(month.nights),
+      currentNight: selectedNight,
+      currentMataIndex:
+        typeof selectedNight === 'object' &&
+        selectedNight !== null &&
+        'mata' in selectedNight &&
+        typeof selectedNight.mata === 'object' &&
+        selectedNight.mata !== null &&
+        'index' in selectedNight.mata
+          ? Number(selectedNight.mata.index)
+          : 1,
     };
   }
 
@@ -573,17 +580,17 @@ describe('MaramatakaPage', () => {
   function flushSuccessfulMaramatakaRequests(
     requests: ReturnType<typeof flushMaramatakaRequests>,
     month = monthFixture(),
-    today = todayFixture(),
     cycle = cycleFixture(month.nights),
     moonDetails = moonDetailsFixture(),
     year = yearFixture(),
     starMarkers = starMarkersFixture(),
   ): void {
-    requests.cycleRequest.flush(cycle);
-    requests.todayRequest.flush(today);
-    requests.moonDetailsRequest.flush(moonDetails);
-    requests.yearRequest.flush(year);
+    requests.pageRequest.flush({
+      cycle,
+      moonDetails,
+    });
     requests.starMarkersRequest.flush(starMarkers);
+    requests.yearRequest.flush(year);
   }
 
   it('shows loading states before data arrives', () => {
@@ -616,22 +623,9 @@ describe('MaramatakaPage', () => {
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
     const requests = flushMaramatakaRequests();
-    const {
-      cycleRequest,
-      todayRequest,
-      moonDetailsRequest,
-      yearRequest,
-      starMarkersRequest,
-    } = requests;
 
-    expect(todayRequest.request.params.get('dateTime')).toBe(
-      '2026-01-11T01:00:00',
-    );
-    expect(cycleRequest.request.params.get('date')).toBe('2026-01-11');
-    expect(cycleRequest.request.params.has('tz')).toBe(false);
-    expect(moonDetailsRequest.request.params.get('date')).toBe('2026-01-11');
-    expect(yearRequest.request.params.get('date')).toBe('2026-01-11');
-    expect(starMarkersRequest.request.params.get('date')).toBe('2026-01-11');
+    expect(requests.pageRequest.request.params.get('date')).toBe('2026-01-11');
+    expect(requests.pageRequest.request.params.has('tz')).toBe(false);
 
     flushSuccessfulMaramatakaRequests(
       requests,
@@ -832,7 +826,6 @@ describe('MaramatakaPage', () => {
     flushSuccessfulMaramatakaRequests(
       flushMaramatakaRequests(),
       monthFixture(),
-      todayFixture(),
       cycleFixture(),
       moonDetailsFixture(),
       ruhanuiYearFixture(),
@@ -863,9 +856,7 @@ describe('MaramatakaPage', () => {
     fixture.detectChanges();
 
     flushInitialRequests().flush(locationsFixture());
-    flushSuccessfulMaramatakaRequests(
-      flushMaramatakaRequests(),
-      monthFixture([
+    const balancedMonth = monthFixture([
         {
           mata: { index: 15, name: 'Ohua', version: 'mita-te-tai-best' },
           startsAt: '2026-01-10T06:45:00.000Z',
@@ -883,19 +874,11 @@ describe('MaramatakaPage', () => {
             },
           ],
         },
-      ]),
-      {
-        mata: { index: 15, name: 'Ohua' },
-        overlappingMata: [
-          {
-            mata: { index: 1, name: 'Whiro' },
-            cycleStartsAt: '2026-01-12T06:45:00.000Z',
-            reason: 'new-moon-anchor',
-          },
-        ],
-        startsAt: '2026-01-10T06:45:00.000Z',
-        endsAt: '2026-01-11T06:45:00.000Z',
-      },
+      ]);
+    flushSuccessfulMaramatakaRequests(
+      flushMaramatakaRequests(),
+      balancedMonth,
+      cycleFixtureForMonth(balancedMonth, balancedMonth.nights[1]),
     );
     fixture.detectChanges();
 
@@ -943,11 +926,8 @@ describe('MaramatakaPage', () => {
     mataButtons[1].click();
 
     const mataRequests = flushMaramatakaRequests();
-    expect(mataRequests.cycleRequest.request.params.get('date')).toBe(
+    expect(mataRequests.pageRequest.request.params.get('date')).toBe(
       '2026-01-11',
-    );
-    expect(mataRequests.todayRequest.request.params.get('dateTime')).toBe(
-      '2026-01-11T19:46:00',
     );
     flushSuccessfulMaramatakaRequests(mataRequests);
     fixture.detectChanges();
@@ -958,12 +938,9 @@ describe('MaramatakaPage', () => {
     yearMonthCard.click();
 
     const yearMonthRequests = flushMaramatakaRequests();
-    expect(yearMonthRequests.cycleRequest.request.params.get('date')).toBe(
+    expect(yearMonthRequests.pageRequest.request.params.get('date')).toBe(
       '2026-01-10',
     );
-    expect(
-      yearMonthRequests.todayRequest.request.params.get('dateTime'),
-    ).toBe('2026-01-10T19:45:00');
     flushSuccessfulMaramatakaRequests(yearMonthRequests);
   });
 
@@ -975,7 +952,6 @@ describe('MaramatakaPage', () => {
     flushSuccessfulMaramatakaRequests(
       flushMaramatakaRequests(),
       monthFixture(),
-      todayFixture(),
       cycleFixture(),
       {
         ...moonDetailsFixture(),
@@ -1003,7 +979,6 @@ describe('MaramatakaPage', () => {
     flushSuccessfulMaramatakaRequests(
       flushMaramatakaRequests(),
       monthFixture(),
-      todayFixture(),
       cycleFixture(),
       moonDetailsFixture(),
     );
@@ -1035,10 +1010,18 @@ describe('MaramatakaPage', () => {
       flushMaramatakaRequests(),
       monthFixture(),
       {
-        ...todayFixture(),
-        mata: { index: 24, name: 'Tangaroa-ā-roto' },
+        ...cycleFixture(),
+        currentMataIndex: 24,
+        currentNight: {
+          mata: {
+            index: 24,
+            name: 'Tangaroa-ā-roto',
+            version: 'mita-te-tai-best',
+          },
+          startsAt: '2026-01-10T06:45:00.000Z',
+          endsAt: '2026-01-11T06:45:00.000Z',
+        },
       },
-      cycleFixture(),
       {
         ...moonDetailsFixture(),
         phase: 'Waning Crescent',
@@ -1072,11 +1055,7 @@ describe('MaramatakaPage', () => {
     page.onLocationChange('auckland');
 
     const requests = flushMaramatakaRequests('auckland');
-    flushSuccessfulMaramatakaRequests(requests, monthFixture(), {
-      mata: { index: 2, name: 'Tirea' },
-      startsAt: '2026-01-11T06:45:00.000Z',
-      endsAt: '2026-01-12T06:45:00.000Z',
-    });
+    flushSuccessfulMaramatakaRequests(requests);
 
     fixture.detectChanges();
 
@@ -1099,21 +1078,16 @@ describe('MaramatakaPage', () => {
     page.onDateChange('2026-06-26');
 
     const requests = flushMaramatakaRequests();
-    expect(requests.cycleRequest.request.params.get('date')).toBe('2026-06-26');
-    expect(requests.todayRequest.request.params.get('dateTime')).toBe(
-      '2026-06-26T12:00:00',
-    );
-    expect(requests.moonDetailsRequest.request.params.get('date')).toBe(
-      '2026-06-26',
-    );
-    expect(requests.starMarkersRequest.request.params.get('date')).toBe(
-      '2026-06-26',
-    );
+    expect(requests.pageRequest.request.params.get('date')).toBe('2026-06-26');
 
     flushSuccessfulMaramatakaRequests(requests, monthFixture(), {
-      mata: { index: 2, name: 'Tirea' },
-      startsAt: '2026-06-25T00:00:00.000Z',
-      endsAt: '2026-06-26T00:00:00.000Z',
+      ...cycleFixture(),
+      currentMataIndex: 2,
+      currentNight: {
+        mata: { index: 2, name: 'Tirea', version: 'mita-te-tai-best' },
+        startsAt: '2026-06-25T00:00:00.000Z',
+        endsAt: '2026-06-26T00:00:00.000Z',
+      },
     });
     fixture.detectChanges();
 
@@ -1143,14 +1117,12 @@ describe('MaramatakaPage', () => {
     page.onDateChange('2026-01-10');
 
     const requests = flushMaramatakaRequests();
-    expect(requests.todayRequest.request.params.get('dateTime')).toBe(
-      '2026-01-10T12:00:00',
-    );
+    expect(requests.pageRequest.request.params.get('date')).toBe('2026-01-10');
 
     flushSuccessfulMaramatakaRequests(requests);
   });
 
-  it('reloads data when the NZ calendar date changes on focus', () => {
+  it('reloads data when the NZ solar date changes on focus', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T09:00:00.000Z'));
 
@@ -1160,7 +1132,7 @@ describe('MaramatakaPage', () => {
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
     const firstRequests = flushMaramatakaRequests();
-    expect(firstRequests.cycleRequest.request.params.get('date')).toBe(
+    expect(firstRequests.pageRequest.request.params.get('date')).toBe(
       '2026-01-01',
     );
 
@@ -1170,23 +1142,14 @@ describe('MaramatakaPage', () => {
     window.dispatchEvent(new Event('focus'));
 
     const secondRequests = flushMaramatakaRequests();
-    expect(secondRequests.todayRequest.request.params.get('dateTime')).toBe(
-      '2026-01-02T02:30:00',
-    );
-    expect(secondRequests.cycleRequest.request.params.get('date')).toBe(
-      '2026-01-02',
-    );
-    expect(secondRequests.moonDetailsRequest.request.params.get('date')).toBe(
-      '2026-01-02',
-    );
-    expect(secondRequests.starMarkersRequest.request.params.get('date')).toBe(
+    expect(secondRequests.pageRequest.request.params.get('date')).toBe(
       '2026-01-02',
     );
 
     flushSuccessfulMaramatakaRequests(secondRequests);
   });
 
-  it('sends h23 midnight for today dateTime', () => {
+  it('uses the NZ solar date when local time reaches midnight', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T11:00:00.000Z'));
 
@@ -1198,43 +1161,31 @@ describe('MaramatakaPage', () => {
 
     const requests = flushMaramatakaRequests();
 
-    expect(requests.todayRequest.request.params.get('dateTime')).toBe(
-      '2026-01-02T00:00:00',
-    );
+    expect(requests.pageRequest.request.params.get('date')).toBe('2026-01-02');
 
     flushSuccessfulMaramatakaRequests(requests);
   });
 
-  it('shows month and today states independently when requests fail or return empty data', () => {
+  it('shows month and today errors when the shared cycle request fails', () => {
     const fixture = TestBed.createComponent(MaramatakaPage);
     fixture.detectChanges();
 
     const locationsRequest = flushInitialRequests();
     locationsRequest.flush(locationsFixture());
-    const {
-      cycleRequest,
-      todayRequest,
-      moonDetailsRequest,
-      yearRequest,
-      starMarkersRequest,
-    } = flushMaramatakaRequests();
+    const { pageRequest, yearRequest, starMarkersRequest } =
+      flushMaramatakaRequests();
 
-    cycleRequest.flush(cycleFixture());
-    todayRequest.flush('Failure', { status: 500, statusText: 'Server Error' });
-    moonDetailsRequest.flush('Failure', {
+    pageRequest.flush('Failure', {
       status: 500,
       statusText: 'Server Error',
     });
-    yearRequest.flush('Failure', { status: 500, statusText: 'Server Error' });
-    starMarkersRequest.flush('Failure', {
-      status: 500,
-      statusText: 'Server Error',
-    });
+    starMarkersRequest.flush(starMarkersFixture());
+    yearRequest.flush(yearFixture());
 
     fixture.detectChanges();
 
     expect(
-      fixture.nativeElement.querySelector('[data-testid="month-empty-state"]'),
+      fixture.nativeElement.querySelector('[data-testid="month-error-state"]'),
     ).not.toBeNull();
     expect(
       fixture.nativeElement.querySelector('[data-testid="today-error-state"]'),

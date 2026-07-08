@@ -8,6 +8,7 @@ import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { MaramatakaApiService } from './maramataka-api.service';
 import {
   MaramatakaCycleDetails,
+  MaramatakaPageData,
   MaramatakaYear,
   StarMarker,
 } from './maramataka.models';
@@ -235,6 +236,8 @@ describe('MaramatakaApiService', () => {
 
     expect(cycle?.currentMataIndex).toBe(16);
     expect(cycle?.currentNight.mata).toBe('Ohua');
+    expect(cycle?.currentNight.mataDetails?.index).toBe(15);
+    expect(cycle?.currentNight.mataDetails?.version).toBe('mita-te-tai-best');
     expect(cycle?.currentNight.startsAt).toEqual(
       new Date('2026-09-26T05:39:00.000Z'),
     );
@@ -404,6 +407,86 @@ describe('MaramatakaApiService', () => {
     expect(year?.events[0].occursAt).toEqual(
       new Date('2026-09-10T18:03:00.000Z'),
     );
+  });
+
+  it('maps the composed page payload from the API', () => {
+    let pageData: MaramatakaPageData | undefined;
+
+    service
+      .getPageData('wellington', new Date('2026-06-24T12:00:00.000Z'))
+      .subscribe((response) => {
+        pageData = response;
+      });
+
+    const request = httpTestingController.expectOne(
+      (req) =>
+        req.url === '/api/maramataka/page' &&
+        req.params.get('location') === 'wellington',
+    );
+
+    expect(request.request.params.get('date')).toBe('2026-06-25');
+    request.flush({
+      cycle: {
+        version: 'mita-te-tai-best',
+        ruleSet,
+        timezone: 'Pacific/Auckland',
+        currentMataIndex: 1,
+        currentNight: {
+          mata: {
+            index: 1,
+            name: 'Whiro',
+            version: 'mita-te-tai-best',
+          },
+          startsAt: '2026-06-24T06:07:00.000Z',
+          endsAt: '2026-06-25T06:07:00.000Z',
+        },
+        anchors: {
+          whiro: {
+            type: 'whiro',
+            label: 'Whiro / Kohititanga',
+            occursAt: '2026-06-24T06:07:00.000Z',
+            localDate: '2026-06-24',
+            localTime: '18:07:00',
+            timezone: 'Pacific/Auckland',
+            source: 'astronomy-engine moonrise',
+          },
+          nextWhiro: {
+            type: 'next-whiro',
+            label: 'Next Whiro / Kohititanga',
+            occursAt: '2026-07-24T06:07:00.000Z',
+            localDate: '2026-07-24',
+            localTime: '18:07:00',
+            timezone: 'Pacific/Auckland',
+            source: 'astronomy-engine moonrise',
+          },
+        },
+        nights: [
+          {
+            mata: {
+              index: 1,
+              name: 'Whiro',
+              version: 'mita-te-tai-best',
+            },
+            startsAt: '2026-06-24T06:07:00.000Z',
+            endsAt: '2026-06-25T06:07:00.000Z',
+          },
+        ],
+      },
+      moonDetails: {
+        date: '2026-06-25',
+        phase: 'New Moon',
+        fractionIlluminated: 0.01,
+        lunarAgeDays: 0.3,
+        distanceKm: null,
+        unavailable: ['distanceKm'],
+        source: 'astronomy-engine',
+      },
+    });
+
+    expect(pageData?.cycle.currentNight.startsAt).toEqual(
+      new Date('2026-06-24T06:07:00.000Z'),
+    );
+    expect(pageData?.moonDetails.date).toBe('2026-06-25');
   });
 
   it('uses the configured API base URL', () => {

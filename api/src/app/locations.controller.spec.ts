@@ -16,7 +16,7 @@ describe('LocationsController', () => {
     it('should return all locations', () => {
       const locations = controller.getLocations();
 
-      expect(locations).toHaveLength(4);
+      expect(locations.length).toBeGreaterThanOrEqual(17);
       expect(locations).toContainEqual({
         id: 'wellington',
         name: 'Wellington',
@@ -36,6 +36,11 @@ describe('LocationsController', () => {
         id: 'gisborne',
         name: 'Gisborne',
         rohe: 'Turanganui-a-Kiwa',
+      });
+      expect(locations).toContainEqual({
+        id: 'waitangi-chatham-islands',
+        name: 'Waitangi, Chatham Islands',
+        rohe: 'Rēkohu / Wharekauri',
       });
     });
 

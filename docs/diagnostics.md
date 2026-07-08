@@ -74,6 +74,36 @@ npm run diagnose:maramataka -- sky-position --lat -41.2865 --lon 174.7762 --time
 Use explicit coordinates when checking whether a rule or sky event is stable
 across places.
 
+## Runtime Profiling
+
+Turn on API timing logs when checking slow location changes or heavy calendar
+years:
+
+```sh
+MARAMATAKA_PROFILE=1 npm run dev:all
+```
+
+Each Maramataka endpoint writes a structured `maramataka_profile` log with the
+operation, requested location/date, status, and duration in milliseconds. This
+is useful for comparing the fast `page` payload with the lazy-loaded
+`star-markers` dawn sky and heavier `year` timeline. The app derives the
+selected-day panel from the `page.cycle` response, so normal page reloads do
+not call `maramataka.today`.
+
+Turn on browser request timings from DevTools for the frontend fan-out:
+
+```js
+localStorage.setItem('maramataka:profile', '1');
+```
+
+Reload the page, change location or date, and the console will print timing
+lines for the fast `page` request, lazy-loaded dawn sky request, and
+lazy-loaded `year` request. Disable it with:
+
+```js
+localStorage.removeItem('maramataka:profile');
+```
+
 ## Dev Verification
 
 Fast local confidence check:
@@ -93,4 +123,3 @@ Start the API and frontend together:
 ```sh
 npm run dev:all
 ```
-
