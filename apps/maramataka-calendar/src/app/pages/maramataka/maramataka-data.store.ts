@@ -13,6 +13,11 @@ import {
 import { NZ_TIMEZONE } from './maramataka.constants';
 import { MaramatakaApiService } from './maramataka-api.service';
 import {
+  AppLanguage,
+  isAppLanguage,
+  MARAMATAKA_COPY,
+} from './maramataka-copy';
+import {
   LocationSummary,
   MaramatakaCycleDetails,
   MaramatakaMonth,
@@ -25,6 +30,17 @@ import {
 interface MaramatakaLoadContext {
   locationId: string;
   requestDate: Date;
+}
+
+const LANGUAGE_STORAGE_KEY = 'maramataka-language';
+
+function initialLanguage(): AppLanguage {
+  const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  if (storedLanguage && isAppLanguage(storedLanguage)) {
+    return storedLanguage;
+  }
+
+  return navigator.language.toLowerCase().startsWith('mi') ? 'mi' : 'en';
 }
 
 @Injectable()
@@ -61,6 +77,8 @@ export class MaramatakaDataStore {
   readonly now = signal(new Date());
   readonly selectedDate = signal(this.api.formatDate(new Date()));
   readonly useLiveDate = signal(true);
+  readonly language = signal<AppLanguage>(initialLanguage());
+  readonly copy = computed(() => MARAMATAKA_COPY[this.language()]);
 
   private readonly selectedDateInstant = signal<Date | null>(null);
 
@@ -69,7 +87,7 @@ export class MaramatakaDataStore {
       (location) => location.id === this.selectedLocationId(),
     );
 
-    return selectedLocation?.name ?? 'Selected location';
+    return selectedLocation?.name ?? this.copy().errors.selectedLocation;
   });
 
   constructor() {
@@ -145,6 +163,15 @@ export class MaramatakaDataStore {
     this.reloadData();
   }
 
+  selectLanguage(language: string): void {
+    if (!isAppLanguage(language) || language === this.language()) {
+      return;
+    }
+
+    this.language.set(language);
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  }
+
   private connectDataStreams(): void {
     this.requestContext$
       .pipe(
@@ -159,14 +186,11 @@ export class MaramatakaDataStore {
               this.cycleLoading.set(false);
               this.todayLoading.set(false);
               this.moonDetailsLoading.set(false);
-              this.monthError.set(
-                'Unable to load maramataka month. Please try again.',
-              );
-              this.cycleError.set('Unable to load maramataka cycle anchors.');
-              this.todayError.set(
-                'Unable to load the selected day. Please try again.',
-              );
-              this.moonDetailsError.set('Unable to load moon details.');
+              const copy = this.copy().errors;
+              this.monthError.set(copy.month);
+              this.cycleError.set(copy.cycle);
+              this.todayError.set(copy.today);
+              this.moonDetailsError.set(copy.moonDetails);
               return EMPTY;
             }),
           ),
@@ -191,7 +215,7 @@ export class MaramatakaDataStore {
             catchError(() => {
               this.starMarkers.set([]);
               this.starMarkersLoading.set(false);
-              this.starMarkersError.set('Unable to load dawn sky.');
+              this.starMarkersError.set(this.copy().errors.dawnSky);
               return EMPTY;
             }),
           ),
@@ -215,7 +239,7 @@ export class MaramatakaDataStore {
                 this.yearTimelineLoading.set(false);
                 this.yearTimelineError.set(null);
                 this.yearError.set(
-                  `Unable to load maramataka year.${this.formatRequestError(error)}`,
+                  `${this.copy().errors.year}${this.formatRequestError(error)}`,
                 );
                 return EMPTY;
               }),
@@ -233,7 +257,7 @@ export class MaramatakaDataStore {
                     catchError((error: unknown) => {
                       this.yearTimelineLoading.set(false);
                       this.yearTimelineError.set(
-                        `Unable to load maramataka year annotations.${this.formatRequestError(error)}`,
+                        `${this.copy().errors.yearAnnotations}${this.formatRequestError(error)}`,
                       );
                       return EMPTY;
                     }),
@@ -279,27 +303,14 @@ export class MaramatakaDataStore {
           this.yearTimelineLoading.set(false);
           this.yearTimelineError.set(null);
           this.starMarkersLoading.set(false);
-          this.monthError.set(
-            'Unable to load maramataka month because locations could not be loaded.',
-          );
-          this.cycleError.set(
-            'Unable to load maramataka cycle because locations could not be loaded.',
-          );
-          this.todayError.set(
-            'Unable to load the selected day because locations could not be loaded.',
-          );
-          this.moonDetailsError.set(
-            'Unable to load moon details because locations could not be loaded.',
-          );
-          this.yearError.set(
-            'Unable to load maramataka year because locations could not be loaded.',
-          );
-          this.starMarkersError.set(
-            'Unable to load star markers because locations could not be loaded.',
-          );
-          this.locationsError.set(
-            'Unable to load locations. Please try again.',
-          );
+          const copy = this.copy().errors;
+          this.monthError.set(copy.monthWithoutLocations);
+          this.cycleError.set(copy.cycleWithoutLocations);
+          this.todayError.set(copy.todayWithoutLocations);
+          this.moonDetailsError.set(copy.moonDetailsWithoutLocations);
+          this.yearError.set(copy.yearWithoutLocations);
+          this.starMarkersError.set(copy.starMarkersWithoutLocations);
+          this.locationsError.set(copy.locations);
         },
       });
   }

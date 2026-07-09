@@ -1,15 +1,15 @@
 <section class="month-section" aria-labelledby="cycle-section-heading">
   <div class="section-header">
     <div>
-      <p class="eyebrow">2. Cycle</p>
-      <h2 id="cycle-section-heading">Where am I in this lunar cycle?</h2>
+      <p class="eyebrow">{{ copy().cycle.eyebrow }}</p>
+      <h2 id="cycle-section-heading">{{ copy().cycle.heading }}</h2>
     </div>
-    <p>Based on {{ selectedLocationName() }}</p>
+    <p>{{ copy().cycle.basedOn }} {{ selectedLocationName() }}</p>
   </div>
 
   @if (monthLoading()) {
   <p class="state" data-testid="month-loading-state">
-    Loading maramataka month...
+    {{ copy().cycle.loadingMonth }}
   </p>
   } @else if (monthError()) {
   <p class="state error" data-testid="month-error-state">
@@ -17,18 +17,19 @@
   </p>
   } @else if (!month() || !hasNights()) {
   <p class="state" data-testid="month-empty-state">
-    No maramataka nights are available for this month.
+    {{ copy().cycle.emptyMonth }}
   </p>
   } @else { @if (cycleLoading()) {
   <p class="state compact" data-testid="cycle-loading-state">
-    Loading cycle anchors...
+    {{ copy().cycle.loadingAnchors }}
   </p>
   } @else if (cycleError()) {
   <p class="state compact" data-testid="cycle-error-state">
-    Cycle anchors are unavailable. The generated marama is still shown.
+    {{ copy().cycle.anchorsUnavailable }}
   </p>
   }
   <app-maramataka-month-view
+    [copy]="copy()"
     [month]="month()!"
     [cycle]="cycle()"
     [yearEvents]="yearEvents()"

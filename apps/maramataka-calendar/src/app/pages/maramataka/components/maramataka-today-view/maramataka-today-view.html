@@ -1,15 +1,15 @@
 <section class="today-section" aria-labelledby="today-heading">
   <div class="section-header">
     <div>
-      <p class="eyebrow">1. Selected day</p>
-      <h2 id="today-heading">What is happening on this day?</h2>
+      <p class="eyebrow">{{ copy().today.eyebrow }}</p>
+      <h2 id="today-heading">{{ copy().today.heading }}</h2>
     </div>
     <p>{{ selectedLocationName() }}</p>
   </div>
 
   @if (todayLoading()) {
   <p class="state" data-testid="today-loading-state">
-    Loading maramataka for the selected day...
+    {{ copy().today.loading }}
   </p>
   } @else if (todayError()) {
   <p class="state error" data-testid="today-error-state">
@@ -17,7 +17,7 @@
   </p>
   } @else if (!today()) {
   <p class="state" data-testid="today-empty-state">
-    No maramataka night is available for this day.
+    {{ copy().today.empty }}
   </p>
   } @else {
   <article class="moon-tracker" data-testid="today-card">
@@ -53,15 +53,20 @@
     </div>
 
     <div class="mata-panel">
-      <p class="eyebrow">Mata for this day</p>
+      <p class="eyebrow">{{ copy().today.mataForThisDay }}</p>
       <h3>{{ today()!.mata.name }}</h3>
       @if (today()!.overlappingMata?.length) {
       <p class="overlap-label" data-testid="today-overlap-state">
-        Also {{ today()!.overlappingMata![0].mata.name }} for the next cycle
+        {{
+          copy().today.alsoNextCycle.replace(
+            '{mata}',
+            today()!.overlappingMata![0].mata.name
+          )
+        }}
       </p>
       }
       <p class="countdown" data-testid="next-mata-countdown">
-        {{ countdownToNextMata() }} until next mata
+        {{ countdownToNextMata() }} {{ copy().today.untilNextMata }}
       </p>
 
       @if (fishingGuidance()) {
@@ -73,7 +78,7 @@
           }
         </ul>
         <p class="guidance-source">
-          Source: @if (fishingGuidance()!.sourceUrl) {
+          {{ copy().cycle.source }}: @if (fishingGuidance()!.sourceUrl) {
           <a
             [href]="fishingGuidance()!.sourceUrl"
             target="_blank"
@@ -88,7 +93,7 @@
       </section>
       } @if (moonDetailsLoading()) {
       <p class="state compact" data-testid="moon-details-loading-state">
-        Loading moon details...
+        {{ copy().today.loadingMoonDetails }}
       </p>
       } @else if (moonDetailsError()) {
       <p class="state error compact" data-testid="moon-details-error-state">
@@ -97,46 +102,46 @@
       } @else if (moonDetails()) {
       <dl class="moon-facts" data-testid="moon-details-panel">
         <div>
-          <dt>Phase</dt>
+          <dt>{{ copy().today.phase }}</dt>
           <dd>{{ moonDetails()!.phase }}</dd>
         </div>
         @if (illuminationPercent() !== null) {
         <div>
-          <dt>Illumination</dt>
+          <dt>{{ copy().today.illumination }}</dt>
           <dd>{{ illuminationPercent() }}%</dd>
         </div>
         } @if (!moonDetails()!.unavailable.includes('lunarAgeDays')) {
         <div>
-          <dt>Age</dt>
-          <dd>{{ moonDetails()!.lunarAgeDays }} days</dd>
+          <dt>{{ copy().today.age }}</dt>
+          <dd>{{ moonDetails()!.lunarAgeDays }} {{ copy().today.days }}</dd>
         </div>
         }
       </dl>
       }
     </div>
 
-    <dl class="timing-panel" aria-label="Moon timings">
+    <dl class="timing-panel" [attr.aria-label]="copy().today.moonTimings">
       <div>
-        <dt>Moonrise</dt>
+        <dt>{{ copy().today.moonrise }}</dt>
         <dd>{{ today()!.startsAt | date: 'h:mm a' : nzTimeZone }}</dd>
       </div>
       @if (moonDetails()?.transit) {
       <div>
-        <dt>Meridian</dt>
+        <dt>{{ copy().today.meridian }}</dt>
         <dd>
           {{ moonDetails()!.transit!.occursAt | date: 'h:mm a' : nzTimeZone }}
         </dd>
       </div>
       } @if (moonDetails()?.moonset) {
       <div>
-        <dt>Moonset</dt>
+        <dt>{{ copy().today.moonset }}</dt>
         <dd>
           {{ moonDetails()!.moonset!.occursAt | date: 'h:mm a' : nzTimeZone }}
         </dd>
       </div>
       }
       <div>
-        <dt>Next moonrise</dt>
+        <dt>{{ copy().today.nextMoonrise }}</dt>
         <dd>{{ today()!.endsAt | date: 'h:mm a' : nzTimeZone }}</dd>
       </div>
     </dl>
@@ -144,7 +149,7 @@
 
   @if (starMarkersLoading()) {
   <p class="state compact" data-testid="star-markers-loading-state">
-    Loading dawn sky...
+    {{ copy().today.loadingDawnSky }}
   </p>
   } @else if (starMarkersError()) {
   <p class="state error compact" data-testid="star-markers-error-state">
@@ -159,21 +164,24 @@
   <section class="star-layer dawn-sky-layer" data-testid="dawn-sky-panel">
     <div class="dawn-sky-heading">
       <div>
-        <p class="guidance-title">Dawn sky</p>
+        <p class="guidance-title">{{ copy().today.dawnSky }}</p>
         @if (dawnObservationTime()) {
         <p class="dawn-sky-time">
-          Sampled {{ dawnObservationTime()! | date: 'h:mm a' : nzTimeZone }}
+          {{ copy().today.sampled }}
+          {{ dawnObservationTime()! | date: 'h:mm a' : nzTimeZone }}
         </p>
         }
         <p class="dawn-sky-scope">
-          Dawn is sampled while the Sun is 12° to 18° below the horizon.
+          {{ copy().today.dawnRule }}
         </p>
       </div>
-      <span class="dawn-sky-count">{{ dawnVisibleMarkers().length }} visible</span>
+      <span class="dawn-sky-count">
+        {{ dawnVisibleMarkers().length }} {{ copy().today.visible }}
+      </span>
     </div>
     @if (dawnVisibleMarkers().length) {
     <div class="dawn-horizon" data-testid="dawn-horizon">
-      <div class="horizon-sky" aria-label="Schematic dawn horizon">
+      <div class="horizon-sky" [attr.aria-label]="copy().today.dawnHorizon">
         <span class="horizon-line" aria-hidden="true"></span>
         @for (altitude of horizonAltitudeGuideLines; track altitude) {
         <span
@@ -222,27 +230,35 @@
     </ul>
     } @else {
     <p class="state compact">
-      No configured bodies are above the horizon in the sampled dawn sky.
+      {{ copy().today.noDawnBodies }}
     </p>
     }
     @if (dawnMoonSummary()) {
     <p class="dawn-sky-moon">
-      <span>Moon phase</span>
+      <span>{{ copy().today.moonPhase }}</span>
       <strong>{{ dawnMoonSummary() }}</strong>
     </p>
     }
     @if (dawnHiddenMarkerCount()) {
     <p class="dawn-sky-hidden">
       {{ dawnHiddenMarkerCount() }} configured
-      {{ dawnHiddenMarkerCount() === 1 ? 'body is' : 'bodies are' }}
-      below the horizon at dawn.
+      {{
+        dawnHiddenMarkerCount() === 1
+          ? copy().today.bodySingular
+          : copy().today.bodyPlural
+      }}
+      {{ copy().today.belowHorizonSuffix }}
     </p>
     }
     @if (dawnOutOfViewMarkerCount()) {
     <p class="dawn-sky-hidden">
       {{ dawnOutOfViewMarkerCount() }} visible
-      {{ dawnOutOfViewMarkerCount() === 1 ? 'body is' : 'bodies are' }}
-      outside the north-to-south dawn field.
+      {{
+        dawnOutOfViewMarkerCount() === 1
+          ? copy().today.bodySingular
+          : copy().today.bodyPlural
+      }}
+      {{ copy().today.outsideDawnFieldSuffix }}
     </p>
     }
   </section>

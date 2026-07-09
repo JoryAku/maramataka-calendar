@@ -1,8 +1,8 @@
 <section class="year-section" aria-labelledby="year-heading">
   <div class="section-header">
     <div>
-      <p class="eyebrow">3. Year rhythm</p>
-      <h2 id="year-heading">How does the year unfold?</h2>
+      <p class="eyebrow">{{ copy().year.eyebrow }}</p>
+      <h2 id="year-heading">{{ copy().year.heading }}</h2>
     </div>
     @if (year()) {
     <p>{{ year()!.year }}</p>
@@ -11,7 +11,7 @@
 
   @if (yearLoading()) {
   <p class="state" data-testid="year-loading-state">
-    Loading maramataka year...
+    {{ copy().year.loading }}
   </p>
   } @else if (yearError()) {
   <p class="state error" data-testid="year-error-state">
@@ -19,22 +19,18 @@
   </p>
   } @else if (!year() || !year()!.months.length) {
   <p class="state" data-testid="year-empty-state">
-    No maramataka year timeline is available for this date.
+    {{ copy().year.empty }}
   </p>
   } @else {
   <p class="state compact year-rule-note">
-    Year view starts at Te Tahi o Pipiri and uses actual dates across the
-    maramataka year. It marks marama boundaries, month and seasonal dawn
-    appearances, Matariki appearance/disappearance, astronomical New Moons,
-    astronomical Full Moons, equinoxes, solstices, and the Matariki public
-    holiday marker.
+    {{ copy().year.ruleNote }}
   </p>
   @if (yearTimelineLoading()) {
   <p
     class="state compact year-timeline-loading"
     data-testid="year-timeline-loading-state"
   >
-    Loading celestial annotations...
+    {{ copy().year.loadingAnnotations }}
   </p>
   }
   @if (yearTimelineError()) {
@@ -47,7 +43,7 @@
   }
   @if (year()!.diagnostics.length) {
   <div class="year-diagnostics" data-testid="year-diagnostics">
-    <h3>Year timeline notes</h3>
+    <h3>{{ copy().year.diagnosticsHeading }}</h3>
     <ul>
       @for (diagnostic of year()!.diagnostics; track diagnostic.name + diagnostic.reason) {
       <li>
@@ -67,14 +63,20 @@
     class="year-timeline"
     data-testid="year-rhythm-timeline"
     role="list"
-    aria-label="Maramataka year rhythm timeline"
+    [attr.aria-label]="copy().year.timelineLabel"
   >
-    <div class="year-band-guide" aria-label="Timeline levels">
-      <span class="band-chip star">Star</span>
-      <span class="band-chip seasonal">Seasonal</span>
-      <span class="band-chip solar">Solar</span>
-      <span class="band-chip lunar">Lunar phase</span>
-      <span class="band-chip holiday">Holiday</span>
+    <div class="year-band-guide" [attr.aria-label]="copy().year.levelsLabel">
+      <span class="band-chip star">{{ copy().year.eventTypes.star }}</span>
+      <span class="band-chip seasonal">
+        {{ copy().year.eventTypes.seasonal }}
+      </span>
+      <span class="band-chip solar">{{ copy().year.eventTypes.solar }}</span>
+      <span class="band-chip lunar">
+        {{ copy().year.eventTypes.lunarPhase }}
+      </span>
+      <span class="band-chip holiday">
+        {{ copy().year.eventTypes.holiday }}
+      </span>
     </div>
     <div class="year-axis" aria-hidden="true">
       <span>{{ year()!.startsAt | date: 'd MMM y' : nzTimeZone }}</span>
@@ -106,10 +108,10 @@
         class="year-selected-date"
         data-testid="year-selected-date-marker"
         [style.left.%]="selectedDateOffsetPercent()"
-        [attr.aria-label]="'Selected date ' + selectedDateLabel()"
+        [attr.aria-label]="copy().year.selectedDate + ' ' + selectedDateLabel()"
         role="img"
       >
-        <span class="selected-date-label">Selected</span>
+        <span class="selected-date-label">{{ copy().year.selected }}</span>
         <span class="selected-date-line" aria-hidden="true"></span>
         <span class="selected-date-dot" aria-hidden="true"></span>
         <span class="selected-date-time">{{ selectedDateLabel() }}</span>
@@ -140,7 +142,7 @@
     </div>
   </div>
 
-  <div class="year-marama-list" aria-label="Maramataka months in this year">
+  <div class="year-marama-list" [attr.aria-label]="copy().year.maramaListLabel">
     @for (month of year()!.months; track month.startsAt.toISOString()) {
     <article
       role="button"
@@ -160,9 +162,9 @@
       <small>{{ month.starMarkers![0].name }}</small>
       }
       @if (month.isEstimated) {
-      <small>Astronomy anchors only</small>
+      <small>{{ copy().year.astronomyAnchorsOnly }}</small>
       } @else {
-      <small>{{ month.nightsCount }} mata</small>
+      <small>{{ month.nightsCount }} {{ copy().year.mata }}</small>
       }
     </article>
     }

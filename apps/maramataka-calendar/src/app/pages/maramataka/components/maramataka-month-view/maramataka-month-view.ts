@@ -7,6 +7,7 @@ import {
   MaramatakaYearEvent,
 } from '../../maramataka.models';
 import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { MaramatakaCopy } from '../../maramataka-copy';
 
 @Component({
   selector: 'app-maramataka-month-view',
@@ -21,6 +22,7 @@ export class MaramatakaMonthView {
   private readonly innerRadius = 31;
   private readonly labelRadius = 39;
 
+  copy = input.required<MaramatakaCopy>();
   month = input.required<MaramatakaMonth>();
   now = input.required<Date>();
   cycle = input<MaramatakaCycleDetails | null>(null);
@@ -97,7 +99,7 @@ export class MaramatakaMonthView {
 
     return [
       night.mata,
-      `moonrise ${this.formatNightStart(night)}`,
+      `${this.copy().cycle.moonrise} ${this.formatNightStart(night)}`,
       anchor,
     ]
       .filter(Boolean)
@@ -127,7 +129,7 @@ export class MaramatakaMonthView {
       fullMoon.occursAt.getTime() >= night.startsAt.getTime() &&
       fullMoon.occursAt.getTime() < night.endsAt.getTime()
     ) {
-      return 'Rākaunui / Full Moon';
+      return `Rākaunui / ${this.copy().cycle.fullMoon}`;
     }
 
     return null;
@@ -172,22 +174,22 @@ export class MaramatakaMonthView {
     switch (event.type) {
       case 'star-marker':
         return event.starMarkerScope === 'seasonal'
-          ? 'Seasonal'
-          : 'Star';
+          ? this.copy().year.eventTypes.seasonal
+          : this.copy().year.eventTypes.star;
       case 'star-appearance':
-        return 'Appears';
+        return this.copy().year.eventTypes.appears;
       case 'star-invisibility':
-        return 'Disappears';
+        return this.copy().year.eventTypes.disappears;
       case 'new-moon':
-        return 'New Moon';
+        return this.copy().year.eventTypes.newMoon;
       case 'full-moon':
-        return 'Full Moon';
+        return this.copy().year.eventTypes.fullMoon;
       case 'public-holiday':
-        return 'Holiday';
+        return this.copy().year.eventTypes.holiday;
       case 'solar-season':
-        return 'Solar';
+        return this.copy().year.eventTypes.solar;
       case 'month-start':
-        return 'Month start';
+        return this.copy().year.eventTypes.monthStart;
     }
   }
 

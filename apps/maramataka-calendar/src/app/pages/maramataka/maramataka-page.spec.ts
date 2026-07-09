@@ -72,6 +72,8 @@ describe('MaramatakaPage', () => {
   };
 
   beforeEach(() => {
+    window.localStorage.removeItem('maramataka-language');
+
     TestBed.configureTestingModule({
       imports: [MaramatakaPage],
       providers: [provideHttpClient(), provideHttpClientTesting()],
@@ -83,6 +85,7 @@ describe('MaramatakaPage', () => {
   afterEach(() => {
     httpTestingController.verify();
     TestBed.resetTestingModule();
+    window.localStorage.removeItem('maramataka-language');
     vi.useRealTimers();
   });
 
@@ -1104,6 +1107,28 @@ describe('MaramatakaPage', () => {
 
     expect(litPhase?.getAttribute('data-phase-side')).toBe('right');
     expect(litPhase?.getAttribute('d')).toContain('A 42 42');
+  });
+
+  it('switches static interface copy to te reo Maori', () => {
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests());
+    fixture.detectChanges();
+
+    const page = fixture.componentInstance as unknown as {
+      onLanguageChange(language: string): void;
+    };
+    page.onLanguageChange('mi');
+    fixture.detectChanges();
+
+    const content = fixture.nativeElement.textContent as string;
+    expect(content).toContain('1. Te ra kua tipakohia');
+    expect(content).toContain('He aha nga ahuatanga o tenei ra?');
+    expect(content).toContain('Te rangi ata');
+    expect(content).toContain('3. Manawataki tau');
+    expect(window.localStorage.getItem('maramataka-language')).toBe('mi');
   });
 
   it('uses the selected location for API requests', () => {

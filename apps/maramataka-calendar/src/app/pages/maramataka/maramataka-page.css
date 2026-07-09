@@ -24,7 +24,8 @@ h1 {
   grid-template-columns:
     minmax(0, 1fr)
     minmax(0, 1fr)
-    minmax(9rem, 10rem);
+    minmax(8rem, 9rem)
+    minmax(12rem, 14rem);
   column-gap: 1rem;
   row-gap: 0.75rem;
   align-items: end;
@@ -65,6 +66,10 @@ h1 {
   align-self: end;
 }
 
+.language-panel {
+  min-width: 0;
+}
+
 input[type='date'].control-input {
   padding-right: 2.7rem;
 }
@@ -88,7 +93,7 @@ input[type='date'].control-input::-webkit-calendar-picker-indicator {
   font-weight: 800;
   line-height: 1.2;
   cursor: pointer;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .secondary-button:disabled {
