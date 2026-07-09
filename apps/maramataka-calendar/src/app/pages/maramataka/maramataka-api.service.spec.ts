@@ -20,6 +20,9 @@ describe('MaramatakaApiService', () => {
     id: 'mita-te-tai-best-observational-v1',
     name: 'Mita Te Tai / Best observational maramataka',
     version: '1',
+    mataVersion: 'mita-te-tai-best',
+    metadataVersion: 1,
+    fingerprint: 'test-rule-fingerprint',
     source:
       'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
     tradition: 'Mita Te Tai / Best',
@@ -218,6 +221,15 @@ describe('MaramatakaApiService', () => {
     });
 
     expect(year?.startsAt).toEqual(new Date('2025-12-31T11:00:00.000Z'));
+    expect(year?.ruleSet).toEqual(
+      expect.objectContaining({
+        id: 'mita-te-tai-best-observational-v1',
+        version: '1',
+        mataVersion: 'mita-te-tai-best',
+        metadataVersion: 1,
+        fingerprint: 'test-rule-fingerprint',
+      }),
+    );
     expect(year?.months[0].startsAt).toEqual(
       new Date('2026-09-10T18:03:00.000Z'),
     );
@@ -309,6 +321,13 @@ describe('MaramatakaApiService', () => {
 
     expect(pageData?.cycle.currentNight.startsAt).toEqual(
       new Date('2026-06-24T06:07:00.000Z'),
+    );
+    expect(pageData?.cycle.ruleSet).toEqual(
+      expect.objectContaining({
+        mataVersion: 'mita-te-tai-best',
+        metadataVersion: 1,
+        fingerprint: 'test-rule-fingerprint',
+      }),
     );
     expect(pageData?.moonDetails.date).toBe('2026-06-25');
   });

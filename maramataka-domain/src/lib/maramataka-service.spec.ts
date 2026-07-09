@@ -13,6 +13,7 @@ import {
 import { MaramatakaService } from './maramataka-service';
 import { MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET } from './mita-te-tai-best';
 import { summarizeRuleSet } from './maramataka-rule-set';
+import { MaramatakaMonth } from './maramataka';
 
 describe('MaramatakaService', () => {
   const location: Location = {
@@ -435,12 +436,15 @@ describe('MaramatakaService', () => {
         },
       },
     });
-    const firstMonth = {
+    const firstMonth: MaramatakaMonth = {
       version: 'mita-te-tai-best' as const,
       ruleSet: {
         id: 'mita-te-tai-best-observational-v1',
         name: 'Mita Te Tai / Best observational maramataka',
         version: '1',
+        mataVersion: 'mita-te-tai-best',
+        metadataVersion: 1,
+        fingerprint: 'test-rule-fingerprint',
         source: 'test',
         tradition: 'test',
         maramaStart: 'new-moon-observation-window-moonrise',
@@ -621,6 +625,9 @@ describe('MaramatakaService', () => {
         id: 'test-rule-set',
         name: 'Test rule set',
         version: 'test',
+        mataVersion: 'mita-te-tai-best',
+        metadataVersion: 1,
+        fingerprint: 'test-rule-fingerprint',
         source: 'test',
         tradition: 'test',
         maramaStart: 'new-moon-observation-window-moonrise',

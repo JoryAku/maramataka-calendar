@@ -7,6 +7,15 @@ import {
   Query,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiServiceUnavailableResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { findAstronomyProviderError } from '@maramataka-calendar/astronomy';
 import {
   MaramatakaService,
@@ -19,7 +28,23 @@ import {
   toMoonDetailsResponse,
   toStarMarkersResponse,
 } from './maramataka-response.dto';
+import {
+  maramatakaPageResponseSchema,
+  maramatakaYearResponseSchema,
+  starMarkerSchema,
+} from './maramataka-openapi.schemas';
 
+const MARAMATAKA_CACHE_CONTROL =
+  'public, max-age=900, stale-while-revalidate=3600';
+const MARAMATAKA_CACHE_RESPONSE_HEADER = {
+  description: 'Shared maramataka response cache policy.',
+  schema: {
+    type: 'string',
+    example: MARAMATAKA_CACHE_CONTROL,
+  },
+};
+
+@ApiTags('maramataka')
 @Controller('maramataka')
 export class MaramatakaController {
   private readonly logger = new Logger(MaramatakaController.name);
@@ -27,7 +52,58 @@ export class MaramatakaController {
   constructor(private readonly maramatakaService: MaramatakaService) {}
 
   @Get('page')
-  @Header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600')
+  @Header('Cache-Control', MARAMATAKA_CACHE_CONTROL)
+  @ApiOperation({
+    summary: 'Get shared maramataka page data',
+    description:
+      'Returns the current cycle details and moon details for the selected local date and location.',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    example: '2026-07-05',
+    description: 'Local date in YYYY-MM-DD format.',
+  })
+  @ApiQuery({
+    name: 'location',
+    required: false,
+    example: 'wellington',
+    description:
+      'Preset location id. Use this instead of lat/lon/timezone for known places.',
+  })
+  @ApiQuery({
+    name: 'lat',
+    required: false,
+    example: '-41.2865',
+    description: 'Latitude for a custom location.',
+  })
+  @ApiQuery({
+    name: 'lon',
+    required: false,
+    example: '174.7762',
+    description: 'Longitude for a custom location.',
+  })
+  @ApiQuery({
+    name: 'timezone',
+    required: false,
+    example: 'Pacific/Auckland',
+    description: 'IANA timezone for a custom location.',
+  })
+  @ApiOkResponse({
+    description:
+      'Current cycle and moon details, including the API-safe rule-set summary.',
+    headers: {
+      'Cache-Control': MARAMATAKA_CACHE_RESPONSE_HEADER,
+    },
+    schema: maramatakaPageResponseSchema,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid date or missing custom location fields.',
+  })
+  @ApiNotFoundResponse({ description: 'Unknown preset location id.' })
+  @ApiServiceUnavailableResponse({
+    description: 'Astronomy provider data is unavailable.',
+  })
   async getPage(
     @Query() query: DateLocationQueryDto,
   ): Promise<MaramatakaPageResponseDto> {
@@ -57,7 +133,66 @@ export class MaramatakaController {
   }
 
   @Get('year')
-  @Header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600')
+  @Header('Cache-Control', MARAMATAKA_CACHE_CONTROL)
+  @ApiOperation({
+    summary: 'Get a maramataka year',
+    description:
+      'Returns the calculated solar/star/lunar year that contains the selected local date. Timeline events are included by default.',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    example: '2026-07-05',
+    description: 'Local date in YYYY-MM-DD format.',
+  })
+  @ApiQuery({
+    name: 'location',
+    required: false,
+    example: 'wellington',
+    description:
+      'Preset location id. Use this instead of lat/lon/timezone for known places.',
+  })
+  @ApiQuery({
+    name: 'lat',
+    required: false,
+    example: '-41.2865',
+    description: 'Latitude for a custom location.',
+  })
+  @ApiQuery({
+    name: 'lon',
+    required: false,
+    example: '174.7762',
+    description: 'Longitude for a custom location.',
+  })
+  @ApiQuery({
+    name: 'timezone',
+    required: false,
+    example: 'Pacific/Auckland',
+    description: 'IANA timezone for a custom location.',
+  })
+  @ApiQuery({
+    name: 'includeTimelineEvents',
+    required: false,
+    enum: ['true', 'false'],
+    example: 'true',
+    description:
+      'Set to false for a lighter year response without timeline events.',
+  })
+  @ApiOkResponse({
+    description:
+      'Calculated maramataka year, month boundaries, optional timeline events, and rule-set summary.',
+    headers: {
+      'Cache-Control': MARAMATAKA_CACHE_RESPONSE_HEADER,
+    },
+    schema: maramatakaYearResponseSchema,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid date, boolean, or missing custom location fields.',
+  })
+  @ApiNotFoundResponse({ description: 'Unknown preset location id.' })
+  @ApiServiceUnavailableResponse({
+    description: 'Astronomy provider data is unavailable.',
+  })
   async getYear(@Query() query: YearQueryDto): Promise<MaramatakaYear> {
     const { date, location, includeTimelineEvents } = Object.assign(
       new YearQueryDto(),
@@ -78,7 +213,61 @@ export class MaramatakaController {
   }
 
   @Get('star-markers')
-  @Header('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600')
+  @Header('Cache-Control', MARAMATAKA_CACHE_CONTROL)
+  @ApiOperation({
+    summary: 'Get dawn sky star markers',
+    description:
+      'Returns configured star and body visibility details for the selected local date and location.',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    example: '2026-07-05',
+    description: 'Local date in YYYY-MM-DD format.',
+  })
+  @ApiQuery({
+    name: 'location',
+    required: false,
+    example: 'wellington',
+    description:
+      'Preset location id. Use this instead of lat/lon/timezone for known places.',
+  })
+  @ApiQuery({
+    name: 'lat',
+    required: false,
+    example: '-41.2865',
+    description: 'Latitude for a custom location.',
+  })
+  @ApiQuery({
+    name: 'lon',
+    required: false,
+    example: '174.7762',
+    description: 'Longitude for a custom location.',
+  })
+  @ApiQuery({
+    name: 'timezone',
+    required: false,
+    example: 'Pacific/Auckland',
+    description: 'IANA timezone for a custom location.',
+  })
+  @ApiOkResponse({
+    description:
+      'Configured dawn sky marker details, ordered for frontend display.',
+    headers: {
+      'Cache-Control': MARAMATAKA_CACHE_RESPONSE_HEADER,
+    },
+    schema: {
+      type: 'array',
+      items: starMarkerSchema,
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid date or missing custom location fields.',
+  })
+  @ApiNotFoundResponse({ description: 'Unknown preset location id.' })
+  @ApiServiceUnavailableResponse({
+    description: 'Astronomy provider data is unavailable.',
+  })
   async getStarMarkers(
     @Query() query: DateLocationQueryDto,
   ): Promise<StarMarkerResponseDto[]> {

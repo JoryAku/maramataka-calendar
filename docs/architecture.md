@@ -72,6 +72,10 @@ service, and returns JSON DTOs for the frontend. Startup logs include active
 cache fingerprints and compact metadata summaries under the `CacheFingerprint`
 logger.
 
+Month, cycle, and year responses include an API-safe rule-set summary with the
+source id/version, `mataVersion`, metadata schema version, and rule-set
+fingerprint used for the calculation.
+
 ### Frontend
 
 The Angular app presents the same calculated data in focused views:

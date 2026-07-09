@@ -11,8 +11,10 @@ material.
   rule sets.
 - Keep Living by the Stars as one named rule set, rather than baking it into
   generic calendar code.
-- Add rule-set metadata to API responses so generated dates can always explain
-  which source and version produced them.
+- Explore a Mita Te Tai / Best observational reconstruction as a second
+  selectable rule set, but keep it clearly labelled as reconstructed until
+  dated source-calendar examples can calibrate Pipiri, Ruhanui, and Matariki
+  appearance rules.
 - Explore per-rule-set definitions for Pipiri, Ruhanui, dawn visibility, mata
   names, Matariki holiday framing, and event labels.
 
@@ -92,7 +94,9 @@ material.
 
 ## API And Documentation
 
-- Add Swagger/OpenAPI docs when the API shape settles.
+- Consider a Swagger UI page if we decide the convenience is worth relaxing
+  security headers for the docs route. The API currently exposes JSON-only
+  OpenAPI at `/api/openapi.json`.
 - Make diagnostic endpoints and scripts easier to discover.
 - Keep source-material notes separate from implemented rules so research
   hypotheses do not accidentally become product behavior.

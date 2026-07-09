@@ -26,6 +26,11 @@ selected-day and month views can render quickly when the location or date
 changes. Dawn sky markers load separately from `GET /maramataka/star-markers`,
 and the heavier `GET /maramataka/year` timeline also loads separately.
 
+Generated maramataka responses include an API-safe `ruleSet` summary. The
+summary carries the source id/name/version, `mataVersion`, metadata schema
+version, and stable rule-set fingerprint so clients can explain which rule
+inputs produced a date without needing the full registered rule set.
+
 ## Error Shape
 
 The API uses a global exception filter. Error responses use this shape:
@@ -42,8 +47,12 @@ The API uses a global exception filter. Error responses use this shape:
 
 ## OpenAPI
 
-OpenAPI/Swagger generation is intentionally deferred while the API contract is
-still changing with the Matariki calendar rule-set model. The project does not
-currently include `@nestjs/swagger`. The next API documentation step should add
-Swagger decorators and generated docs once DTOs are stable enough that generated
-schema churn is low.
+The API exposes generated OpenAPI JSON at `/api/openapi.json`. This is kept
+JSON-only for now so the docs remain reviewable without relaxing the strict
+security headers for an embedded Swagger UI page.
+
+Controller annotations describe the stable endpoint purpose, query parameters,
+cache behavior, common error responses, and the main response body shapes.
+Those response schemas are maintained as reusable OpenAPI schema constants so
+the generated docs can stay readable while the domain objects remain shared
+TypeScript interfaces.
