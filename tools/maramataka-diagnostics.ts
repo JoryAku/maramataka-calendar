@@ -2,6 +2,7 @@ import {
   AstronomyEngineProvider,
   CachedAstronomyProvider,
   createCacheFingerprint,
+  createFingerprintNamespace,
   FileAstronomyCacheStore,
   formatIsoDateInTimezone,
   Location,
@@ -325,6 +326,34 @@ function cacheFingerprintReport() {
   };
 }
 
+async function inspectCacheNamespaces(options: CliOptions) {
+  const cachePath = stringOption(
+    options,
+    'cache',
+    process.env['MARAMATAKA_ASTRONOMY_CACHE_PATH'] ??
+      join(process.cwd(), '.cache', 'astronomy.json'),
+  );
+  const activeNamespaces = activeAstronomyCacheNamespaces();
+  const store = new FileAstronomyCacheStore(cachePath);
+  const result = truthyOption(options, 'prune')
+    ? await store.pruneStaleNamespaces(activeNamespaces, {
+        includeUnknown: truthyOption(options, 'prune-unknown'),
+      })
+    : await store.inspectNamespaces(activeNamespaces);
+
+  console.log(JSON.stringify(result, null, 2));
+}
+
+function activeAstronomyCacheNamespaces(): string[] {
+  return [
+    createFingerprintNamespace('raw', RAW_ASTRONOMY_CACHE_METADATA),
+    createFingerprintNamespace(
+      'observational',
+      OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
+    ),
+  ];
+}
+
 function parseArgs(argv: string[]): { command: string; options: CliOptions } {
   const [command = 'help', ...rest] = argv;
   const options: CliOptions = {};
@@ -377,6 +406,11 @@ function stringOption(
   }
 
   throw new Error(`Missing --${key}`);
+}
+
+function truthyOption(options: CliOptions, key: string): boolean {
+  const value = options[key];
+  return value === true || value === 'true' || value === '1' || value === 'yes';
 }
 
 function numberOption(
@@ -1251,6 +1285,7 @@ Commands:
   holiday-explorer   --year 2026
   event-placement    --at YYYY-MM-DDTHH:mm
   cache-fingerprints
+  cache-namespaces    [--cache .cache/astronomy.json] [--prune] [--prune-unknown]
 
 Location options:
   --lat -41.2865 --lon 174.7762 --timezone Pacific/Auckland --location Wellington
@@ -1284,6 +1319,9 @@ async function main() {
       break;
     case 'cache-fingerprints':
       console.log(JSON.stringify(cacheFingerprintReport(), null, 2));
+      break;
+    case 'cache-namespaces':
+      await inspectCacheNamespaces(options);
       break;
     default:
       usage();

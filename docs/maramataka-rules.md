@@ -239,6 +239,12 @@ slice is file-backed and dependency-free:
 - The active short fingerprints and compact metadata summaries are logged at
   API startup. Full readable metadata can be printed with
   `npm run diagnose:maramataka -- cache-fingerprints`.
+- Stale raw/observational astronomy namespaces can be inspected with
+  `npm run diagnose:maramataka -- cache-namespaces` and pruned with
+  `npm run diagnose:maramataka -- cache-namespaces --prune`.
+- Pre-fingerprint legacy entries can be removed with
+  `npm run diagnose:maramataka -- cache-namespaces --prune --prune-unknown`
+  after confirming the app is using active cache namespaces.
 - Cached date strings are revived as `Date` values before reaching domain code.
 
 This file-backed cache is the current persistence boundary. It can later be

@@ -18,6 +18,9 @@ describe('MaramatakaPage', () => {
     id: 'mita-te-tai-best-observational-v1',
     name: 'Mita Te Tai / Best observational maramataka',
     version: '1',
+    mataVersion: 'mita-te-tai-best',
+    metadataVersion: 1,
+    fingerprint: 'test-rule-fingerprint',
     source:
       'Elsdon Best, Fishing Methods and Devices of the Maori; Mita Te Tai / Metara notebook reference',
     tradition: 'Mita Te Tai / Best',

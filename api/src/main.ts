@@ -1,12 +1,17 @@
-import { Logger } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
 import {
   createCacheFingerprint,
   RAW_ASTRONOMY_CACHE_METADATA,
   OBSERVATIONAL_ASTRONOMY_CACHE_METADATA,
 } from '@maramataka-calendar/astronomy';
-import { createMaramatakaRuleSetCacheMetadata } from '@maramataka-calendar/maramataka-domain';
+import {
+  createMaramatakaRuleSetCacheMetadata,
+  createMaramatakaRuleSetFingerprint,
+  MARAMATAKA_RULE_SET_CACHE_METADATA_VERSION,
+} from '@maramataka-calendar/maramataka-domain';
 import {
   json,
   NextFunction,
@@ -40,6 +45,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.useGlobalFilters(new ApiExceptionFilter());
   app.setGlobalPrefix(globalPrefix);
+  configureOpenApi(app, globalPrefix);
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);
@@ -50,6 +56,27 @@ async function bootstrap() {
     `API listening on port ${port} with global prefix /${globalPrefix}`,
     'Bootstrap',
   );
+}
+
+function configureOpenApi(app: INestApplication, globalPrefix: string): void {
+  const document = SwaggerModule.createDocument(
+    app,
+    new DocumentBuilder()
+      .setTitle('Maramataka Calendar API')
+      .setDescription(
+        'Astronomy-backed maramataka date, month, year, dawn sky, and timeline data.',
+      )
+      .setVersion('1.0')
+      .build(),
+  );
+  const route = `/${globalPrefix}/openapi.json`;
+
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .get(route, (_request: Request, response: Response) => {
+      response.type('application/json').send(document);
+    });
 }
 
 function logCacheFingerprints(): void {
@@ -94,6 +121,10 @@ function createCacheMetadataSummary() {
         source: ACTIVE_MARAMATAKA_RULE_SET.source,
         tradition: ACTIVE_MARAMATAKA_RULE_SET.tradition,
         mataVersion: ACTIVE_MARAMATAKA_RULE_SET.mataVersion,
+        metadataVersion: MARAMATAKA_RULE_SET_CACHE_METADATA_VERSION,
+        fingerprint: createMaramatakaRuleSetFingerprint(
+          ACTIVE_MARAMATAKA_RULE_SET,
+        ),
       },
       mataCount: ACTIVE_MARAMATAKA_RULE_SET.mata.length,
       yearStartMarker: ACTIVE_MARAMATAKA_RULE_SET.yearStartRule?.marker.id,

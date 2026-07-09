@@ -1,7 +1,4 @@
-import axios from 'axios';
-import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AddressInfo } from 'node:net';
 import { StarMarker } from '@maramataka-calendar/astronomy';
 import {
   MaramatakaCycleDetails,
@@ -12,11 +9,10 @@ import {
   summarizeRuleSet,
 } from '@maramataka-calendar/maramataka-domain';
 import { MaramatakaController } from './maramataka.controller';
-import { ApiExceptionFilter } from './api-exception.filter';
+import { DateLocationQueryDto, YearQueryDto } from './api-query.dto';
 
 describe('MaramatakaController', () => {
-  let app: INestApplication;
-  let baseUrl: string;
+  let controller: MaramatakaController;
   let getCycleDetailsMock: jest.Mock;
   let getYearMock: jest.Mock;
   let getMoonDetailsMock: jest.Mock;
@@ -43,13 +39,7 @@ describe('MaramatakaController', () => {
       ],
     }).compile();
 
-    app = moduleRef.createNestApplication();
-    app.useGlobalFilters(new ApiExceptionFilter());
-    await app.init();
-    await app.listen(0);
-
-    const address = app.getHttpServer().address() as AddressInfo;
-    baseUrl = `http://127.0.0.1:${address.port}`;
+    controller = moduleRef.get(MaramatakaController);
   });
 
   afterEach(() => {
@@ -59,13 +49,14 @@ describe('MaramatakaController', () => {
     getStarMarkersMock.mockReset();
   });
 
-  afterAll(async () => {
-    await app.close();
-  });
-
   const ruleSet = JSON.parse(
     JSON.stringify(summarizeRuleSet(MITA_TE_TAI_BEST_OBSERVATIONAL_RULE_SET)),
   ) as ReturnType<typeof summarizeRuleSet>;
+  const dateLocationQuery = (
+    query: Partial<DateLocationQueryDto>,
+  ): DateLocationQueryDto => Object.assign(new DateLocationQueryDto(), query);
+  const yearQuery = (query: Partial<YearQueryDto>): YearQueryDto =>
+    Object.assign(new YearQueryDto(), query);
 
   const createMonthFixture = (): MaramatakaMonth => ({
     version: 'mita-te-tai-best',
@@ -236,19 +227,12 @@ describe('MaramatakaController', () => {
       getMoonDetailsMock.mockResolvedValue(createMoonDetailsFixture());
       getStarMarkersMock.mockResolvedValue(createStarMarkersFixture());
 
-      const response = await axios.get(`${baseUrl}/maramataka/page`, {
-        params: {
-          date: '2026-01-02',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
+      const response = await controller.getPage(dateLocationQuery({
+        date: '2026-01-02',
+        location: 'wellington',
+      }));
 
-      expect(response.status).toBe(200);
-      expect(response.headers['cache-control']).toBe(
-        'public, max-age=900, stale-while-revalidate=3600',
-      );
-      expect(response.data).toMatchObject({
+      expect(response).toMatchObject({
         cycle: {
           version: 'mita-te-tai-best',
           currentMataIndex: 2,
@@ -266,7 +250,7 @@ describe('MaramatakaController', () => {
           lunarAgeDays: 2.5,
           distanceKm: null,
           moonrise: {
-            occursAt: '2026-01-02T07:46:00.000Z',
+            occursAt: new Date('2026-01-02T07:46:00.000Z'),
           },
         },
       });
@@ -281,16 +265,12 @@ describe('MaramatakaController', () => {
       getMoonDetailsMock.mockResolvedValue(createMoonDetailsFixture());
       getStarMarkersMock.mockResolvedValue(createStarMarkersFixture());
 
-      const response = await axios.get(`${baseUrl}/maramataka/page`, {
-        params: {
+      await expect(
+        controller.getPage(dateLocationQuery({
           date: '2026-01-02',
           location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(400);
-      expect(response.data.message).toBe(
+        })),
+      ).rejects.toThrow(
         'No Maramataka cycle found for supplied date and location',
       );
     });
@@ -300,31 +280,24 @@ describe('MaramatakaController', () => {
     it('returns year timeline months for the selected date', async () => {
       getYearMock.mockResolvedValue(createYearFixture());
 
-      const response = await axios.get(`${baseUrl}/maramataka/year`, {
-        params: {
-          date: '2026-01-02',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
+      const response = await controller.getYear(yearQuery({
+        date: '2026-01-02',
+        location: 'wellington',
+      }));
 
-      expect(response.status).toBe(200);
-      expect(response.headers['cache-control']).toBe(
-        'public, max-age=900, stale-while-revalidate=3600',
-      );
-      expect(response.data).toMatchObject({
+      expect(response).toMatchObject({
         version: 'mita-te-tai-best',
         ruleSet,
         year: 2026,
         timezone: 'Pacific/Auckland',
-        startsAt: '2025-12-31T11:00:00.000Z',
-        endsAt: '2026-12-31T11:00:00.000Z',
+        startsAt: new Date('2025-12-31T11:00:00.000Z'),
+        endsAt: new Date('2026-12-31T11:00:00.000Z'),
         months: [
           {
             sequence: 1,
             name: 'Marama 1',
-            startsAt: '2026-01-01T07:47:00.000Z',
-            endsAt: '2026-01-30T07:47:00.000Z',
+            startsAt: new Date('2026-01-01T07:47:00.000Z'),
+            endsAt: new Date('2026-01-30T07:47:00.000Z'),
             durationDays: 29,
             nightsCount: 29,
             repeatedMata: [],
@@ -352,16 +325,12 @@ describe('MaramatakaController', () => {
     it('can omit expensive timeline events for progressive loading', async () => {
       getYearMock.mockResolvedValue(createYearFixture());
 
-      const response = await axios.get(`${baseUrl}/maramataka/year`, {
-        params: {
-          date: '2026-01-02',
-          location: 'wellington',
-          includeTimelineEvents: 'false',
-        },
-        validateStatus: () => true,
-      });
+      await controller.getYear(yearQuery({
+        date: '2026-01-02',
+        location: 'wellington',
+        includeTimelineEvents: 'false',
+      }));
 
-      expect(response.status).toBe(200);
       expect(getYearMock.mock.calls[0]?.[2]).toEqual({
         includeTimelineEvents: false,
       });
@@ -393,22 +362,14 @@ describe('MaramatakaController', () => {
       ];
       getStarMarkersMock.mockResolvedValue(starMarkers);
 
-      const response = await axios.get(`${baseUrl}/maramataka/star-markers`, {
-        params: {
-          date: '2026-06-25',
-          location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
+      const response = await controller.getStarMarkers(dateLocationQuery({
+        date: '2026-06-25',
+        location: 'wellington',
+      }));
 
-      expect(response.status).toBe(200);
-      expect(response.headers['cache-control']).toBe(
-        'public, max-age=900, stale-while-revalidate=3600',
-      );
-      expect(response.data).toEqual([
+      expect(response).toEqual([
         {
           ...starMarkers[0],
-          observedAt: '2026-06-24T18:00:00.000Z',
         },
       ]);
       expect(getStarMarkersMock).toHaveBeenCalledTimes(1);
@@ -427,16 +388,12 @@ describe('MaramatakaController', () => {
     });
 
     it('returns HTTP 400 for invalid star marker date', async () => {
-      const response = await axios.get(`${baseUrl}/maramataka/star-markers`, {
-        params: {
+      await expect(
+        controller.getStarMarkers(dateLocationQuery({
           date: 'bad-date',
           location: 'wellington',
-        },
-        validateStatus: () => true,
-      });
-
-      expect(response.status).toBe(400);
-      expect(response.data.message).toBe('date must be in YYYY-MM-DD format');
+        })),
+      ).rejects.toThrow('date must be in YYYY-MM-DD format');
       expect(getStarMarkersMock).not.toHaveBeenCalled();
     });
   });

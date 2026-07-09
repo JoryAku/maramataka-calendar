@@ -64,6 +64,9 @@ export interface MaramatakaRuleSetSummary {
   id: string;
   name: string;
   version: string;
+  mataVersion: MaramatakaVersion;
+  metadataVersion: typeof MARAMATAKA_RULE_SET_CACHE_METADATA_VERSION;
+  fingerprint: string;
   source: string;
   sourceQuote?: string;
   tradition: string;
@@ -108,12 +111,19 @@ export interface MaramatakaRuleSetSummary {
   };
 }
 
-export interface MaramatakaRuleSet extends MaramatakaRuleSetSummary {
+export interface MaramatakaRuleSet
+  extends Omit<
+    MaramatakaRuleSetSummary,
+    | 'metadataVersion'
+    | 'fingerprint'
+    | 'yearStartRule'
+    | 'matarikiHoliday'
+    | 'starMonthNaming'
+  > {
   yearStartRule?: YearStartRuleSet;
   matarikiHoliday?: MatarikiHolidayRuleSet;
   starMonthNaming?: StarMonthNamingRuleSet;
   mata: Mata[];
-  mataVersion: MaramatakaVersion;
 }
 
 export const MARAMATAKA_RULE_SET_CACHE_METADATA_VERSION = 1;
@@ -125,6 +135,9 @@ export function summarizeRuleSet(
     id: ruleSet.id,
     name: ruleSet.name,
     version: ruleSet.version,
+    mataVersion: ruleSet.mataVersion,
+    metadataVersion: MARAMATAKA_RULE_SET_CACHE_METADATA_VERSION,
+    fingerprint: createMaramatakaRuleSetFingerprint(ruleSet),
     source: ruleSet.source,
     sourceQuote: ruleSet.sourceQuote,
     tradition: ruleSet.tradition,

@@ -156,6 +156,9 @@ export interface MaramatakaRuleSet {
   id: string;
   name: string;
   version: string;
+  mataVersion: string;
+  metadataVersion: number;
+  fingerprint: string;
   source: string;
   sourceQuote?: string;
   tradition: string;

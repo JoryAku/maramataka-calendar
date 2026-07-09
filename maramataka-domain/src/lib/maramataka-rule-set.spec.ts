@@ -1,6 +1,7 @@
 import {
   createMaramatakaRuleSetCacheMetadata,
   createMaramatakaRuleSetFingerprint,
+  summarizeRuleSet,
 } from './maramataka-rule-set';
 import { LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET } from './living-by-the-stars';
 
@@ -58,5 +59,22 @@ describe('maramataka rule set fingerprint metadata', () => {
     });
 
     expect(changedFingerprint).not.toBe(baseFingerprint);
+  });
+
+  it('surfaces stable rule-set metadata in API-safe summaries', () => {
+    const summary = summarizeRuleSet(LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET);
+
+    expect(summary).toEqual(
+      expect.objectContaining({
+        id: 'living-by-the-stars-observational-v1',
+        version: '1',
+        mataVersion: 'living-by-the-star',
+        metadataVersion: 1,
+        fingerprint: createMaramatakaRuleSetFingerprint(
+          LIVING_BY_THE_STARS_OBSERVATIONAL_RULE_SET,
+        ),
+        source: 'Living by the Stars 2021-2024 calendars',
+      }),
+    );
   });
 });
