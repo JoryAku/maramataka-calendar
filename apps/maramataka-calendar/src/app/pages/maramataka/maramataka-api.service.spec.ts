@@ -261,6 +261,9 @@ describe('MaramatakaApiService', () => {
     );
 
     expect(request.request.params.get('date')).toBe('2026-06-25');
+    expect(request.request.params.get('instant')).toBe(
+      '2026-06-24T12:00:00.000Z',
+    );
     request.flush({
       cycle: {
         version: 'mita-te-tai-best',

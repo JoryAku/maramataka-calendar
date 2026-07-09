@@ -6,6 +6,7 @@ import {
   StarMarker,
 } from '../../maramataka.models';
 import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { MaramatakaCopy } from '../../maramataka-copy';
 
 @Component({
   selector: 'app-maramataka-today-view',
@@ -25,6 +26,7 @@ export class MaramatakaTodayView {
   private readonly dawnFieldMinAzimuth = 0;
   private readonly dawnFieldMaxAzimuth = 180;
 
+  copy = input.required<MaramatakaCopy>();
   selectedLocationName = input.required<string>();
   todayLoading = input.required<boolean>();
   todayError = input<string | null>(null);
@@ -245,10 +247,10 @@ export class MaramatakaTodayView {
 
   protected starMarkerAltitudeLabel(marker: StarMarker): string {
     if (marker.visibility === 'below-horizon') {
-      return `${Math.abs(marker.altitudeDegrees)}° below horizon`;
+      return `${Math.abs(marker.altitudeDegrees)}° ${this.copy().today.belowHorizon}`;
     }
 
-    return `${marker.altitudeDegrees}° above ${marker.direction}`;
+    return `${marker.altitudeDegrees}° ${this.copy().today.above} ${marker.direction}`;
   }
 
   protected starMarkerMetaLabel(marker: StarMarker): string {
@@ -259,20 +261,20 @@ export class MaramatakaTodayView {
 
   protected starMarkerVisibilityLabel(marker: StarMarker): string {
     return marker.visibility === 'below-horizon'
-      ? 'below horizon'
-      : marker.visibility;
+      ? this.copy().today.visibility.belowHorizon
+      : this.copy().today.visibility[marker.visibility];
   }
 
   private starMarkerTypeLabel(type: StarMarker['type']): string {
     switch (type) {
       case 'asterism':
-        return 'asterism';
+        return this.copy().today.markerTypes.asterism;
       case 'planet':
-        return 'planet';
+        return this.copy().today.markerTypes.planet;
       case 'sky-figure':
-        return 'sky figure';
+        return this.copy().today.markerTypes.skyFigure;
       case 'star':
-        return 'star';
+        return this.copy().today.markerTypes.star;
     }
   }
 

@@ -36,6 +36,10 @@ export class MaramatakaPage implements OnInit {
     this.store.selectDateString(date);
   }
 
+  protected onLanguageChange(language: string): void {
+    this.store.selectLanguage(language);
+  }
+
   protected selectDate(date: Date): void {
     this.store.selectDate(date);
   }

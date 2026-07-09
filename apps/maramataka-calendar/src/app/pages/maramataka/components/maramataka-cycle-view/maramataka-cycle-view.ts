@@ -7,6 +7,7 @@ import {
   MaramatakaNight,
   MaramatakaYearEvent,
 } from '../../maramataka.models';
+import { MaramatakaCopy } from '../../maramataka-copy';
 
 @Component({
   selector: 'app-maramataka-cycle-view',
@@ -15,6 +16,7 @@ import {
   styleUrl: './maramataka-cycle-view.css',
 })
 export class MaramatakaCycleView {
+  copy = input.required<MaramatakaCopy>();
   selectedLocationName = input.required<string>();
   monthLoading = input.required<boolean>();
   monthError = input<string | null>(null);

@@ -1,18 +1,54 @@
-<section class="maramataka-page">
+<section
+  class="maramataka-page"
+  [attr.lang]="store.language() === 'mi' ? 'mi' : 'en-NZ'"
+>
   <header class="page-header">
-    <div>
-      <h1>Maramataka</h1>
+    <div class="title-row">
+      <h1>{{ store.copy().appTitle }}</h1>
+
+      <section
+        class="control-panel language-panel"
+        [attr.aria-label]="store.copy().controls.language"
+      >
+        <label class="control-label" for="language-select">
+          {{ store.copy().controls.language }}
+        </label>
+        <select
+          id="language-select"
+          class="control-input language-input"
+          [value]="store.language()"
+          autocomplete="language"
+          (change)="onLanguageChange($any($event.target).value)"
+        >
+          <option value="en" lang="en">{{ store.copy().languages.en }}</option>
+          <option value="mi" lang="mi">{{ store.copy().languages.mi }}</option>
+        </select>
+      </section>
     </div>
 
     <div class="controls">
-      <section class="control-panel" aria-label="Location">
-        <label class="control-label" for="location-select">Location</label>
+      <section
+        class="control-panel"
+        [attr.aria-label]="store.copy().controls.location"
+      >
+        <label class="control-label" for="location-select">
+          {{ store.copy().controls.location }}
+        </label>
         @if (store.locationsLoading()) {
-        <p class="state compact" data-testid="locations-loading-state">
-          Loading locations...
+        <p
+          class="state compact"
+          data-testid="locations-loading-state"
+          role="status"
+          aria-live="polite"
+        >
+          {{ store.copy().controls.loadingLocations }}
         </p>
         } @else if (store.locationsError()) {
-        <p class="state error compact" data-testid="locations-error-state">
+        <p
+          class="state error compact"
+          data-testid="locations-error-state"
+          role="alert"
+        >
           {{ store.locationsError() }}
         </p>
         } @else {
@@ -29,8 +65,13 @@
         }
       </section>
 
-      <section class="control-panel" aria-label="View date">
-        <label class="control-label" for="date-select">View date</label>
+      <section
+        class="control-panel"
+        [attr.aria-label]="store.copy().controls.viewDate"
+      >
+        <label class="control-label" for="date-select">
+          {{ store.copy().controls.viewDate }}
+        </label>
         <input
           id="date-select"
           class="control-input"
@@ -45,15 +86,24 @@
           class="secondary-button"
           type="button"
           [disabled]="store.useLiveDate()"
+          [attr.aria-label]="
+            store.useLiveDate()
+              ? store.copy().controls.useTodayDisabled
+              : store.copy().controls.useToday
+          "
+          [attr.title]="
+            store.useLiveDate() ? store.copy().controls.useTodayDisabled : null
+          "
           (click)="resetDateToToday()"
         >
-          Use today
+          {{ store.copy().controls.useToday }}
         </button>
       </div>
     </div>
   </header>
 
   <app-maramataka-today-view
+    [copy]="store.copy()"
     [selectedLocationName]="store.selectedLocationName()"
     [todayLoading]="store.todayLoading()"
     [todayError]="store.todayError()"
@@ -68,6 +118,7 @@
   ></app-maramataka-today-view>
 
   <app-maramataka-cycle-view
+    [copy]="store.copy()"
     [selectedLocationName]="store.selectedLocationName()"
     [monthLoading]="store.monthLoading()"
     [monthError]="store.monthError()"
@@ -81,6 +132,7 @@
   ></app-maramataka-cycle-view>
 
   <app-maramataka-year-view
+    [copy]="store.copy()"
     [yearLoading]="store.yearLoading()"
     [yearTimelineLoading]="store.yearTimelineLoading()"
     [yearTimelineError]="store.yearTimelineError()"

@@ -40,10 +40,11 @@ export class MaramatakaApiService {
   getPageData(locationId: string, date: Date): Observable<MaramatakaPageData> {
     const params = new HttpParams()
       .set('date', this.toYyyyMmDd(date))
+      .set('instant', date.toISOString())
       .set('location', locationId);
 
     return this.profileRequest(
-      `page ${locationId} ${this.toYyyyMmDd(date)}`,
+      `page ${locationId} ${date.toISOString()}`,
       this.http
         .get<ApiMaramatakaPageData>(this.apiUrl('/maramataka/page'), {
           params,

@@ -6,6 +6,7 @@ import {
   MaramatakaYearMonth,
 } from '../../maramataka.models';
 import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { MaramatakaCopy } from '../../maramataka-copy';
 
 type YearEventLayoutGroup =
   | 'star-marker'
@@ -24,6 +25,7 @@ type YearEventLayoutGroup =
 export class MaramatakaYearView {
   protected readonly nzTimeZone = NZ_TIMEZONE;
 
+  copy = input.required<MaramatakaCopy>();
   yearLoading = input.required<boolean>();
   yearTimelineLoading = input(false);
   yearTimelineError = input<string | null>(null);
@@ -110,22 +112,22 @@ export class MaramatakaYearView {
     switch (event.type) {
       case 'star-marker':
         return event.starMarkerScope === 'seasonal'
-          ? 'Seasonal'
-          : 'Star';
+          ? this.copy().year.eventTypes.seasonal
+          : this.copy().year.eventTypes.star;
       case 'star-appearance':
-        return 'Appears';
+        return this.copy().year.eventTypes.appears;
       case 'star-invisibility':
-        return 'Disappears';
+        return this.copy().year.eventTypes.disappears;
       case 'new-moon':
-        return 'New Moon';
+        return this.copy().year.eventTypes.newMoon;
       case 'full-moon':
-        return 'Full Moon';
+        return this.copy().year.eventTypes.fullMoon;
       case 'public-holiday':
-        return 'Holiday';
+        return this.copy().year.eventTypes.holiday;
       case 'solar-season':
-        return 'Solar';
+        return this.copy().year.eventTypes.solar;
       case 'month-start':
-        return 'Month start';
+        return this.copy().year.eventTypes.monthStart;
     }
   }
 
@@ -220,12 +222,16 @@ export class MaramatakaYearView {
 
     if (month.anchors.fullMoon) {
       parts.push(
-        `Full Moon ${this.formatShortDate(month.anchors.fullMoon.occursAt)}`,
+        `${this.copy().year.eventTypes.fullMoon} ${this.formatShortDate(
+          month.anchors.fullMoon.occursAt,
+        )}`,
       );
     }
 
     parts.push(
-      `next Whiro ${this.formatShortDate(month.anchors.nextWhiro.occursAt)}`,
+      `${this.copy().cycle.nextWhiro} ${this.formatShortDate(
+        month.anchors.nextWhiro.occursAt,
+      )}`,
     );
 
     return parts.join(', ');

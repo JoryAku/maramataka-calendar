@@ -1,7 +1,7 @@
 <section class="cycle-shell" aria-labelledby="cycle-heading">
   <div class="cycle-summary">
     <div>
-      <h3 id="cycle-heading">Lunar cycle</h3>
+      <h3 id="cycle-heading">{{ copy().cycle.lunarCycle }}</h3>
       <p>{{ month().ruleSet.name }}</p>
     </div>
     <dl>
@@ -11,7 +11,7 @@
       </div>
       @if (cycle()?.anchors?.fullMoon) {
       <div>
-        <dt>Rakaunui observation</dt>
+        <dt>{{ copy().cycle.rakaunuiObservation }}</dt>
         <dd>
           {{
             cycle()!.anchors.fullMoon!.occursAt
@@ -19,7 +19,7 @@
           }}
           @if (cycle()!.anchors.fullMoon!.astronomicalOccursAt) {
           <small>
-            Full Moon
+            {{ copy().cycle.fullMoon }}
             {{
               cycle()!.anchors.fullMoon!.astronomicalOccursAt
                 | date: 'd MMM, h:mm a' : nzTimeZone
@@ -31,7 +31,7 @@
       }
       @if (cycle()?.anchors?.nextWhiro) {
       <div>
-        <dt>Next Whiro</dt>
+        <dt>{{ copy().cycle.nextWhiro }}</dt>
         <dd>
           {{
             cycle()!.anchors.nextWhiro.occursAt
@@ -46,10 +46,11 @@
   @if (hasBalancedLength()) {
   <p class="balance-note" data-testid="balance-note">
     @if (repeatedMata().length) {
-      Repeated mata: {{ repeatedMata().join(', ') }}.
+      {{ copy().cycle.repeatedMata }}: {{ repeatedMata().join(', ') }}.
     }
     @if (month().nights.length !== 30) {
-      {{ month().nights.length }} moonrise intervals are shown; final names may be omitted.
+      {{ month().nights.length }} {{ copy().cycle.intervalsShown }};
+      {{ copy().cycle.finalNamesMayBeOmitted }}.
     }
   </p>
   }
@@ -57,14 +58,15 @@
   @if (starMonth() || cycleStarMarkers().length) {
   <section class="cycle-star-layer" data-testid="cycle-star-marker-layer">
     @if (starMonth()) {
-    <p>Star month: {{ starMonth()!.name }}</p>
+    <p>{{ copy().cycle.starMonth }}: {{ starMonth()!.name }}</p>
     @if (starMonth()!.marker) {
     <span>
-      Named from {{ starMonth()!.marker!.name }} at dawn around Whiro.
+      {{ copy().cycle.namedFrom }} {{ starMonth()!.marker!.name }}
+      {{ copy().cycle.atDawnAroundWhiro }}.
     </span>
     } @else {
     <span>
-      Named by sequence from the Matariki year start; no specific star marker is configured for this month yet.
+      {{ copy().cycle.sequenceNamed }}
     </span>
     }
     @if (starMonth()!.note) {
@@ -72,23 +74,23 @@
       {{ starMonth()!.note!.description }}
     </span>
     <span>
-      Source note: {{ starMonth()!.note!.sourceText }}
+      {{ copy().cycle.sourceNote }}: {{ starMonth()!.note!.sourceText }}
     </span>
     }
     } @else {
-    <p>Dawn sky markers for this part of the cycle</p>
+    <p>{{ copy().cycle.dawnMarkers }}</p>
     }
     @if (month().ruleSet.starMonthNaming) {
     <span>
-      Star month rule:
+      {{ copy().cycle.starMonthRule }}:
       {{ month().ruleSet.starMonthNaming!.strategy }}.
-      Source: {{ month().ruleSet.starMonthNaming!.source }}
+      {{ copy().cycle.source }}: {{ month().ruleSet.starMonthNaming!.source }}
       @if (month().ruleSet.starMonthNaming!.sourceUrl) {
       <a
         [href]="month().ruleSet.starMonthNaming!.sourceUrl"
         target="_blank"
         rel="noreferrer"
-        >View source</a
+        >{{ copy().cycle.viewSource }}</a
       >
       }
     </span>
@@ -98,7 +100,7 @@
       <li>
         <strong>{{ marker.name }}</strong>
         @if (marker.visibility === 'below-horizon') {
-        <span>{{ marker.altitudeDegrees }}° below horizon</span>
+        <span>{{ marker.altitudeDegrees }}° {{ copy().today.belowHorizon }}</span>
         } @else {
         <span>{{ marker.altitudeDegrees }}° {{ marker.direction }}</span>
         }
@@ -113,7 +115,7 @@
       <svg
         class="cycle-wheel"
         role="list"
-        aria-label="Generated marama wheel"
+        [attr.aria-label]="copy().cycle.generatedWheel"
         viewBox="0 0 100 100"
       >
         <circle class="wheel-guide outer" cx="50" cy="50" r="49"></circle>
@@ -156,7 +158,7 @@
 
     </div>
 
-    <ol class="cycle-list" aria-label="Generated marama intervals">
+    <ol class="cycle-list" [attr.aria-label]="copy().cycle.generatedIntervals">
       @for (night of month().nights; track night.startsAt.toISOString(); let i = $index) {
       <li [class.current]="isCurrentNight(night)">
         <button
@@ -172,11 +174,14 @@
             <em>{{ anchorLabel(night) }}</em>
             }
             @if (night.overlappingMata?.length) {
-            <em>Also {{ night.overlappingMata![0].mata }}</em>
+            <em>{{ copy().cycle.also }} {{ night.overlappingMata![0].mata }}</em>
             }
             @let nightEvents = eventsForNight(night);
             @if (nightEvents.length) {
-            <span class="night-events" aria-label="Events in this mata">
+            <span
+              class="night-events"
+              [attr.aria-label]="copy().cycle.eventsInMata"
+            >
               @for (event of nightEvents; track event.type + event.name + event.occursAt.toISOString()) {
               <span
                 class="night-event"
