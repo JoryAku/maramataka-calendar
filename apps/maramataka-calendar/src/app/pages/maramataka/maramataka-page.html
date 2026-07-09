@@ -1,7 +1,29 @@
-<section class="maramataka-page">
+<section
+  class="maramataka-page"
+  [attr.lang]="store.language() === 'mi' ? 'mi' : 'en-NZ'"
+>
   <header class="page-header">
-    <div>
+    <div class="title-row">
       <h1>{{ store.copy().appTitle }}</h1>
+
+      <section
+        class="control-panel language-panel"
+        [attr.aria-label]="store.copy().controls.language"
+      >
+        <label class="control-label" for="language-select">
+          {{ store.copy().controls.language }}
+        </label>
+        <select
+          id="language-select"
+          class="control-input language-input"
+          [value]="store.language()"
+          autocomplete="language"
+          (change)="onLanguageChange($any($event.target).value)"
+        >
+          <option value="en" lang="en">{{ store.copy().languages.en }}</option>
+          <option value="mi" lang="mi">{{ store.copy().languages.mi }}</option>
+        </select>
+      </section>
     </div>
 
     <div class="controls">
@@ -13,11 +35,20 @@
           {{ store.copy().controls.location }}
         </label>
         @if (store.locationsLoading()) {
-        <p class="state compact" data-testid="locations-loading-state">
+        <p
+          class="state compact"
+          data-testid="locations-loading-state"
+          role="status"
+          aria-live="polite"
+        >
           {{ store.copy().controls.loadingLocations }}
         </p>
         } @else if (store.locationsError()) {
-        <p class="state error compact" data-testid="locations-error-state">
+        <p
+          class="state error compact"
+          data-testid="locations-error-state"
+          role="alert"
+        >
           {{ store.locationsError() }}
         </p>
         } @else {
@@ -50,29 +81,19 @@
         />
       </section>
 
-      <section
-        class="control-panel language-panel"
-        [attr.aria-label]="store.copy().controls.language"
-      >
-        <label class="control-label" for="language-select">
-          {{ store.copy().controls.language }}
-        </label>
-        <select
-          id="language-select"
-          class="control-input"
-          [value]="store.language()"
-          (change)="onLanguageChange($any($event.target).value)"
-        >
-          <option value="en">{{ store.copy().languages.en }}</option>
-          <option value="mi">{{ store.copy().languages.mi }}</option>
-        </select>
-      </section>
-
       <div class="control-actions">
         <button
           class="secondary-button"
           type="button"
           [disabled]="store.useLiveDate()"
+          [attr.aria-label]="
+            store.useLiveDate()
+              ? store.copy().controls.useTodayDisabled
+              : store.copy().controls.useToday
+          "
+          [attr.title]="
+            store.useLiveDate() ? store.copy().controls.useTodayDisabled : null
+          "
           (click)="resetDateToToday()"
         >
           {{ store.copy().controls.useToday }}

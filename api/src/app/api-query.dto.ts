@@ -23,6 +23,7 @@ export interface YearRequest extends DateLocationRequest {
 
 export class DateLocationQueryDto {
   date?: string;
+  instant?: string;
   location?: string;
   lat?: string;
   lon?: string;
@@ -33,7 +34,9 @@ export class DateLocationQueryDto {
     const location = this.location
       ? parseNamedLocation(this.location)
       : parseCoordinatesOrThrow(this.lat, this.lon, this.timezone);
-    const date = parseLocalDateForTimezone(dateParts, location.timezone);
+    const date = this.instant
+      ? parseInstant(this.instant)
+      : parseLocalDateForTimezone(dateParts, location.timezone);
 
     return { date, location };
   }
@@ -140,6 +143,15 @@ function parseDateParts(dateInput: string | undefined): LocalDateParts {
     month,
     day,
   };
+}
+
+function parseInstant(instantInput: string): Date {
+  const date = new Date(instantInput);
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException('instant must be a valid ISO date-time');
+  }
+
+  return date;
 }
 
 function parseNumber(value: string, field: 'lat' | 'lon'): number {

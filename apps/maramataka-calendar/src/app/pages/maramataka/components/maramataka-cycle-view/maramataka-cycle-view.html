@@ -1,4 +1,8 @@
-<section class="month-section" aria-labelledby="cycle-section-heading">
+<section
+  class="month-section"
+  aria-labelledby="cycle-section-heading"
+  [attr.aria-busy]="monthLoading() || cycleLoading()"
+>
   <div class="section-header">
     <div>
       <p class="eyebrow">{{ copy().cycle.eyebrow }}</p>
@@ -8,11 +12,16 @@
   </div>
 
   @if (monthLoading()) {
-  <p class="state" data-testid="month-loading-state">
+  <p
+    class="state"
+    data-testid="month-loading-state"
+    role="status"
+    aria-live="polite"
+  >
     {{ copy().cycle.loadingMonth }}
   </p>
   } @else if (monthError()) {
-  <p class="state error" data-testid="month-error-state">
+  <p class="state error" data-testid="month-error-state" role="alert">
     {{ monthError() }}
   </p>
   } @else if (!month() || !hasNights()) {
@@ -20,7 +29,12 @@
     {{ copy().cycle.emptyMonth }}
   </p>
   } @else { @if (cycleLoading()) {
-  <p class="state compact" data-testid="cycle-loading-state">
+  <p
+    class="state compact"
+    data-testid="cycle-loading-state"
+    role="status"
+    aria-live="polite"
+  >
     {{ copy().cycle.loadingAnchors }}
   </p>
   } @else if (cycleError()) {

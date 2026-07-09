@@ -256,8 +256,39 @@ describe('MaramatakaController', () => {
       });
       expect(getCycleDetailsMock).toHaveBeenCalledTimes(1);
       expect(getMoonDetailsMock).toHaveBeenCalledTimes(1);
+      expect(getCycleDetailsMock.mock.calls[0]?.[1].toISOString()).toBe(
+        '2026-01-01T23:00:00.000Z',
+      );
       expect(getYearMock).not.toHaveBeenCalled();
       expect(getStarMarkersMock).not.toHaveBeenCalled();
+    });
+
+    it('uses an exact instant when one is supplied', async () => {
+      getCycleDetailsMock.mockResolvedValue(createCycleFixture());
+      getMoonDetailsMock.mockResolvedValue(createMoonDetailsFixture());
+
+      await controller.getPage(dateLocationQuery({
+        date: '2026-01-02',
+        instant: '2026-01-02T07:47:00.000Z',
+        location: 'wellington',
+      }));
+
+      expect(getCycleDetailsMock.mock.calls[0]?.[1].toISOString()).toBe(
+        '2026-01-02T07:47:00.000Z',
+      );
+      expect(getMoonDetailsMock.mock.calls[0]?.[1].toISOString()).toBe(
+        '2026-01-02T07:47:00.000Z',
+      );
+    });
+
+    it('rejects invalid exact instants', async () => {
+      await expect(
+        controller.getPage(dateLocationQuery({
+          date: '2026-01-02',
+          instant: 'not-a-date',
+          location: 'wellington',
+        })),
+      ).rejects.toThrow('instant must be a valid ISO date-time');
     });
 
     it('returns HTTP 400 when no cycle is available', async () => {

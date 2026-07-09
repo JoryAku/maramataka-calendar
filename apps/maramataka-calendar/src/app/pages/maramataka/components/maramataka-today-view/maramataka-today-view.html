@@ -1,4 +1,10 @@
-<section class="today-section" aria-labelledby="today-heading">
+<section
+  class="today-section"
+  aria-labelledby="today-heading"
+  [attr.aria-busy]="
+    todayLoading() || moonDetailsLoading() || starMarkersLoading()
+  "
+>
   <div class="section-header">
     <div>
       <p class="eyebrow">{{ copy().today.eyebrow }}</p>
@@ -8,11 +14,16 @@
   </div>
 
   @if (todayLoading()) {
-  <p class="state" data-testid="today-loading-state">
+  <p
+    class="state"
+    data-testid="today-loading-state"
+    role="status"
+    aria-live="polite"
+  >
     {{ copy().today.loading }}
   </p>
   } @else if (todayError()) {
-  <p class="state error" data-testid="today-error-state">
+  <p class="state error" data-testid="today-error-state" role="alert">
     {{ todayError() }}
   </p>
   } @else if (!today()) {
@@ -92,11 +103,20 @@
         </p>
       </section>
       } @if (moonDetailsLoading()) {
-      <p class="state compact" data-testid="moon-details-loading-state">
+      <p
+        class="state compact"
+        data-testid="moon-details-loading-state"
+        role="status"
+        aria-live="polite"
+      >
         {{ copy().today.loadingMoonDetails }}
       </p>
       } @else if (moonDetailsError()) {
-      <p class="state error compact" data-testid="moon-details-error-state">
+      <p
+        class="state error compact"
+        data-testid="moon-details-error-state"
+        role="alert"
+      >
         {{ moonDetailsError() }}
       </p>
       } @else if (moonDetails()) {
@@ -148,11 +168,20 @@
   </article>
 
   @if (starMarkersLoading()) {
-  <p class="state compact" data-testid="star-markers-loading-state">
+  <p
+    class="state compact"
+    data-testid="star-markers-loading-state"
+    role="status"
+    aria-live="polite"
+  >
     {{ copy().today.loadingDawnSky }}
   </p>
   } @else if (starMarkersError()) {
-  <p class="state error compact" data-testid="star-markers-error-state">
+  <p
+    class="state error compact"
+    data-testid="star-markers-error-state"
+    role="alert"
+  >
     {{ starMarkersError() }}
   </p>
   } @else if (

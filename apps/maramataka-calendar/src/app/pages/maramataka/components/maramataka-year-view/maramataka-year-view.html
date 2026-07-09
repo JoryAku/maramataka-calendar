@@ -1,4 +1,8 @@
-<section class="year-section" aria-labelledby="year-heading">
+<section
+  class="year-section"
+  aria-labelledby="year-heading"
+  [attr.aria-busy]="yearLoading() || yearTimelineLoading()"
+>
   <div class="section-header">
     <div>
       <p class="eyebrow">{{ copy().year.eyebrow }}</p>
@@ -10,11 +14,16 @@
   </div>
 
   @if (yearLoading()) {
-  <p class="state" data-testid="year-loading-state">
+  <p
+    class="state"
+    data-testid="year-loading-state"
+    role="status"
+    aria-live="polite"
+  >
     {{ copy().year.loading }}
   </p>
   } @else if (yearError()) {
-  <p class="state error" data-testid="year-error-state">
+  <p class="state error" data-testid="year-error-state" role="alert">
     {{ yearError() }}
   </p>
   } @else if (!year() || !year()!.months.length) {
@@ -29,6 +38,8 @@
   <p
     class="state compact year-timeline-loading"
     data-testid="year-timeline-loading-state"
+    role="status"
+    aria-live="polite"
   >
     {{ copy().year.loadingAnnotations }}
   </p>
@@ -37,6 +48,7 @@
   <p
     class="state compact error year-timeline-error"
     data-testid="year-timeline-error-state"
+    role="alert"
   >
     {{ yearTimelineError() }}
   </p>

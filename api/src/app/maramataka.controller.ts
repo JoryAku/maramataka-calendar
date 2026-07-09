@@ -65,6 +65,13 @@ export class MaramatakaController {
     description: 'Local date in YYYY-MM-DD format.',
   })
   @ApiQuery({
+    name: 'instant',
+    required: false,
+    example: '2026-07-04T20:45:00.000Z',
+    description:
+      'Optional exact instant used to resolve the current mata. The local date is still supplied in date for display/cache grouping.',
+  })
+  @ApiQuery({
     name: 'location',
     required: false,
     example: 'wellington',

@@ -1000,6 +1000,9 @@ describe('MaramatakaPage', () => {
     expect(mataRequests.pageRequest.request.params.get('date')).toBe(
       '2026-01-11',
     );
+    expect(mataRequests.pageRequest.request.params.get('instant')).toBe(
+      '2026-01-11T06:46:00.000Z',
+    );
     flushSuccessfulMaramatakaRequests(mataRequests);
     fixture.detectChanges();
 
@@ -1011,6 +1014,9 @@ describe('MaramatakaPage', () => {
     const yearMonthRequests = flushMaramatakaRequests();
     expect(yearMonthRequests.pageRequest.request.params.get('date')).toBe(
       '2026-01-10',
+    );
+    expect(yearMonthRequests.pageRequest.request.params.get('instant')).toBe(
+      '2026-01-10T06:45:00.000Z',
     );
     flushSuccessfulMaramatakaRequests(yearMonthRequests);
   });
@@ -1124,8 +1130,8 @@ describe('MaramatakaPage', () => {
     fixture.detectChanges();
 
     const content = fixture.nativeElement.textContent as string;
-    expect(content).toContain('1. Te ra kua tipakohia');
-    expect(content).toContain('He aha nga ahuatanga o tenei ra?');
+    expect(content).toContain('1. Te rā kua tīpakohia');
+    expect(content).toContain('He aha ngā āhuatanga o tēnei rā?');
     expect(content).toContain('Te rangi ata');
     expect(content).toContain('3. Manawataki tau');
     expect(window.localStorage.getItem('maramataka-language')).toBe('mi');
