@@ -208,24 +208,14 @@
         {{ dawnVisibleBodies().length }} {{ copy().today.visible }}
       </span>
     </div>
-    @if (dawnVisibleBodies().length || dawnSunSvgPath()) {
+    @if (dawnVisibleBodies().length || dawnSunrisePoint()) {
     <div class="dawn-horizon" data-testid="dawn-horizon">
       <div class="horizon-sky" [attr.aria-label]="copy().today.dawnHorizon">
-        @if (dawnSunSvgPath()) {
-        <svg
-          class="sun-path-layer"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path class="sun-path-line" [attr.d]="dawnSunSvgPath()"></path>
-        </svg>
         @if (dawnSunrisePoint(); as sunrisePoint) {
         <span
           class="sunrise-marker"
-          [style.left.%]="sunPathPointLeft(sunrisePoint)"
-          [style.bottom.%]="sunPathPointBottom(sunrisePoint)"
+          [style.left.%]="sunrisePointLeft(sunrisePoint)"
+          [style.bottom.%]="sunrisePointBottom(sunrisePoint)"
         >
           <span class="sunrise-dot" aria-hidden="true"></span>
           <span class="sunrise-label">
@@ -234,8 +224,11 @@
           </span>
         </span>
         }
-        }
-        <span class="horizon-line" aria-hidden="true"></span>
+        <span
+          class="horizon-line"
+          [style.bottom.%]="horizonAltitudeBottom(0)"
+          aria-hidden="true"
+        ></span>
         @for (altitude of horizonAltitudeGuideLines; track altitude) {
         <span
           class="horizon-altitude-line"

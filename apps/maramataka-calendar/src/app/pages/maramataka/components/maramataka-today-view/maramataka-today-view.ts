@@ -33,10 +33,10 @@ export class MaramatakaTodayView {
   protected readonly horizonAltitudeGuideLines = [45, 30, 15, 0];
   private readonly horizonAltitudeMin = 0;
   private readonly horizonAltitudeMax = 45;
-  private readonly horizonPlotBottom = 12;
-  private readonly horizonPlotHeight = 76;
-  private readonly sunPathBelowHorizonMinAltitude = -18;
-  private readonly sunPathBelowHorizonBottom = 4;
+  private readonly horizonPlotBottom = 26;
+  private readonly horizonPlotHeight = 62;
+  private readonly sunriseBelowHorizonMinAltitude = -18;
+  private readonly sunriseBelowHorizonBottom = 6;
   private readonly dawnFieldMinAzimuth = 0;
   private readonly dawnFieldMaxAzimuth = 180;
 
@@ -173,21 +173,6 @@ export class MaramatakaTodayView {
       ) ?? [],
   );
 
-  protected readonly dawnSunSvgPath = computed(() => {
-    const points = this.dawnSunPathPoints();
-
-    if (points.length < 2) {
-      return '';
-    }
-
-    return points
-      .map((point, index) => {
-        const command = index === 0 ? 'M' : 'L';
-        return `${command} ${this.sunPathPointLeft(point).toFixed(2)} ${this.sunPathPointTop(point).toFixed(2)}`;
-      })
-      .join(' ');
-  });
-
   protected readonly dawnSunrisePoint = computed(() => {
     const points = this.dawnSunPathPoints();
 
@@ -237,7 +222,7 @@ export class MaramatakaTodayView {
     );
   }
 
-  protected sunPathPointLeft(point: DawnSunPathPoint): number {
+  protected sunrisePointLeft(point: DawnSunPathPoint): number {
     const normalizedAzimuth = ((point.azimuthDegrees % 360) + 360) % 360;
     const clampedAzimuth = Math.max(
       this.dawnFieldMinAzimuth,
@@ -251,26 +236,22 @@ export class MaramatakaTodayView {
     );
   }
 
-  protected sunPathPointBottom(point: DawnSunPathPoint): number {
+  protected sunrisePointBottom(point: DawnSunPathPoint): number {
     if (point.altitudeDegrees < this.horizonAltitudeMin) {
       const altitude = Math.max(
-        this.sunPathBelowHorizonMinAltitude,
+        this.sunriseBelowHorizonMinAltitude,
         point.altitudeDegrees,
       );
 
       return (
-        this.sunPathBelowHorizonBottom +
-        ((altitude - this.sunPathBelowHorizonMinAltitude) /
-          (this.horizonAltitudeMin - this.sunPathBelowHorizonMinAltitude)) *
-          (this.horizonPlotBottom - this.sunPathBelowHorizonBottom)
+        this.sunriseBelowHorizonBottom +
+        ((altitude - this.sunriseBelowHorizonMinAltitude) /
+          (this.horizonAltitudeMin - this.sunriseBelowHorizonMinAltitude)) *
+          (this.horizonPlotBottom - this.sunriseBelowHorizonBottom)
       );
     }
 
     return this.horizonAltitudeBottom(point.altitudeDegrees);
-  }
-
-  protected sunPathPointTop(point: DawnSunPathPoint): number {
-    return 100 - this.sunPathPointBottom(point);
   }
 
   protected isHorizonMarkerClamped(marker: HorizonBody): boolean {

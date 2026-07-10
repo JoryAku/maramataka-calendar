@@ -794,7 +794,7 @@ describe('MaramatakaPage', () => {
       fixture.nativeElement.querySelector('[data-testid="dawn-horizon"]'),
     ).not.toBeNull();
     expect(
-      fixture.nativeElement.querySelector('.sun-path-line'),
+      fixture.nativeElement.querySelector('.sunrise-marker'),
     ).not.toBeNull();
     expect(
       fixture.nativeElement.querySelector('.horizon-marker.moon'),
