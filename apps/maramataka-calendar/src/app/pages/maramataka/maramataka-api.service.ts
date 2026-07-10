@@ -5,6 +5,7 @@ import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { NZ_TIMEZONE } from './maramataka.constants';
 import {
   ApiMaramatakaCycleDetails,
+  DawnSky,
   ApiMaramatakaPageData,
   ApiMaramatakaYear,
   ApiMata,
@@ -74,23 +75,78 @@ export class MaramatakaApiService {
     );
   }
 
-  getStarMarkers(locationId: string, date: Date): Observable<StarMarker[]> {
+  getDawnSky(locationId: string, date: Date): Observable<DawnSky> {
     const params = new HttpParams()
       .set('date', this.toYyyyMmDd(date))
       .set('location', locationId);
 
     return this.profileRequest(
-      `star-markers ${locationId} ${this.toYyyyMmDd(date)}`,
+      `dawn-sky ${locationId} ${this.toYyyyMmDd(date)}`,
       this.http
-        .get<ApiStarMarker[]>(this.apiUrl('/maramataka/star-markers'), {
-          params,
-        })
-        .pipe(
-          map((response) =>
-            response.map((marker) => this.mapStarMarker(marker)),
-          ),
-        ),
+        .get<DawnSky<string> | ApiStarMarker[]>(
+          this.apiUrl('/maramataka/dawn-sky'),
+          {
+            params,
+          },
+        )
+        .pipe(map((response) => this.mapDawnSky(response))),
     );
+  }
+
+  private emptyDawnSunPath(): DawnSky['sunPath'] {
+    return {
+      startsAt: new Date(0),
+      sunriseAt: new Date(0),
+      points: [],
+      calculation: 'Dawn sun path unavailable from API response.',
+    };
+  }
+
+  private mapDawnSky(apiDawnSky: DawnSky<string> | ApiStarMarker[]): DawnSky {
+    if (Array.isArray(apiDawnSky)) {
+      return {
+        starMarkers: apiDawnSky.map((marker) => this.mapStarMarker(marker)),
+        sunPath: this.emptyDawnSunPath(),
+      };
+    }
+
+    return {
+      starMarkers: apiDawnSky.starMarkers.map((marker) =>
+        this.mapStarMarker(marker),
+      ),
+      sunPath: {
+        ...apiDawnSky.sunPath,
+        startsAt: new Date(apiDawnSky.sunPath.startsAt),
+        sunriseAt: new Date(apiDawnSky.sunPath.sunriseAt),
+        points: apiDawnSky.sunPath.points.map((point) => ({
+          ...point,
+          observedAt: new Date(point.observedAt),
+        })),
+      },
+      sunriseExtremes: apiDawnSky.sunriseExtremes
+        ? {
+            ...apiDawnSky.sunriseExtremes,
+            northernmost: {
+              ...apiDawnSky.sunriseExtremes.northernmost,
+              observedAt: new Date(
+                apiDawnSky.sunriseExtremes.northernmost.observedAt,
+              ),
+            },
+            southernmost: {
+              ...apiDawnSky.sunriseExtremes.southernmost,
+              observedAt: new Date(
+                apiDawnSky.sunriseExtremes.southernmost.observedAt,
+              ),
+            },
+          }
+        : undefined,
+      moon: apiDawnSky.moon
+        ? {
+            ...apiDawnSky.moon,
+            observedAt: new Date(apiDawnSky.moon.observedAt),
+          }
+        : undefined,
+    };
   }
 
   private apiUrl(path: string): string {

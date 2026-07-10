@@ -1,5 +1,7 @@
 import {
   AstronomyProvider,
+  DawnSky,
+  DawnSunriseExtremes,
   FullMoon,
   Location,
   MoonDetails,
@@ -8,7 +10,6 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
-  SolarSeasonEvent,
   StarMarker,
   StarMarkerAppearanceWindow,
   StarMarkerDawnRisingConfig,
@@ -33,7 +34,6 @@ export const RAW_ASTRONOMY_CACHE_METADATA = {
     'moon-phases',
     'new-moons',
     'full-moons',
-    'solar-seasons',
     'moonrise',
     'moonrise-set',
     'moon-transit',
@@ -45,9 +45,10 @@ export const RAW_ASTRONOMY_CACHE_METADATA = {
 
 export const OBSERVATIONAL_ASTRONOMY_CACHE_METADATA = {
   layer: 'observational-astronomy',
-  version: 1,
+  version: 2,
   providerContract: 'astronomy-provider-v1',
   operations: [
+    'dawn-sky',
     'star-markers',
     'star-first-appearances',
     'star-first-appearance-windows',
@@ -55,6 +56,7 @@ export const OBSERVATIONAL_ASTRONOMY_CACHE_METADATA = {
   ],
   dawnMarkerSampling: {
     dailyMarkerSample: 'midpoint-between-sun-altitude--18-and--12',
+    annualSunriseExtremes: 'daily-sunrise-azimuth-scan-for-local-calendar-year',
     firstAppearanceWindow: 'sun-altitude--18-through-sunrise',
     nightInvisibilityCondition:
       'marker-never-above-horizon-while-sun-at-or-below-threshold',
@@ -121,18 +123,6 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
         fullMoons.map((fullMoon) => ({
           ...fullMoon,
           occursAt: new Date(fullMoon.occursAt),
-        })),
-    );
-  }
-
-  async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
-    return this.getOrSet(
-      this.rawCacheKey(`solar-seasons:${year}`),
-      () => this.provider.getSolarSeasons?.(year) ?? Promise.resolve([]),
-      (events) =>
-        events.map((event) => ({
-          ...event,
-          occursAt: new Date(event.occursAt),
         })),
     );
   }
@@ -216,22 +206,119 @@ export class PersistentCachedAstronomyProvider implements AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
+    const dawnSky = await this.getDawnSky(date, location, markers);
+
+    return dawnSky.starMarkers;
+  }
+
+  async getDawnSky(
+    date: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<DawnSky> {
     return this.getOrSet(
       this.observationalCacheKey(
         [
-          'star-markers',
+          'dawn-sky',
           this.locationCacheKey(date, location),
           this.starMarkerCacheKey(markers),
         ].join(':'),
       ),
       () =>
-        this.provider.getStarMarkers?.(date, location, markers) ??
-        Promise.resolve([]),
-      (markers) =>
-        markers.map((marker) => ({
+        this.provider.getDawnSky?.(date, location, markers) ??
+        this.provider.getStarMarkers?.(date, location, markers).then(
+        (starMarkers) => ({
+          starMarkers,
+          sunPath: {
+              startsAt: new Date(0),
+              sunriseAt: new Date(0),
+              points: [],
+            calculation: 'Dawn sun path unavailable from astronomy provider.',
+          },
+          sunriseExtremes: undefined,
+          moon: undefined,
+        }),
+      ) ??
+      Promise.resolve({
+        starMarkers: [],
+          sunPath: {
+            startsAt: new Date(0),
+            sunriseAt: new Date(0),
+            points: [],
+          calculation: 'Dawn sun path unavailable from astronomy provider.',
+        },
+        sunriseExtremes: undefined,
+        moon: undefined,
+      }),
+      (dawnSky) => ({
+        starMarkers: dawnSky.starMarkers.map((marker) => ({
           ...marker,
           observedAt: new Date(marker.observedAt),
         })),
+        sunPath: {
+          ...dawnSky.sunPath,
+          startsAt: new Date(dawnSky.sunPath.startsAt),
+          sunriseAt: new Date(dawnSky.sunPath.sunriseAt),
+          points: dawnSky.sunPath.points.map((point) => ({
+            ...point,
+            observedAt: new Date(point.observedAt),
+          })),
+        },
+        sunriseExtremes: dawnSky.sunriseExtremes
+          ? {
+              ...dawnSky.sunriseExtremes,
+              northernmost: {
+                ...dawnSky.sunriseExtremes.northernmost,
+                observedAt: new Date(
+                  dawnSky.sunriseExtremes.northernmost.observedAt,
+                ),
+              },
+              southernmost: {
+                ...dawnSky.sunriseExtremes.southernmost,
+                observedAt: new Date(
+                  dawnSky.sunriseExtremes.southernmost.observedAt,
+                ),
+              },
+            }
+          : undefined,
+        moon: dawnSky.moon
+          ? {
+              ...dawnSky.moon,
+              observedAt: new Date(dawnSky.moon.observedAt),
+            }
+          : undefined,
+      }),
+    );
+  }
+
+  async getSunriseExtremes(
+    year: number,
+    location: Location,
+  ): Promise<DawnSunriseExtremes> {
+    if (!this.provider.getSunriseExtremes) {
+      throw new Error('Sunrise extremes are unavailable from astronomy provider.');
+    }
+
+    return this.getOrSet(
+      this.observationalCacheKey(
+        [
+          'sunrise-extremes',
+          year,
+          this.locationOnlyCacheKey(location),
+        ].join(':'),
+      ),
+      () => this.provider.getSunriseExtremes!(year, location),
+      (extremes) => ({
+        ...extremes,
+        northernmost: {
+          ...extremes.northernmost,
+          observedAt: new Date(extremes.northernmost.observedAt),
+        },
+        southernmost: {
+          ...extremes.southernmost,
+          observedAt: new Date(extremes.southernmost.observedAt),
+        },
+      }),
     );
   }
 

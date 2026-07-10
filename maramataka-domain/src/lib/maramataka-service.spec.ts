@@ -1379,7 +1379,7 @@ describe('MaramatakaService', () => {
     );
   });
 
-  it('adds equinox and solstice events within the maramataka year', async () => {
+  it('adds sunrise extremes within the maramataka year', async () => {
     const getNewMoons = jest
       .fn()
       .mockResolvedValueOnce([])
@@ -1400,38 +1400,50 @@ describe('MaramatakaService', () => {
         },
       ])
       .mockResolvedValueOnce([]);
-    const getSolarSeasons = jest
+    const getSunriseExtremes = jest
       .fn()
-      .mockResolvedValueOnce([
-        {
-          name: 'March equinox',
-          occursAt: new Date('2026-03-20T14:46:00.000Z'),
-          source: 'astronomy-engine',
+      .mockResolvedValueOnce({
+        year: 2026,
+        northernmost: {
+          date: '2026-06-21',
+          observedAt: new Date('2026-06-21T18:25:00.000Z'),
+          altitudeDegrees: 0,
+          azimuthDegrees: 58,
+          direction: 'ENE',
         },
-        {
-          name: 'June solstice',
-          occursAt: new Date('2026-06-21T08:24:00.000Z'),
-          source: 'astronomy-engine',
+        southernmost: {
+          date: '2026-12-21',
+          observedAt: new Date('2026-12-21T17:45:00.000Z'),
+          altitudeDegrees: 0,
+          azimuthDegrees: 122,
+          direction: 'ESE',
         },
-        {
-          name: 'December solstice',
-          occursAt: new Date('2026-12-21T20:50:00.000Z'),
-          source: 'astronomy-engine',
+        calculation: 'annual sunrise azimuth scan',
+      })
+      .mockResolvedValueOnce({
+        year: 2027,
+        northernmost: {
+          date: '2027-06-01',
+          observedAt: new Date('2027-06-01T18:25:00.000Z'),
+          altitudeDegrees: 0,
+          azimuthDegrees: 58,
+          direction: 'ENE',
         },
-      ])
-      .mockResolvedValueOnce([
-        {
-          name: 'June solstice',
-          occursAt: new Date('2027-06-21T14:10:00.000Z'),
-          source: 'astronomy-engine',
+        southernmost: {
+          date: '2027-12-21',
+          observedAt: new Date('2027-12-21T17:45:00.000Z'),
+          altitudeDegrees: 0,
+          azimuthDegrees: 122,
+          direction: 'ESE',
         },
-      ]);
+        calculation: 'annual sunrise azimuth scan',
+      });
     const service = new MaramatakaService({
       astronomyProvider: {
         getNewMoons,
         getMoonPhases: jest.fn(),
         getFullMoons: jest.fn().mockResolvedValue([]),
-        getSolarSeasons,
+        getSunriseExtremes,
         getMoonRise: jest.fn(),
         getMoonRiseSet: jest.fn(),
         getMoonTransit: jest.fn(),
@@ -1459,20 +1471,25 @@ describe('MaramatakaService', () => {
       new Date('2026-07-10T12:00:00Z'),
     );
 
-    expect(getSolarSeasons).toHaveBeenCalledWith(2026);
-    expect(getSolarSeasons).toHaveBeenCalledWith(2027);
+    expect(getSunriseExtremes).toHaveBeenCalledWith(2026, location);
+    expect(getSunriseExtremes).toHaveBeenCalledWith(2027, location);
     expect(
-      year.events.filter((event) => event.type === 'solar-season'),
+      year.events.filter((event) => event.type === 'sunrise-extreme'),
     ).toEqual([
       expect.objectContaining({
-        type: 'solar-season',
-        name: 'June solstice',
-        occursAt: new Date('2026-06-21T08:24:00.000Z'),
+        type: 'sunrise-extreme',
+        name: 'Northernmost sunrise',
+        occursAt: new Date('2026-06-21T18:25:00.000Z'),
       }),
       expect.objectContaining({
-        type: 'solar-season',
-        name: 'December solstice',
-        occursAt: new Date('2026-12-21T20:50:00.000Z'),
+        type: 'sunrise-extreme',
+        name: 'Southernmost sunrise',
+        occursAt: new Date('2026-12-21T17:45:00.000Z'),
+      }),
+      expect.objectContaining({
+        type: 'sunrise-extreme',
+        name: 'Northernmost sunrise',
+        occursAt: new Date('2027-06-01T18:25:00.000Z'),
       }),
     ]);
   });

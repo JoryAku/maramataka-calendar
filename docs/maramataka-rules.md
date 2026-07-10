@@ -108,13 +108,12 @@ Year-view star events are split into two scopes:
   never above the horizon during astronomical night (`Sun <= -18°`) within the
   displayed maramataka year.
 
-## Solar Season Anchors
+## Sunrise Horizon Limits
 
-The year rhythm view includes the four astronomical solar season anchors:
-March equinox, June solstice, September equinox, and December solstice. These
-are informational timeline events from Astronomy Engine `Seasons(year)` data.
-They do not currently drive Whiro, marama naming, Ruhanui, or Matariki public
-holiday calculations.
+The year rhythm view marks the northernmost and southernmost sunrise horizon
+points reached within the displayed maramataka year. These are informational
+timeline events from an annual sunrise azimuth scan. They do not currently drive
+Whiro, marama naming, Ruhanui, or Matariki public holiday calculations.
 
 ## Year Calculation Rule
 
@@ -211,8 +210,8 @@ source-derived hypotheses before changing the rule set.
 ## Astronomy Provider Resilience
 
 The app treats Astronomy Engine as the authoritative astronomy provider for New
-Moon, Full Moon, moonrise, moonset, transit, phase, illumination, equinox, and
-solstice data.
+Moon, Full Moon, moonrise, moonset, transit, phase, illumination, dawn sky, and
+sunrise horizon limit data.
 
 Provider calls must fail predictably:
 

@@ -205,12 +205,36 @@
         </p>
       </div>
       <span class="dawn-sky-count">
-        {{ dawnVisibleMarkers().length }} {{ copy().today.visible }}
+        {{ dawnVisibleBodies().length }} {{ copy().today.visible }}
       </span>
     </div>
-    @if (dawnVisibleMarkers().length) {
+    @if (dawnVisibleBodies().length || dawnSunSvgPath()) {
     <div class="dawn-horizon" data-testid="dawn-horizon">
       <div class="horizon-sky" [attr.aria-label]="copy().today.dawnHorizon">
+        @if (dawnSunSvgPath()) {
+        <svg
+          class="sun-path-layer"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path class="sun-path-line" [attr.d]="dawnSunSvgPath()"></path>
+        </svg>
+        @if (dawnSunrisePoint(); as sunrisePoint) {
+        <span
+          class="sunrise-marker"
+          [style.left.%]="sunPathPointLeft(sunrisePoint)"
+          [style.bottom.%]="sunPathPointBottom(sunrisePoint)"
+        >
+          <span class="sunrise-dot" aria-hidden="true"></span>
+          <span class="sunrise-label">
+            {{ copy().today.sunrise }}
+            {{ dawnSunPath()!.sunriseAt | date: 'h:mm a' : nzTimeZone }}
+          </span>
+        </span>
+        }
+        }
         <span class="horizon-line" aria-hidden="true"></span>
         @for (altitude of horizonAltitudeGuideLines; track altitude) {
         <span
@@ -221,7 +245,7 @@
           <span>{{ altitude }}°</span>
         </span>
         }
-        @for (marker of dawnVisibleMarkers(); track marker.id) {
+        @for (marker of dawnVisibleBodies(); track marker.name) {
         <span
           [class]="horizonMarkerClass(marker)"
           [style.left.%]="horizonMarkerLeft(marker)"
@@ -247,7 +271,16 @@
         <span>S</span>
       </div>
     </div>
+    @if (dawnVisibleBodies().length) {
     <ul class="dawn-sky-list">
+      @if (dawnVisibleMoon(); as moon) {
+      <li>
+        <span>{{ starMarkerVisibilityLabel(moon) }}</span>
+        <strong>{{ moon.name }}</strong>
+        <em>{{ moonMetaLabel(moon) }}</em>
+        <small>{{ starMarkerAltitudeLabel(moon) }}</small>
+      </li>
+      }
       @for (marker of dawnVisibleMarkers(); track marker.id) {
       <li>
         <span>{{ starMarkerVisibilityLabel(marker) }}</span>
@@ -257,6 +290,11 @@
       </li>
       }
     </ul>
+    } @else {
+    <p class="state compact">
+      {{ copy().today.noDawnBodies }}
+    </p>
+    }
     } @else {
     <p class="state compact">
       {{ copy().today.noDawnBodies }}

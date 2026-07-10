@@ -1,5 +1,7 @@
 import {
   AstronomyProvider,
+  DawnSky,
+  DawnSunriseExtremes,
   FullMoon,
   Location,
   MoonDetails,
@@ -8,7 +10,6 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
-  SolarSeasonEvent,
   StarMarker,
   StarMarkerAppearanceWindow,
   StarMarkerDefinition,
@@ -23,12 +24,12 @@ export class CachedAstronomyProvider implements AstronomyProvider {
   private moonPhaseCache = new Map<number, Promise<MoonPhase[]>>();
   private newMoonCache = new Map<number, Promise<NewMoon[]>>();
   private fullMoonCache = new Map<number, Promise<FullMoon[]>>();
-  private solarSeasonCache = new Map<number, Promise<SolarSeasonEvent[]>>();
   private moonRiseCache = new Map<string, Promise<MoonRise>>();
   private moonRiseSetCache = new Map<string, Promise<MoonRiseSet>>();
   private moonTransitCache = new Map<string, Promise<MoonTransit>>();
   private moonDetailsCache = new Map<string, Promise<MoonDetails>>();
-  private starMarkerCache = new Map<string, Promise<StarMarker[]>>();
+  private dawnSkyCache = new Map<string, Promise<DawnSky>>();
+  private sunriseExtremesCache = new Map<string, Promise<DawnSunriseExtremes>>();
   private starFirstAppearanceCache = new Map<string, Promise<StarMarker[]>>();
   private starFirstAppearanceWindowCache = new Map<
     string,
@@ -83,23 +84,6 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     });
 
     this.fullMoonCache.set(year, request);
-    return request;
-  }
-
-  async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
-    const cachedRequest = this.solarSeasonCache.get(year);
-    if (cachedRequest) {
-      return cachedRequest;
-    }
-
-    const request = (
-      this.provider.getSolarSeasons?.(year) ?? Promise.resolve([])
-    ).catch((error) => {
-      this.solarSeasonCache.delete(year);
-      throw error;
-    });
-
-    this.solarSeasonCache.set(year, request);
     return request;
   }
 
@@ -182,26 +166,88 @@ export class CachedAstronomyProvider implements AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
+    const dawnSky = await this.getDawnSky(date, location, markers);
+
+    return dawnSky.starMarkers;
+  }
+
+  async getDawnSky(
+    date: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<DawnSky> {
     const key = [
       STAR_DAWN_SAMPLING_CACHE_VERSION,
       this.locationCacheKey(date, location),
       this.starMarkerCacheKey(markers),
     ].join(':');
 
-    const cachedRequest = this.starMarkerCache.get(key);
+    const cachedRequest = this.dawnSkyCache.get(key);
     if (cachedRequest) {
       return cachedRequest;
     }
 
     const request = (
-      this.provider.getStarMarkers?.(date, location, markers) ??
-      Promise.resolve([])
+      this.provider.getDawnSky?.(date, location, markers) ??
+      this.provider.getStarMarkers?.(date, location, markers).then(
+        (starMarkers) => ({
+          starMarkers,
+          sunPath: {
+            startsAt: new Date(0),
+            sunriseAt: new Date(0),
+            points: [],
+            calculation: 'Dawn sun path unavailable from astronomy provider.',
+          },
+          sunriseExtremes: undefined,
+          moon: undefined,
+        }),
+      ) ??
+      Promise.resolve({
+        starMarkers: [],
+        sunPath: {
+          startsAt: new Date(0),
+          sunriseAt: new Date(0),
+          points: [],
+          calculation: 'Dawn sun path unavailable from astronomy provider.',
+        },
+        sunriseExtremes: undefined,
+        moon: undefined,
+      })
     ).catch((error) => {
-      this.starMarkerCache.delete(key);
+      this.dawnSkyCache.delete(key);
       throw error;
     });
 
-    this.starMarkerCache.set(key, request);
+    this.dawnSkyCache.set(key, request);
+    return request;
+  }
+
+  async getSunriseExtremes(
+    year: number,
+    location: Location,
+  ): Promise<DawnSunriseExtremes> {
+    const key = [
+      STAR_DAWN_SAMPLING_CACHE_VERSION,
+      year,
+      this.locationOnlyCacheKey(location),
+    ].join(':');
+    const cachedRequest = this.sunriseExtremesCache.get(key);
+    if (cachedRequest) {
+      return cachedRequest;
+    }
+
+    const request = this.provider.getSunriseExtremes?.(year, location).catch(
+      (error) => {
+        this.sunriseExtremesCache.delete(key);
+        throw error;
+      },
+    );
+
+    if (!request) {
+      throw new Error('Sunrise extremes are unavailable from astronomy provider.');
+    }
+
+    this.sunriseExtremesCache.set(key, request);
     return request;
   }
 

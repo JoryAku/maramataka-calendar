@@ -23,12 +23,15 @@ import {
 } from '@maramataka-calendar/maramataka-domain';
 import { DateLocationQueryDto, YearQueryDto } from './api-query.dto';
 import {
+  DawnSkyResponseDto,
   MaramatakaPageResponseDto,
   StarMarkerResponseDto,
+  toDawnSkyResponse,
   toMoonDetailsResponse,
   toStarMarkersResponse,
 } from './maramataka-response.dto';
 import {
+  dawnSkySchema,
   maramatakaPageResponseSchema,
   maramatakaYearResponseSchema,
   starMarkerSchema,
@@ -286,6 +289,72 @@ export class MaramatakaController {
     );
 
     return toStarMarkersResponse(markers);
+  }
+
+  @Get('dawn-sky')
+  @Header('Cache-Control', MARAMATAKA_CACHE_CONTROL)
+  @ApiOperation({
+    summary: 'Get dawn sky with Sun path',
+    description:
+      'Returns configured dawn sky marker details plus the sampled path of the rising Sun for the selected local date and location.',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    example: '2026-07-05',
+    description: 'Local date in YYYY-MM-DD format.',
+  })
+  @ApiQuery({
+    name: 'location',
+    required: false,
+    example: 'wellington',
+    description:
+      'Preset location id. Use this instead of lat/lon/timezone for known places.',
+  })
+  @ApiQuery({
+    name: 'lat',
+    required: false,
+    example: '-41.2865',
+    description: 'Latitude for a custom location.',
+  })
+  @ApiQuery({
+    name: 'lon',
+    required: false,
+    example: '174.7762',
+    description: 'Longitude for a custom location.',
+  })
+  @ApiQuery({
+    name: 'timezone',
+    required: false,
+    example: 'Pacific/Auckland',
+    description: 'IANA timezone for a custom location.',
+  })
+  @ApiOkResponse({
+    description:
+      'Configured dawn sky marker details and sampled Sun path, ordered for frontend display.',
+    headers: {
+      'Cache-Control': MARAMATAKA_CACHE_RESPONSE_HEADER,
+    },
+    schema: dawnSkySchema,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid date or missing custom location fields.',
+  })
+  @ApiNotFoundResponse({ description: 'Unknown preset location id.' })
+  @ApiServiceUnavailableResponse({
+    description: 'Astronomy provider data is unavailable.',
+  })
+  async getDawnSky(
+    @Query() query: DateLocationQueryDto,
+  ): Promise<DawnSkyResponseDto> {
+    const { date, location } = this.validateDateLocationQuery(query);
+    const dawnSky = await this.handleAstronomyErrors(
+      'maramataka.dawn-sky',
+      () => this.maramatakaService.getDawnSky(location, date),
+      this.profileContext(query, date),
+    );
+
+    return toDawnSkyResponse(dawnSky);
   }
 
   private validateDateLocationQuery(

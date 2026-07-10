@@ -1,1 +1,72 @@
-:host{display:block}
+@import url("./maramataka-today-view.feature.css");
+
+:host {
+  display: block;
+}
+
+.sun-path-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.sun-path-line {
+  fill: none;
+  stroke: #f0c66b;
+  stroke-dasharray: 2.5 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 0.9;
+  opacity: 0.78;
+  filter: drop-shadow(0 0 7px #f0c66b66);
+  vector-effect: non-scaling-stroke;
+}
+
+.sunrise-marker {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  gap: 0.18rem;
+  justify-items: center;
+  width: 6.4rem;
+  color: #f0c66b;
+  text-align: center;
+  transform: translate(-50%, 50%);
+  pointer-events: none;
+}
+
+.sunrise-dot {
+  display: block;
+  width: 1rem;
+  aspect-ratio: 1;
+  border: 2px solid #33270d;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff9df 0 22%, #f0c66b 24% 100%);
+  box-shadow:
+    0 0 0 0.28rem #102821,
+    0 0 18px #f0c66b88;
+}
+
+.sunrise-label {
+  max-width: 100%;
+  color: #fff9df;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 1px 3px #000;
+  white-space: nowrap;
+}
+
+.horizon-marker.moon {
+  color: #f1efe6;
+}
+
+.horizon-marker.moon .horizon-dot {
+  border-color: #28352f;
+  background: radial-gradient(circle at 38% 42%, #fffdf0 0 48%, #9fb5ac 52% 100%);
+  box-shadow:
+    0 0 0 0.35rem #102821,
+    0 0 16px #f1efe655;
+}

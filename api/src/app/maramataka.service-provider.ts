@@ -3,6 +3,7 @@ import {
   AstronomyEngineProvider,
   AstronomyProvider,
   CachedAstronomyProvider,
+  DawnSky,
   FileAstronomyCacheStore,
   FullMoon,
   Location,
@@ -150,6 +151,16 @@ export class StubAstronomyProvider implements AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]> {
+    const dawnSky = await this.getDawnSky(date, location, markers);
+
+    return dawnSky.starMarkers;
+  }
+
+  async getDawnSky(
+    date: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<DawnSky> {
     const observedAt = this.stubDawnObservationTime(date, location);
 
     const markerDefinitions: StarMarkerDefinition[] =
@@ -174,24 +185,95 @@ export class StubAstronomyProvider implements AstronomyProvider {
             },
           ];
 
-    return markerDefinitions.map((marker, index) => ({
-      id: marker.id,
-      name: marker.name,
-      type: marker.type,
-      englishName: marker.englishName,
-      description: marker.description,
-      seasonalAssociation: marker.seasonalAssociation,
-      source: marker.source,
-      sourceUrl: marker.sourceUrl,
-      confidence: marker.confidence,
-      observedAt,
-      altitudeDegrees: Math.max(6, 24 - index * 2),
-      azimuthDegrees: 74 + index,
-      direction: 'E',
-      visibility: index === 0 ? 'prominent' : 'visible',
+    return {
+      starMarkers: markerDefinitions.map((marker, index) => ({
+        id: marker.id,
+        name: marker.name,
+        type: marker.type,
+        englishName: marker.englishName,
+        description: marker.description,
+        seasonalAssociation: marker.seasonalAssociation,
+        source: marker.source,
+        sourceUrl: marker.sourceUrl,
+        confidence: marker.confidence,
+        observedAt,
+        altitudeDegrees: Math.max(6, 24 - index * 2),
+        azimuthDegrees: 74 + index,
+        direction: 'E',
+        visibility: index === 0 ? 'prominent' : 'visible',
+        calculation:
+          'Stub dawn sky marker sampled inside the 18° to 12° pre-sunrise dawn band.',
+      })),
+      sunPath: {
+        startsAt: new Date(observedAt.getTime() - 45 * 60_000),
+        sunriseAt: new Date(observedAt.getTime() + 45 * 60_000),
+        points: [-18, -12, -6, 0].map((altitudeDegrees, index) => ({
+          observedAt: new Date(observedAt.getTime() + (index - 1.5) * 30 * 60_000),
+          altitudeDegrees,
+          azimuthDegrees: 66 + index * 4,
+          direction: 'E',
+        })),
+        calculation:
+          'Stub Sun path sampled from astronomical dawn through sunrise.',
+      },
+      sunriseExtremes: {
+        year: Number.parseInt(date.slice(0, 4), 10),
+        northernmost: {
+          date: `${date.slice(0, 4)}-06-21`,
+          observedAt: new Date(`${date.slice(0, 4)}-06-20T19:25:00.000Z`),
+          altitudeDegrees: 0,
+          azimuthDegrees: 58,
+          direction: 'ENE',
+        },
+        southernmost: {
+          date: `${date.slice(0, 4)}-12-21`,
+          observedAt: new Date(`${date.slice(0, 4)}-12-20T17:45:00.000Z`),
+          altitudeDegrees: 0,
+          azimuthDegrees: 122,
+          direction: 'ESE',
+        },
+        calculation:
+          'Stub annual sunrise limits for the selected local calendar year.',
+      },
+      moon: {
+        name: 'Moon',
+        type: 'moon',
+        observedAt,
+        phase: 'Waxing Crescent',
+        fractionIlluminated: 0.25,
+        altitudeDegrees: 14,
+        azimuthDegrees: 96,
+        direction: 'E',
+        visibility: 'visible',
+        calculation: 'Stub Moon sky position sampled at dawn.',
+        source: 'stub',
+      },
+    };
+  }
+
+  async getSunriseExtremes(
+    year: number,
+    _location: Location,
+  ): Promise<DawnSky['sunriseExtremes']> {
+    return {
+      year,
+      northernmost: {
+        date: `${year}-06-21`,
+        observedAt: new Date(`${year}-06-20T19:25:00.000Z`),
+        altitudeDegrees: 0,
+        azimuthDegrees: 58,
+        direction: 'ENE',
+      },
+      southernmost: {
+        date: `${year}-12-21`,
+        observedAt: new Date(`${year}-12-20T17:45:00.000Z`),
+        altitudeDegrees: 0,
+        azimuthDegrees: 122,
+        direction: 'ESE',
+      },
       calculation:
-        'Stub dawn sky marker sampled inside the 18° to 12° pre-sunrise dawn band.',
-    }));
+        'Stub annual sunrise limits for the selected local calendar year.',
+    };
   }
 
   async getStarFirstAppearances(

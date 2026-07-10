@@ -134,10 +134,10 @@ fingerprint namespace derived from readable cache metadata.
 
 Current persistent namespaces:
 
-- raw astronomy facts: moon phases, New Moons, Full Moons, solar seasons,
-  moonrise, moonrise/set, moon transit, and moon details
+- raw astronomy facts: moon phases, New Moons, Full Moons, moonrise,
+  moonrise/set, moon transit, and moon details
 - observational astronomy: dawn star markers, dawn-window first appearances,
-  and night-invisibility periods
+  sunrise horizon limits, and night-invisibility periods
 
 The maramataka rule set also exposes readable fingerprint metadata for mata
 names, year-start logic, Ruhanui logic, named-month markers, and Matariki

@@ -82,7 +82,9 @@
       <span class="band-chip seasonal">
         {{ copy().year.eventTypes.seasonal }}
       </span>
-      <span class="band-chip solar">{{ copy().year.eventTypes.solar }}</span>
+      <span class="band-chip solar">
+        {{ copy().year.eventTypes.sunriseLimit }}
+      </span>
       <span class="band-chip lunar">
         {{ copy().year.eventTypes.lunarPhase }}
       </span>
@@ -129,8 +131,7 @@
         <span class="selected-date-time">{{ selectedDateLabel() }}</span>
       </span>
       }
-      @for (event of year()!.events; track event.type + event.name + event.occursAt.toISOString()) {
-      @if (event.type !== 'month-start') {
+      @for (event of visibleYearEvents(); track event.type + event.name + event.occursAt.toISOString()) {
       <article
         role="listitem"
         tabindex="0"
@@ -149,7 +150,6 @@
           {{ yearEventSymbol(event) }}
         </span>
       </article>
-      }
       }
     </div>
   </div>

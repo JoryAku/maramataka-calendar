@@ -13,7 +13,7 @@ type YearEventLayoutGroup =
   | 'seasonal-marker'
   | 'star-invisibility'
   | 'public-holiday'
-  | 'solar-season'
+  | 'sunrise-extreme'
   | 'lunar-phase';
 
 @Component({
@@ -75,7 +75,7 @@ export class MaramatakaYearView {
       case 'star-appearance':
       case 'star-invisibility':
         return 13 + lane * 1.8;
-      case 'solar-season':
+      case 'sunrise-extreme':
         return 14.9;
       case 'new-moon':
       case 'full-moon':
@@ -101,8 +101,8 @@ export class MaramatakaYearView {
         return '●';
       case 'public-holiday':
         return '✦';
-      case 'solar-season':
-        return '☼';
+      case 'sunrise-extreme':
+        return '↕';
       case 'month-start':
         return '◇';
     }
@@ -124,8 +124,8 @@ export class MaramatakaYearView {
         return this.copy().year.eventTypes.fullMoon;
       case 'public-holiday':
         return this.copy().year.eventTypes.holiday;
-      case 'solar-season':
-        return this.copy().year.eventTypes.solar;
+      case 'sunrise-extreme':
+        return this.copy().year.eventTypes.sunriseLimit;
       case 'month-start':
         return this.copy().year.eventTypes.monthStart;
     }
@@ -203,6 +203,13 @@ export class MaramatakaYearView {
     }).format(selectedDate);
   }
 
+  protected visibleYearEvents(): MaramatakaYearEvent[] {
+    return (
+      this.year()?.events.filter((event) => this.shouldDisplayYearEvent(event)) ??
+      []
+    );
+  }
+
   protected yearEventAriaLabel(event: MaramatakaYearEvent): string {
     const parts = [
       event.name,
@@ -262,12 +269,13 @@ export class MaramatakaYearView {
       { key: 'seasonal-marker', types: ['star-marker'] },
       { key: 'star-invisibility', types: ['star-appearance', 'star-invisibility'] },
       { key: 'public-holiday', types: ['public-holiday'] },
-      { key: 'solar-season', types: ['solar-season'] },
+      { key: 'sunrise-extreme', types: ['sunrise-extreme'] },
       { key: 'lunar-phase', types: ['new-moon', 'full-moon'] },
     ];
 
     for (const group of layoutGroups) {
       const events = year.events
+        .filter((event) => this.shouldDisplayYearEvent(event))
         .filter(
           (event) =>
             group.types.includes(event.type) &&
@@ -313,6 +321,10 @@ export class MaramatakaYearView {
     return `${event.type}|${event.name}|${event.occursAt.toISOString()}`;
   }
 
+  private shouldDisplayYearEvent(event: MaramatakaYearEvent): boolean {
+    return event.type !== 'month-start';
+  }
+
   private yearEventLayoutGroupForEvent(
     event: MaramatakaYearEvent,
   ): YearEventLayoutGroup | null {
@@ -326,8 +338,8 @@ export class MaramatakaYearView {
         return 'star-invisibility';
       case 'public-holiday':
         return 'public-holiday';
-      case 'solar-season':
-        return 'solar-season';
+      case 'sunrise-extreme':
+        return 'sunrise-extreme';
       case 'new-moon':
       case 'full-moon':
         return 'lunar-phase';
@@ -343,7 +355,7 @@ export class MaramatakaYearView {
       case 'star-invisibility':
         return 2;
       case 'public-holiday':
-      case 'solar-season':
+      case 'sunrise-extreme':
         return 1;
       case 'lunar-phase':
         return 3;
@@ -357,7 +369,7 @@ export class MaramatakaYearView {
       case 'star-invisibility':
         return 4;
       case 'public-holiday':
-      case 'solar-season':
+      case 'sunrise-extreme':
         return 0;
       case 'lunar-phase':
         return 2.8;

@@ -19,6 +19,8 @@ import {
 } from './maramataka-copy';
 import {
   LocationSummary,
+  DawnMoon,
+  DawnSunPath,
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaToday,
@@ -74,6 +76,8 @@ export class MaramatakaDataStore {
   readonly starMarkersLoading = signal(true);
   readonly starMarkersError = signal<string | null>(null);
   readonly starMarkers = signal<StarMarker[]>([]);
+  readonly dawnSunPath = signal<DawnSunPath | null>(null);
+  readonly dawnMoon = signal<DawnMoon | null>(null);
   readonly now = signal(new Date());
   readonly selectedDate = signal(this.api.formatDate(new Date()));
   readonly useLiveDate = signal(true);
@@ -211,9 +215,11 @@ export class MaramatakaDataStore {
     this.requestContext$
       .pipe(
         switchMap(({ locationId, requestDate }) =>
-          this.api.getStarMarkers(locationId, requestDate).pipe(
+          this.api.getDawnSky(locationId, requestDate).pipe(
             catchError(() => {
               this.starMarkers.set([]);
+              this.dawnSunPath.set(null);
+              this.dawnMoon.set(null);
               this.starMarkersLoading.set(false);
               this.starMarkersError.set(this.copy().errors.dawnSky);
               return EMPTY;
@@ -222,8 +228,10 @@ export class MaramatakaDataStore {
         ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((markers) => {
-        this.starMarkers.set(markers);
+      .subscribe((dawnSky) => {
+        this.starMarkers.set(dawnSky.starMarkers);
+        this.dawnSunPath.set(dawnSky.sunPath);
+        this.dawnMoon.set(dawnSky.moon ?? null);
         this.starMarkersLoading.set(false);
       });
 
@@ -350,6 +358,8 @@ export class MaramatakaDataStore {
     this.moonDetails.set(null);
     this.year.set(null);
     this.starMarkers.set([]);
+    this.dawnSunPath.set(null);
+    this.dawnMoon.set(null);
   }
 
   private refreshIfDateChanged(): void {

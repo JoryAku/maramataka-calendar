@@ -14,18 +14,6 @@ export interface FullMoon {
   source: string;
 }
 
-export type SolarSeasonName =
-  | 'March equinox'
-  | 'June solstice'
-  | 'September equinox'
-  | 'December solstice';
-
-export interface SolarSeasonEvent {
-  name: SolarSeasonName;
-  occursAt: Date;
-  source: string;
-}
-
 export interface MoonRiseSet {
   date: string;
   risesAt: Date;
@@ -104,6 +92,52 @@ export interface StarMarker {
   calculation: string;
 }
 
+export interface DawnSunPathPoint {
+  observedAt: Date;
+  altitudeDegrees: number;
+  azimuthDegrees: number;
+  direction: string;
+}
+
+export interface DawnSunPath {
+  startsAt: Date;
+  sunriseAt: Date;
+  points: DawnSunPathPoint[];
+  calculation: string;
+}
+
+export interface DawnSunriseExtremePoint extends DawnSunPathPoint {
+  date: string;
+}
+
+export interface DawnSunriseExtremes {
+  year: number;
+  northernmost: DawnSunriseExtremePoint;
+  southernmost: DawnSunriseExtremePoint;
+  calculation: string;
+}
+
+export interface DawnMoon {
+  name: 'Moon';
+  type: 'moon';
+  observedAt: Date;
+  phase: MoonPhaseName;
+  fractionIlluminated: number;
+  altitudeDegrees: number;
+  azimuthDegrees: number;
+  direction: string;
+  visibility: StarMarkerVisibility;
+  calculation: string;
+  source: string;
+}
+
+export interface DawnSky {
+  starMarkers: StarMarker[];
+  sunPath: DawnSunPath;
+  sunriseExtremes?: DawnSunriseExtremes;
+  moon?: DawnMoon;
+}
+
 export interface StarMarkerNightInvisibilityPeriod {
   markerId: string;
   markerName: string;
@@ -174,7 +208,6 @@ export interface AstronomyProvider {
   getMoonPhases(year: number): Promise<MoonPhase[]>;
   getNewMoons(year: number): Promise<NewMoon[]>;
   getFullMoons(year: number): Promise<FullMoon[]>;
-  getSolarSeasons?(year: number): Promise<SolarSeasonEvent[]>;
   getMoonRise(date: string, location: Location): Promise<MoonRise>;
   getMoonRiseSet(date: string, location: Location): Promise<MoonRiseSet>;
   getMoonTransit(date: string, location: Location): Promise<MoonTransit>;
@@ -184,6 +217,15 @@ export interface AstronomyProvider {
     location: Location,
     markers?: StarMarkerDefinition[],
   ): Promise<StarMarker[]>;
+  getSunriseExtremes?(
+    year: number,
+    location: Location,
+  ): Promise<DawnSunriseExtremes>;
+  getDawnSky?(
+    date: string,
+    location: Location,
+    markers?: StarMarkerDefinition[],
+  ): Promise<DawnSky>;
   getStarFirstAppearances?(
     startDate: string,
     endDate: string,

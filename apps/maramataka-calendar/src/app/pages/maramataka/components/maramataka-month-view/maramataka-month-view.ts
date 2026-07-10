@@ -9,6 +9,10 @@ import {
 import { NZ_TIMEZONE } from '../../maramataka.constants';
 import { MaramatakaCopy } from '../../maramataka-copy';
 
+type MonthNightEvent = MaramatakaYearEvent & {
+  type: Exclude<MaramatakaYearEvent['type'], 'month-start'>;
+};
+
 @Component({
   selector: 'app-maramataka-month-view',
   imports: [CommonModule],
@@ -135,13 +139,13 @@ export class MaramatakaMonthView {
     return null;
   }
 
-  eventsForNight(night: MaramatakaNight): MaramatakaYearEvent[] {
+  eventsForNight(night: MaramatakaNight): MonthNightEvent[] {
     const startsAt = night.startsAt.getTime();
     const endsAt = night.endsAt.getTime();
 
     return this.yearEvents()
       .filter(
-        (event) =>
+        (event): event is MonthNightEvent =>
           event.type !== 'month-start' &&
           event.occursAt.getTime() >= startsAt &&
           event.occursAt.getTime() < endsAt,
@@ -149,7 +153,7 @@ export class MaramatakaMonthView {
       .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
   }
 
-  eventSymbol(event: MaramatakaYearEvent): string {
+  eventSymbol(event: MonthNightEvent): string {
     switch (event.type) {
       case 'star-marker':
         return '★';
@@ -163,14 +167,12 @@ export class MaramatakaMonthView {
         return '●';
       case 'public-holiday':
         return '✦';
-      case 'solar-season':
-        return '☼';
-      case 'month-start':
-        return '◇';
+      case 'sunrise-extreme':
+        return '↕';
     }
   }
 
-  eventTypeLabel(event: MaramatakaYearEvent): string {
+  eventTypeLabel(event: MonthNightEvent): string {
     switch (event.type) {
       case 'star-marker':
         return event.starMarkerScope === 'seasonal'
@@ -186,10 +188,8 @@ export class MaramatakaMonthView {
         return this.copy().year.eventTypes.fullMoon;
       case 'public-holiday':
         return this.copy().year.eventTypes.holiday;
-      case 'solar-season':
-        return this.copy().year.eventTypes.solar;
-      case 'month-start':
-        return this.copy().year.eventTypes.monthStart;
+      case 'sunrise-extreme':
+        return this.copy().year.eventTypes.sunriseLimit;
     }
   }
 

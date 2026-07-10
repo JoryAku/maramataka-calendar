@@ -1152,7 +1152,7 @@ async function traceYear(options: CliOptions) {
           'star-appearance',
           'star-invisibility',
           'public-holiday',
-          'solar-season',
+          'sunrise-extreme',
         ].includes(event.type),
       )
       .map((event) => ({

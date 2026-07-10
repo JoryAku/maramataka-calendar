@@ -33,9 +33,9 @@ Implemented:
 The cache work now has three layers defined:
 
 - raw astronomy facts, for stable provider results such as phases, rises, sets,
-  transits, equinoxes, and solstices
+  transits, and illumination
 - observational astronomy, for dawn windows, configured star markers, field of
-  view, and visibility thresholds
+  view, sunrise horizon limits, and visibility thresholds
 - maramataka rules, with readable metadata for rule set id/version,
   `mataVersion`, mata names, year-start logic, Pipiri / Hamal candidate
   selection, Matariki visibility checks, Ruhanui insertion/shift logic, named
