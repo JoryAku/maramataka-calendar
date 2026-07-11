@@ -11,7 +11,7 @@ describe('GET /api', () => {
   it('returns a Maramataka page payload', async () => {
     const res = await axios.get('/api/maramataka/page', {
       params: {
-        date: '2026-01-01',
+        date: '2026-01-15',
         location: 'wellington',
       },
     });
