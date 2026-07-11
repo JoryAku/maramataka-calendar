@@ -7,6 +7,7 @@ import {
   MaramatakaYearEvent,
 } from '../../maramataka.models';
 import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { formatDateInTimeZone } from '../../maramataka-date-format';
 import { MaramatakaCopy } from '../../maramataka-copy';
 
 type MonthNightEvent = MaramatakaYearEvent & {
@@ -20,7 +21,6 @@ type MonthNightEvent = MaramatakaYearEvent & {
   styleUrl: './maramataka-month-view.css',
 })
 export class MaramatakaMonthView {
-  protected readonly nzTimeZone = NZ_TIMEZONE;
   private readonly wheelCenter = 50;
   private readonly outerRadius = 47;
   private readonly innerRadius = 31;
@@ -39,6 +39,9 @@ export class MaramatakaMonthView {
     return cycleMarkers.slice(0, 4);
   });
   protected readonly starMonth = computed(() => this.cycle()?.starMonth);
+  protected readonly displayTimeZone = computed(
+    () => this.cycle()?.timezone ?? NZ_TIMEZONE,
+  );
 
   protected readonly wheelSegments = computed(() => {
     const nights = this.month().nights;
@@ -193,6 +196,15 @@ export class MaramatakaMonthView {
     }
   }
 
+  protected formatDateTime(date: Date): string {
+    return formatDateInTimeZone(date, this.displayTimeZone(), {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
   private isFullMoonAnchor(night: MaramatakaNight): boolean {
     const fullMoon = this.cycle()?.anchors.fullMoon;
 
@@ -264,14 +276,12 @@ export class MaramatakaMonthView {
   }
 
   private formatNightStart(night: MaramatakaNight): string {
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
+    return formatDateInTimeZone(night.startsAt, this.displayTimeZone(), {
       day: 'numeric',
       month: 'short',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
-    }).format(night.startsAt);
+    });
   }
 
   private describeSegment(startAngle: number, endAngle: number): string {

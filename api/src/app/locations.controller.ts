@@ -7,7 +7,7 @@ import {
 @Controller('locations')
 export class LocationsController {
   @Get()
-  @Header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
+  @Header('Cache-Control', 'no-cache, must-revalidate')
   getLocations(): readonly LocationSummary[] {
     return getLocationSummaries();
   }

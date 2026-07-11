@@ -17,6 +17,7 @@ export interface MaramatakaNightOverlap {
 export interface LocationSummary {
   id: string;
   name: string;
+  timezone?: string;
   rohe?: string;
 }
 

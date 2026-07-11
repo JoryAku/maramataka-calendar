@@ -8,7 +8,7 @@ import {
   MoonDetails,
   StarMarker,
 } from '../../maramataka.models';
-import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { formatDateInTimeZone } from '../../maramataka-date-format';
 import { MaramatakaCopy } from '../../maramataka-copy';
 
 type HorizonBody = {
@@ -27,7 +27,6 @@ type HorizonBody = {
   styleUrl: './maramataka-today-view.css',
 })
 export class MaramatakaTodayView {
-  protected readonly nzTimeZone = NZ_TIMEZONE;
   private readonly moonVisualRadius = 42;
   private readonly moonVisualCenter = 50;
   protected readonly horizonAltitudeGuideLines = [45, 30, 15, 0];
@@ -41,6 +40,7 @@ export class MaramatakaTodayView {
   private readonly dawnFieldMaxAzimuth = 180;
 
   copy = input.required<MaramatakaCopy>();
+  timeZone = input.required<string>();
   selectedLocationName = input.required<string>();
   todayLoading = input.required<boolean>();
   todayError = input<string | null>(null);
@@ -350,6 +350,13 @@ export class MaramatakaTodayView {
 
   protected moonMetaLabel(moon: DawnMoon): string {
     return `${moon.phase}, ${Math.round(moon.fractionIlluminated * 100)}% illuminated`;
+  }
+
+  protected formatTime(date: Date): string {
+    return formatDateInTimeZone(date, this.timeZone(), {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   }
 
   protected starMarkerVisibilityLabel(marker: HorizonBody): string {

@@ -62,7 +62,7 @@
         <strong>{{ diagnostic.name }}</strong>
         @if (diagnostic.anchorDate) {
         <span>
-          {{ diagnostic.anchorDate | date: 'd MMM y, h:mm a' : nzTimeZone }}
+          {{ formatDateTime(diagnostic.anchorDate) }}
         </span>
         }
         <small>{{ diagnostic.reason }}</small>
@@ -93,8 +93,8 @@
       </span>
     </div>
     <div class="year-axis" aria-hidden="true">
-      <span>{{ year()!.startsAt | date: 'd MMM y' : nzTimeZone }}</span>
-      <span>{{ year()!.endsAt | date: 'd MMM y' : nzTimeZone }}</span>
+      <span>{{ formatYearDate(year()!.startsAt) }}</span>
+      <span>{{ formatYearDate(year()!.endsAt) }}</span>
     </div>
     <div class="year-event-track">
       <div class="year-rail" aria-hidden="true"></div>
@@ -113,7 +113,7 @@
       >
         <span class="year-month-name">{{ month.name }}</span>
         <span class="year-month-start">
-          {{ month.startsAt | date: 'd MMM' : nzTimeZone }}
+          {{ formatShortDate(month.startsAt) }}
         </span>
       </span>
       }
@@ -166,9 +166,9 @@
     >
       <strong>{{ month.name }}</strong>
       <span>
-        {{ month.anchors.whiro.occursAt | date: 'd MMM' : nzTimeZone }}
+        {{ formatShortDate(month.anchors.whiro.occursAt) }}
         -
-        {{ month.anchors.nextWhiro.occursAt | date: 'd MMM' : nzTimeZone }}
+        {{ formatShortDate(month.anchors.nextWhiro.occursAt) }}
       </span>
       @if (month.starMarkers?.length) {
       <small>{{ month.starMarkers![0].name }}</small>

@@ -104,6 +104,7 @@
 
   <app-maramataka-today-view
     [copy]="store.copy()"
+    [timeZone]="store.selectedLocationTimezone()"
     [selectedLocationName]="store.selectedLocationName()"
     [todayLoading]="store.todayLoading()"
     [todayError]="store.todayError()"

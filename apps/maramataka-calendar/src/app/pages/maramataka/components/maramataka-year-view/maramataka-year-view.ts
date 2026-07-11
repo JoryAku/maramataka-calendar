@@ -6,6 +6,7 @@ import {
   MaramatakaYearMonth,
 } from '../../maramataka.models';
 import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { formatDateInTimeZone } from '../../maramataka-date-format';
 import { MaramatakaCopy } from '../../maramataka-copy';
 
 type YearEventLayoutGroup =
@@ -23,8 +24,6 @@ type YearEventLayoutGroup =
   styleUrl: './maramataka-year-view.css',
 })
 export class MaramatakaYearView {
-  protected readonly nzTimeZone = NZ_TIMEZONE;
-
   copy = input.required<MaramatakaCopy>();
   yearLoading = input.required<boolean>();
   yearTimelineLoading = input(false);
@@ -36,6 +35,9 @@ export class MaramatakaYearView {
 
   private readonly yearEventLayout = computed(
     () => this.computeYearEventLayout(),
+  );
+  protected readonly displayTimeZone = computed(
+    () => this.year()?.timezone ?? NZ_TIMEZONE,
   );
 
   protected selectYearMonth(month: MaramatakaYearMonth): void {
@@ -132,8 +134,7 @@ export class MaramatakaYearView {
   }
 
   protected yearEventDateLabel(event: MaramatakaYearEvent): string {
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
+    return formatDateInTimeZone(event.occursAt, this.displayTimeZone(), {
       day: 'numeric',
       month: 'short',
       ...(event.type === 'public-holiday'
@@ -141,7 +142,7 @@ export class MaramatakaYearView {
         : event.type === 'star-invisibility'
           ? { year: 'numeric' }
           : { hour: 'numeric', minute: '2-digit' }),
-    }).format(event.occursAt);
+    });
   }
 
   protected yearMonthOffsetPercent(month: MaramatakaYearMonth): number {
@@ -194,13 +195,12 @@ export class MaramatakaYearView {
       return '';
     }
 
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
+    return formatDateInTimeZone(selectedDate, this.displayTimeZone(), {
       day: 'numeric',
       month: 'short',
       hour: 'numeric',
       minute: '2-digit',
-    }).format(selectedDate);
+    });
   }
 
   protected visibleYearEvents(): MaramatakaYearEvent[] {
@@ -242,6 +242,31 @@ export class MaramatakaYearView {
     );
 
     return parts.join(', ');
+  }
+
+  protected formatShortDate(date: Date): string {
+    return formatDateInTimeZone(date, this.displayTimeZone(), {
+      day: 'numeric',
+      month: 'short',
+    });
+  }
+
+  protected formatYearDate(date: Date): string {
+    return formatDateInTimeZone(date, this.displayTimeZone(), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+  protected formatDateTime(date: Date): string {
+    return formatDateInTimeZone(date, this.displayTimeZone(), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   }
 
   private yearEventLane(event: MaramatakaYearEvent): number {
@@ -382,11 +407,4 @@ export class MaramatakaYearView {
     return startInsetPercent + rawOffset * (1 - startInsetPercent / 100);
   }
 
-  private formatShortDate(date: Date): string {
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
-      day: 'numeric',
-      month: 'short',
-    }).format(date);
-  }
 }

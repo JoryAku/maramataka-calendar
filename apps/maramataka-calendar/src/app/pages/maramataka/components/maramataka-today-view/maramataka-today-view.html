@@ -143,26 +143,26 @@
     <dl class="timing-panel" [attr.aria-label]="copy().today.moonTimings">
       <div>
         <dt>{{ copy().today.moonrise }}</dt>
-        <dd>{{ today()!.startsAt | date: 'h:mm a' : nzTimeZone }}</dd>
+        <dd>{{ formatTime(today()!.startsAt) }}</dd>
       </div>
       @if (moonDetails()?.transit) {
       <div>
         <dt>{{ copy().today.meridian }}</dt>
         <dd>
-          {{ moonDetails()!.transit!.occursAt | date: 'h:mm a' : nzTimeZone }}
+          {{ formatTime(moonDetails()!.transit!.occursAt) }}
         </dd>
       </div>
       } @if (moonDetails()?.moonset) {
       <div>
         <dt>{{ copy().today.moonset }}</dt>
         <dd>
-          {{ moonDetails()!.moonset!.occursAt | date: 'h:mm a' : nzTimeZone }}
+          {{ formatTime(moonDetails()!.moonset!.occursAt) }}
         </dd>
       </div>
       }
       <div>
         <dt>{{ copy().today.nextMoonrise }}</dt>
-        <dd>{{ today()!.endsAt | date: 'h:mm a' : nzTimeZone }}</dd>
+        <dd>{{ formatTime(today()!.endsAt) }}</dd>
       </div>
     </dl>
   </article>
@@ -197,7 +197,7 @@
         @if (dawnObservationTime()) {
         <p class="dawn-sky-time">
           {{ copy().today.sampled }}
-          {{ dawnObservationTime()! | date: 'h:mm a' : nzTimeZone }}
+          {{ formatTime(dawnObservationTime()!) }}
         </p>
         }
         <p class="dawn-sky-scope">
@@ -220,7 +220,7 @@
           <span class="sunrise-dot" aria-hidden="true"></span>
           <span class="sunrise-label">
             {{ copy().today.sunrise }}
-            {{ dawnSunPath()!.sunriseAt | date: 'h:mm a' : nzTimeZone }}
+            {{ formatTime(dawnSunPath()!.sunriseAt) }}
           </span>
         </span>
         }

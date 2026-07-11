@@ -131,10 +131,36 @@ describe('MaramatakaPage', () => {
 
   function locationsFixture() {
     return [
-      { id: 'wellington', name: 'Wellington', rohe: 'Te Whanganui-a-Tara' },
-      { id: 'auckland', name: 'Auckland', rohe: 'Tamaki Makaurau' },
-      { id: 'christchurch', name: 'Christchurch', rohe: 'Otautahi' },
-      { id: 'gisborne', name: 'Gisborne', rohe: 'Turanganui-a-Kiwa' },
+      {
+        id: 'wellington',
+        name: 'Wellington',
+        timezone: 'Pacific/Auckland',
+        rohe: 'Te Whanganui-a-Tara',
+      },
+      {
+        id: 'auckland',
+        name: 'Auckland',
+        timezone: 'Pacific/Auckland',
+        rohe: 'Tamaki Makaurau',
+      },
+      {
+        id: 'christchurch',
+        name: 'Christchurch',
+        timezone: 'Pacific/Auckland',
+        rohe: 'Otautahi',
+      },
+      {
+        id: 'gisborne',
+        name: 'Gisborne',
+        timezone: 'Pacific/Auckland',
+        rohe: 'Turanganui-a-Kiwa',
+      },
+      {
+        id: 'tahiti',
+        name: 'Tahiti',
+        timezone: 'Pacific/Tahiti',
+        rohe: 'French Polynesia',
+      },
     ];
   }
 
@@ -1288,6 +1314,74 @@ describe('MaramatakaPage', () => {
         ) as HTMLInputElement | null
       )?.value,
     ).toBe('2026-06-26');
+  });
+
+  it('uses the selected location timezone when converting picked dates', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-24T22:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests());
+
+    const page = fixture.componentInstance as unknown as {
+      onLocationChange(locationId: string): void;
+      onDateChange(date: string): void;
+    };
+    page.onLocationChange('tahiti');
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests('tahiti'));
+    fixture.detectChanges();
+
+    const dawnPanelText = (
+      fixture.nativeElement.querySelector(
+        '[data-testid="dawn-sky-panel"]',
+      ) as HTMLElement | null
+    )?.textContent;
+    expect(dawnPanelText).toMatch(/Sunrise\s+8:00\s*am/i);
+
+    page.onDateChange('2026-06-26');
+    const requests = flushMaramatakaRequests('tahiti');
+
+    expect(requests.pageRequest.request.params.get('date')).toBe('2026-06-26');
+    expect(requests.pageRequest.request.params.get('instant')).toBe(
+      '2026-06-26T22:00:00.000Z',
+    );
+    expect(requests.yearCoreRequest.request.params.get('date')).toBe(
+      '2026-06-26',
+    );
+    expect(requests.starMarkersRequest.request.params.get('date')).toBe(
+      '2026-06-26',
+    );
+  });
+
+  it('falls back to the known Tahiti timezone when cached locations omit timezone metadata', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-24T22:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(
+      locationsFixture().map(({ timezone, ...location }) => location),
+    );
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests());
+
+    const page = fixture.componentInstance as unknown as {
+      onLocationChange(locationId: string): void;
+      onDateChange(date: string): void;
+    };
+    page.onLocationChange('tahiti');
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests('tahiti'));
+
+    page.onDateChange('2026-06-26');
+    const requests = flushMaramatakaRequests('tahiti');
+
+    expect(requests.pageRequest.request.params.get('date')).toBe('2026-06-26');
+    expect(requests.pageRequest.request.params.get('instant')).toBe(
+      '2026-06-26T22:00:00.000Z',
+    );
   });
 
   it('uses local NZ midday during daylight saving for selected dates', () => {

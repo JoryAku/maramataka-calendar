@@ -380,10 +380,15 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify([
-        { id: 'wellington', name: 'Wellington' },
-        { id: 'auckland', name: 'Auckland' },
-        { id: 'christchurch', name: 'Christchurch' },
-        { id: 'gisborne', name: 'Gisborne' },
+        { id: 'wellington', name: 'Wellington', timezone: 'Pacific/Auckland' },
+        { id: 'auckland', name: 'Auckland', timezone: 'Pacific/Auckland' },
+        {
+          id: 'christchurch',
+          name: 'Christchurch',
+          timezone: 'Pacific/Auckland',
+        },
+        { id: 'gisborne', name: 'Gisborne', timezone: 'Pacific/Auckland' },
+        { id: 'tahiti', name: 'Tahiti', timezone: 'Pacific/Tahiti' },
       ]),
     });
   });

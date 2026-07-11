@@ -7,22 +7,20 @@
     <dl>
       <div>
         <dt>Whiro</dt>
-        <dd>{{ month().whiroStartsAt | date: 'd MMM, h:mm a' : nzTimeZone }}</dd>
+        <dd>{{ formatDateTime(month().whiroStartsAt) }}</dd>
       </div>
       @if (cycle()?.anchors?.fullMoon) {
       <div>
         <dt>{{ copy().cycle.rakaunuiObservation }}</dt>
         <dd>
           {{
-            cycle()!.anchors.fullMoon!.occursAt
-              | date: 'd MMM, h:mm a' : nzTimeZone
+            formatDateTime(cycle()!.anchors.fullMoon!.occursAt)
           }}
           @if (cycle()!.anchors.fullMoon!.astronomicalOccursAt) {
           <small>
             {{ copy().cycle.fullMoon }}
             {{
-              cycle()!.anchors.fullMoon!.astronomicalOccursAt
-                | date: 'd MMM, h:mm a' : nzTimeZone
+              formatDateTime(cycle()!.anchors.fullMoon!.astronomicalOccursAt!)
             }}
           </small>
           }
@@ -34,8 +32,7 @@
         <dt>{{ copy().cycle.nextWhiro }}</dt>
         <dd>
           {{
-            cycle()!.anchors.nextWhiro.occursAt
-              | date: 'd MMM, h:mm a' : nzTimeZone
+            formatDateTime(cycle()!.anchors.nextWhiro.occursAt)
           }}
         </dd>
       </div>
@@ -197,14 +194,14 @@
                 <span>{{ eventTypeLabel(event) }}</span>
                 <strong>{{ event.name }}</strong>
                 <time>
-                  {{ event.occursAt | date: 'd MMM, h:mm a' : nzTimeZone }}
+                  {{ formatDateTime(event.occursAt) }}
                 </time>
               </span>
               }
             </span>
             }
           </span>
-          <time>{{ night.startsAt | date: 'd MMM, h:mm a' : nzTimeZone }}</time>
+          <time>{{ formatDateTime(night.startsAt) }}</time>
         </button>
       </li>
       }

@@ -420,9 +420,12 @@ describe('MaramatakaApiService', () => {
 
     service.getLocations().subscribe();
 
-    const request = httpTestingController.expectOne(
-      'https://api.example.test/api/locations',
-    );
+    const request = httpTestingController.expectOne((req) => {
+      return (
+        req.url === 'https://api.example.test/api/locations' &&
+        req.params.get('registryVersion') === '2026-07-tahiti-timezone'
+      );
+    });
     request.flush([]);
   });
 });
