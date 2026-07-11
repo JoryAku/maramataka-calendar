@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, input } from '@angular/core';
-import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { formatDateInTimeZone } from '../../maramataka-date-format';
 import { MaramatakaNight } from '../../maramataka.models';
 
 @Component({
@@ -10,8 +10,18 @@ import { MaramatakaNight } from '../../maramataka.models';
   styleUrl: './maramataka-night-card.css',
 })
 export class MaramatakaNightCard {
-  protected readonly nzTimeZone = NZ_TIMEZONE;
-
   night = input.required<MaramatakaNight>();
+  timeZone = input.required<string>();
   isCurrent = input(false);
+
+  protected formatNightStart(): string {
+    return formatDateInTimeZone(this.night().startsAt, this.timeZone(), {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
 }

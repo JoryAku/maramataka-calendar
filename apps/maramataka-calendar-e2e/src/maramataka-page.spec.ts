@@ -380,18 +380,61 @@ test('renders the MVP moon tracker and cycle wheel for the selected location', a
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify([
-        { id: 'wellington', name: 'Wellington' },
-        { id: 'auckland', name: 'Auckland' },
-        { id: 'christchurch', name: 'Christchurch' },
-        { id: 'gisborne', name: 'Gisborne' },
+        { id: 'wellington', name: 'Wellington', timezone: 'Pacific/Auckland' },
+        { id: 'auckland', name: 'Auckland', timezone: 'Pacific/Auckland' },
+        {
+          id: 'christchurch',
+          name: 'Christchurch',
+          timezone: 'Pacific/Auckland',
+        },
+        { id: 'gisborne', name: 'Gisborne', timezone: 'Pacific/Auckland' },
+        { id: 'tahiti', name: 'Tahiti', timezone: 'Pacific/Tahiti' },
       ]),
     });
   });
 
-  await page.route('**/api/maramataka/star-markers**', async (route) => {
+  await page.route('**/api/maramataka/dawn-sky**', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify([starMarker, otherVisibleStarMarker]),
+      body: JSON.stringify({
+        starMarkers: [starMarker, otherVisibleStarMarker],
+        sunPath: {
+          startsAt: '2026-06-24T16:30:00.000Z',
+          sunriseAt: '2026-06-24T19:00:00.000Z',
+          points: [
+            {
+              observedAt: '2026-06-24T16:30:00.000Z',
+              altitudeDegrees: -18,
+              azimuthDegrees: 66,
+              direction: 'E',
+            },
+            {
+              observedAt: '2026-06-24T18:00:00.000Z',
+              altitudeDegrees: -9,
+              azimuthDegrees: 72,
+              direction: 'E',
+            },
+            {
+              observedAt: '2026-06-24T19:00:00.000Z',
+              altitudeDegrees: 0,
+              azimuthDegrees: 78,
+              direction: 'E',
+            },
+          ],
+          calculation: 'Stub Sun path sampled from dawn through sunrise.',
+        },
+        moon: {
+          name: 'Moon',
+          phase: 'Waxing Crescent',
+          fractionIlluminated: 0.25,
+          observedAt: '2026-06-24T18:00:00.000Z',
+          altitudeDegrees: 20,
+          azimuthDegrees: 70,
+          direction: 'E',
+          visibility: 'visible',
+          calculation: 'Stub Moon sky position sampled at dawn.',
+        },
+      }),
     });
   });
 

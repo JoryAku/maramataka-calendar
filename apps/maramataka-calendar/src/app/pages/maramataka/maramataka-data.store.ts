@@ -19,6 +19,8 @@ import {
 } from './maramataka-copy';
 import {
   LocationSummary,
+  DawnMoon,
+  DawnSunPath,
   MaramatakaCycleDetails,
   MaramatakaMonth,
   MaramatakaToday,
@@ -30,9 +32,14 @@ import {
 interface MaramatakaLoadContext {
   locationId: string;
   requestDate: Date;
+  timezone: string;
 }
 
 const LANGUAGE_STORAGE_KEY = 'maramataka-language';
+const LOCATION_TIMEZONE_FALLBACKS: Record<string, string> = {
+  tahiti: 'Pacific/Tahiti',
+  'waitangi-chatham-islands': 'Pacific/Chatham',
+};
 
 function initialLanguage(): AppLanguage {
   const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -48,7 +55,7 @@ export class MaramatakaDataStore {
   private readonly api = inject(MaramatakaApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly requestContext$ = new Subject<MaramatakaLoadContext>();
-  private lastRequestedNzDate: string | null = null;
+  private lastRequestedLocalDate: string | null = null;
 
   readonly locationsLoading = signal(true);
   readonly locationsError = signal<string | null>(null);
@@ -74,6 +81,8 @@ export class MaramatakaDataStore {
   readonly starMarkersLoading = signal(true);
   readonly starMarkersError = signal<string | null>(null);
   readonly starMarkers = signal<StarMarker[]>([]);
+  readonly dawnSunPath = signal<DawnSunPath | null>(null);
+  readonly dawnMoon = signal<DawnMoon | null>(null);
   readonly now = signal(new Date());
   readonly selectedDate = signal(this.api.formatDate(new Date()));
   readonly useLiveDate = signal(true);
@@ -88,6 +97,18 @@ export class MaramatakaDataStore {
     );
 
     return selectedLocation?.name ?? this.copy().errors.selectedLocation;
+  });
+
+  readonly selectedLocationTimezone = computed(() => {
+    const selectedLocation = this.locations().find(
+      (location) => location.id === this.selectedLocationId(),
+    );
+
+    return (
+      selectedLocation?.timezone ??
+      LOCATION_TIMEZONE_FALLBACKS[this.selectedLocationId() ?? ''] ??
+      NZ_TIMEZONE
+    );
   });
 
   constructor() {
@@ -121,6 +142,18 @@ export class MaramatakaDataStore {
     }
 
     this.selectedLocationId.set(locationId);
+    if (this.useLiveDate()) {
+      this.selectedDate.set(
+        this.api.formatDate(new Date(), this.selectedLocationTimezone()),
+      );
+    } else {
+      this.selectedDateInstant.set(
+        this.localMiddayForDate(
+          this.selectedDate(),
+          this.selectedLocationTimezone(),
+        ),
+      );
+    }
     this.reloadData();
   }
 
@@ -131,12 +164,17 @@ export class MaramatakaDataStore {
 
     this.useLiveDate.set(false);
     this.selectedDate.set(date);
-    this.selectedDateInstant.set(this.nzMiddayForDate(date));
+    this.selectedDateInstant.set(
+      this.localMiddayForDate(date, this.selectedLocationTimezone()),
+    );
     this.reloadData();
   }
 
   selectDate(date: Date): void {
-    const selectedDate = this.api.formatDate(date);
+    const selectedDate = this.api.formatDate(
+      date,
+      this.selectedLocationTimezone(),
+    );
     const shouldReload =
       selectedDate !== this.selectedDate() ||
       this.selectedDateInstant()?.getTime() !== date.getTime() ||
@@ -152,7 +190,10 @@ export class MaramatakaDataStore {
   }
 
   resetDateToToday(): void {
-    const today = this.api.formatDate(new Date());
+    const today = this.api.formatDate(
+      new Date(),
+      this.selectedLocationTimezone(),
+    );
     if (this.useLiveDate() && today === this.selectedDate()) {
       return;
     }
@@ -175,25 +216,27 @@ export class MaramatakaDataStore {
   private connectDataStreams(): void {
     this.requestContext$
       .pipe(
-        switchMap(({ locationId, requestDate }) =>
-          this.api.getPageData(locationId, requestDate).pipe(
-            catchError(() => {
-              this.month.set(null);
-              this.cycle.set(null);
-              this.today.set(null);
-              this.moonDetails.set(null);
-              this.monthLoading.set(false);
-              this.cycleLoading.set(false);
-              this.todayLoading.set(false);
-              this.moonDetailsLoading.set(false);
-              const copy = this.copy().errors;
-              this.monthError.set(copy.month);
-              this.cycleError.set(copy.cycle);
-              this.todayError.set(copy.today);
-              this.moonDetailsError.set(copy.moonDetails);
-              return EMPTY;
-            }),
-          ),
+        switchMap(({ locationId, requestDate, timezone }) =>
+          this.api
+            .getPageData(locationId, requestDate, timezone)
+            .pipe(
+              catchError(() => {
+                this.month.set(null);
+                this.cycle.set(null);
+                this.today.set(null);
+                this.moonDetails.set(null);
+                this.monthLoading.set(false);
+                this.cycleLoading.set(false);
+                this.todayLoading.set(false);
+                this.moonDetailsLoading.set(false);
+                const copy = this.copy().errors;
+                this.monthError.set(copy.month);
+                this.cycleError.set(copy.cycle);
+                this.todayError.set(copy.today);
+                this.moonDetailsError.set(copy.moonDetails);
+                return EMPTY;
+              }),
+            ),
         ),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -210,28 +253,39 @@ export class MaramatakaDataStore {
 
     this.requestContext$
       .pipe(
-        switchMap(({ locationId, requestDate }) =>
-          this.api.getStarMarkers(locationId, requestDate).pipe(
-            catchError(() => {
-              this.starMarkers.set([]);
-              this.starMarkersLoading.set(false);
-              this.starMarkersError.set(this.copy().errors.dawnSky);
-              return EMPTY;
-            }),
-          ),
+        switchMap(({ locationId, requestDate, timezone }) =>
+          this.api
+            .getDawnSky(locationId, requestDate, timezone)
+            .pipe(
+              catchError(() => {
+                this.starMarkers.set([]);
+                this.dawnSunPath.set(null);
+                this.dawnMoon.set(null);
+                this.starMarkersLoading.set(false);
+                this.starMarkersError.set(this.copy().errors.dawnSky);
+                return EMPTY;
+              }),
+            ),
         ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((markers) => {
-        this.starMarkers.set(markers);
+      .subscribe((dawnSky) => {
+        this.starMarkers.set(dawnSky.starMarkers);
+        this.dawnSunPath.set(dawnSky.sunPath);
+        this.dawnMoon.set(dawnSky.moon ?? null);
         this.starMarkersLoading.set(false);
       });
 
     this.requestContext$
       .pipe(
-        switchMap(({ locationId, requestDate }) =>
+        switchMap(({ locationId, requestDate, timezone }) =>
           this.api
-            .getYear(locationId, requestDate, { includeTimelineEvents: false })
+            .getYear(
+              locationId,
+              requestDate,
+              { includeTimelineEvents: false },
+              timezone,
+            )
             .pipe(
               catchError((error: unknown) => {
                 this.year.set(null);
@@ -250,9 +304,14 @@ export class MaramatakaDataStore {
                 this.yearTimelineError.set(null);
 
                 return this.api
-                  .getYear(locationId, requestDate, {
-                    includeTimelineEvents: true,
-                  })
+                  .getYear(
+                    locationId,
+                    requestDate,
+                    {
+                      includeTimelineEvents: true,
+                    },
+                    timezone,
+                  )
                   .pipe(
                     catchError((error: unknown) => {
                       this.yearTimelineLoading.set(false);
@@ -285,6 +344,9 @@ export class MaramatakaDataStore {
         next: (locations) => {
           this.locations.set(locations);
           this.selectedLocationId.set(locations[0]?.id ?? null);
+          this.selectedDate.set(
+            this.api.formatDate(new Date(), this.selectedLocationTimezone()),
+          );
           this.locationsLoading.set(false);
 
           if (this.selectedLocationId()) {
@@ -322,10 +384,14 @@ export class MaramatakaDataStore {
     }
 
     const requestDate = this.requestDate();
+    const timezone = this.selectedLocationTimezone();
     this.now.set(requestDate);
-    this.lastRequestedNzDate = this.api.formatDate(requestDate);
+    this.lastRequestedLocalDate = this.api.formatDate(
+      requestDate,
+      timezone,
+    );
     this.resetDataState();
-    this.requestContext$.next({ locationId, requestDate });
+    this.requestContext$.next({ locationId, requestDate, timezone });
   }
 
   private resetDataState(): void {
@@ -350,6 +416,8 @@ export class MaramatakaDataStore {
     this.moonDetails.set(null);
     this.year.set(null);
     this.starMarkers.set([]);
+    this.dawnSunPath.set(null);
+    this.dawnMoon.set(null);
   }
 
   private refreshIfDateChanged(): void {
@@ -361,9 +429,12 @@ export class MaramatakaDataStore {
       return;
     }
 
-    const currentNzDate = this.api.formatDate(new Date());
-    if (currentNzDate !== this.lastRequestedNzDate) {
-      this.selectedDate.set(currentNzDate);
+    const currentLocalDate = this.api.formatDate(
+      new Date(),
+      this.selectedLocationTimezone(),
+    );
+    if (currentLocalDate !== this.lastRequestedLocalDate) {
+      this.selectedDate.set(currentLocalDate);
       this.reloadData();
     }
   }
@@ -404,34 +475,44 @@ export class MaramatakaDataStore {
     }
 
     return (
-      this.selectedDateInstant() ?? this.nzMiddayForDate(this.selectedDate())
+      this.selectedDateInstant() ??
+      this.localMiddayForDate(
+        this.selectedDate(),
+        this.selectedLocationTimezone(),
+      )
     );
   }
 
-  private nzMiddayForDate(localDate: string): Date {
+  private localMiddayForDate(localDate: string, timezone: string): Date {
     const match = localDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!match) {
       return new Date();
     }
 
-    return this.nzLocalDateTimeToDate({
-      year: Number(match[1]),
-      month: Number(match[2]),
-      day: Number(match[3]),
-      hour: 12,
-      minute: 0,
-      second: 0,
-    });
+    return this.localDateTimeToDate(
+      {
+        year: Number(match[1]),
+        month: Number(match[2]),
+        day: Number(match[3]),
+        hour: 12,
+        minute: 0,
+        second: 0,
+      },
+      timezone,
+    );
   }
 
-  private nzLocalDateTimeToDate(parts: {
-    year: number;
-    month: number;
-    day: number;
-    hour: number;
-    minute: number;
-    second: number;
-  }): Date {
+  private localDateTimeToDate(
+    parts: {
+      year: number;
+      month: number;
+      day: number;
+      hour: number;
+      minute: number;
+      second: number;
+    },
+    timezone: string,
+  ): Date {
     const localDateTimeAsUtcMs = Date.UTC(
       parts.year,
       parts.month - 1,
@@ -442,13 +523,16 @@ export class MaramatakaDataStore {
     );
     const candidateOffsets = new Set(
       [-24 * 60 * 60 * 1000, 0, 24 * 60 * 60 * 1000].map((probeOffset) =>
-        this.nzTimezoneOffsetMs(new Date(localDateTimeAsUtcMs + probeOffset)),
+        this.timezoneOffsetMs(
+          new Date(localDateTimeAsUtcMs + probeOffset),
+          timezone,
+        ),
       ),
     );
 
     for (const offset of candidateOffsets) {
       const candidate = new Date(localDateTimeAsUtcMs - offset);
-      if (this.matchesNzLocalDateTime(candidate, parts)) {
+      if (this.matchesLocalDateTime(candidate, parts, timezone)) {
         return candidate;
       }
     }
@@ -456,8 +540,8 @@ export class MaramatakaDataStore {
     return new Date(localDateTimeAsUtcMs);
   }
 
-  private nzTimezoneOffsetMs(date: Date): number {
-    const parts = this.nzDateTimeParts(date);
+  private timezoneOffsetMs(date: Date, timezone: string): number {
+    const parts = this.dateTimeParts(date, timezone);
     const localAsUtcMs = Date.UTC(
       parts.year,
       parts.month - 1,
@@ -470,7 +554,7 @@ export class MaramatakaDataStore {
     return localAsUtcMs - date.getTime();
   }
 
-  private matchesNzLocalDateTime(
+  private matchesLocalDateTime(
     date: Date,
     expected: {
       year: number;
@@ -480,8 +564,9 @@ export class MaramatakaDataStore {
       minute: number;
       second: number;
     },
+    timezone: string,
   ): boolean {
-    const actual = this.nzDateTimeParts(date);
+    const actual = this.dateTimeParts(date, timezone);
 
     return (
       actual.year === expected.year &&
@@ -493,7 +578,7 @@ export class MaramatakaDataStore {
     );
   }
 
-  private nzDateTimeParts(date: Date): {
+  private dateTimeParts(date: Date, timezone: string): {
     year: number;
     month: number;
     day: number;
@@ -502,7 +587,7 @@ export class MaramatakaDataStore {
     second: number;
   } {
     const formatter = new Intl.DateTimeFormat('en-NZ', {
-      timeZone: NZ_TIMEZONE,
+      timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

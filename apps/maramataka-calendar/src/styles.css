@@ -167,8 +167,8 @@ body {
   color: #7ce0c9;
 }
 
-.year-event.solar-season .event-symbol,
-.year-event.solar-season .event-label strong {
+.year-event.sunrise-extreme .event-symbol,
+.year-event.sunrise-extreme .event-label strong {
   color: #e8d494;
 }
 
@@ -177,7 +177,7 @@ body {
   background: #0d2c25;
 }
 
-.year-event.solar-season .event-symbol {
+.year-event.sunrise-extreme .event-symbol {
   border-color: #6b5b32;
   background: #1f1a0a;
 }

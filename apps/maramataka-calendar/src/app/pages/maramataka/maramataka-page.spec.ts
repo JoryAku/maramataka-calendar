@@ -109,7 +109,7 @@ describe('MaramatakaPage', () => {
     );
     const starMarkersRequest = httpTestingController.expectOne(
       (req) =>
-        req.url === '/api/maramataka/star-markers' &&
+        req.url === '/api/maramataka/dawn-sky' &&
         req.params.get('location') === locationId,
     );
 
@@ -131,10 +131,36 @@ describe('MaramatakaPage', () => {
 
   function locationsFixture() {
     return [
-      { id: 'wellington', name: 'Wellington', rohe: 'Te Whanganui-a-Tara' },
-      { id: 'auckland', name: 'Auckland', rohe: 'Tamaki Makaurau' },
-      { id: 'christchurch', name: 'Christchurch', rohe: 'Otautahi' },
-      { id: 'gisborne', name: 'Gisborne', rohe: 'Turanganui-a-Kiwa' },
+      {
+        id: 'wellington',
+        name: 'Wellington',
+        timezone: 'Pacific/Auckland',
+        rohe: 'Te Whanganui-a-Tara',
+      },
+      {
+        id: 'auckland',
+        name: 'Auckland',
+        timezone: 'Pacific/Auckland',
+        rohe: 'Tamaki Makaurau',
+      },
+      {
+        id: 'christchurch',
+        name: 'Christchurch',
+        timezone: 'Pacific/Auckland',
+        rohe: 'Otautahi',
+      },
+      {
+        id: 'gisborne',
+        name: 'Gisborne',
+        timezone: 'Pacific/Auckland',
+        rohe: 'Turanganui-a-Kiwa',
+      },
+      {
+        id: 'tahiti',
+        name: 'Tahiti',
+        timezone: 'Pacific/Tahiti',
+        rohe: 'French Polynesia',
+      },
     ];
   }
 
@@ -452,12 +478,20 @@ describe('MaramatakaPage', () => {
           source: 'Matariki public holiday maramataka rule',
         },
         {
-          type: 'solar-season',
-          name: 'June solstice',
+          type: 'sunrise-extreme',
+          name: 'Northernmost sunrise',
           occursAt: '2026-01-11T13:30:00.000Z',
           description:
-            'Astronomical equinox or solstice anchor from the solar year.',
-          source: 'astronomy-engine',
+            'Sunrise reaches its northernmost horizon point for 2026.',
+          source: 'annual sunrise azimuth scan',
+        },
+        {
+          type: 'sunrise-extreme',
+          name: 'Southernmost sunrise',
+          occursAt: '2026-01-11T14:30:00.000Z',
+          description:
+            'Sunrise reaches its southernmost horizon point for 2026.',
+          source: 'annual sunrise azimuth scan',
         },
       ],
     };
@@ -593,6 +627,71 @@ describe('MaramatakaPage', () => {
     ];
   }
 
+  function dawnSunPathFixture(): Record<string, unknown> {
+    return {
+      startsAt: '2026-01-10T16:30:00.000Z',
+      sunriseAt: '2026-01-10T18:00:00.000Z',
+      points: [
+        {
+          observedAt: '2026-01-10T16:30:00.000Z',
+          altitudeDegrees: -18,
+          azimuthDegrees: 66,
+          direction: 'E',
+        },
+        {
+          observedAt: '2026-01-10T17:15:00.000Z',
+          altitudeDegrees: -9,
+          azimuthDegrees: 72,
+          direction: 'E',
+        },
+        {
+          observedAt: '2026-01-10T18:00:00.000Z',
+          altitudeDegrees: 0,
+          azimuthDegrees: 78,
+          direction: 'E',
+        },
+      ],
+      calculation: 'Sun path sampled from astronomical dawn to sunrise.',
+    };
+  }
+
+  function sunriseExtremesFixture(): Record<string, unknown> {
+    return {
+      year: 2026,
+      northernmost: {
+        date: '2026-06-21',
+        observedAt: '2026-06-20T19:25:00.000Z',
+        altitudeDegrees: 0,
+        azimuthDegrees: 58,
+        direction: 'ENE',
+      },
+      southernmost: {
+        date: '2026-12-21',
+        observedAt: '2026-12-20T17:45:00.000Z',
+        altitudeDegrees: 0,
+        azimuthDegrees: 122,
+        direction: 'ESE',
+      },
+      calculation: 'Annual sunrise limits.',
+    };
+  }
+
+  function dawnMoonFixture(): Record<string, unknown> {
+    return {
+      name: 'Moon',
+      type: 'moon',
+      observedAt: '2026-01-10T17:00:00.000Z',
+      phase: 'Waxing Crescent',
+      fractionIlluminated: 0.28,
+      altitudeDegrees: 12,
+      azimuthDegrees: 96,
+      direction: 'E',
+      visibility: 'visible',
+      calculation: 'Moon sky position sampled at dawn.',
+      source: 'astronomy-engine',
+    };
+  }
+
   function flushSuccessfulMaramatakaRequests(
     requests: ReturnType<typeof flushMaramatakaRequests>,
     month = monthFixture(),
@@ -605,7 +704,12 @@ describe('MaramatakaPage', () => {
       cycle,
       moonDetails,
     });
-    requests.starMarkersRequest.flush(starMarkers);
+    requests.starMarkersRequest.flush({
+      starMarkers,
+      sunPath: dawnSunPathFixture(),
+      sunriseExtremes: sunriseExtremesFixture(),
+      moon: dawnMoonFixture(),
+    });
     const yearEvents = year['events'] as { type: string }[];
     requests.yearCoreRequest.flush({
       ...year,
@@ -697,13 +801,15 @@ describe('MaramatakaPage', () => {
     expect(content).toContain('month and seasonal dawn appearances');
     expect(content).toContain('New Moon');
     expect(content).toContain('Full Moon');
-    expect(content).toContain('June solstice');
+    expect(content).toContain('Northernmost sunrise');
+    expect(content).toContain('Southernmost sunrise');
+    expect(content).toContain('Sunrise limit');
     expect(content).toContain('Te Tahi o Pipiri');
     expect(content).toContain('Dawn sky');
     expect(content).toContain(
       'Dawn is sampled while the Sun is 12° to 18° below the horizon',
     );
-    expect(content).toContain('2 visible');
+    expect(content).toContain('3 visible');
     expect(content).toContain(
       '1 visible body is outside the north-to-south dawn field',
     );
@@ -713,6 +819,14 @@ describe('MaramatakaPage', () => {
     expect(
       fixture.nativeElement.querySelector('[data-testid="dawn-horizon"]'),
     ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('.sunrise-marker'),
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('.horizon-marker.moon'),
+    ).not.toBeNull();
+    expect(dawnPanelText).toContain('Sunrise');
+    expect(dawnPanelText).toContain('Moon');
     expect(content).toContain('Matariki');
     expect(content).toContain('Pleiades');
     expect(content).toContain('Whakaahu');
@@ -722,7 +836,7 @@ describe('MaramatakaPage', () => {
         '.dawn-sky-list strong',
       ) as NodeListOf<HTMLElement>,
     ).map((element) => element.textContent?.trim());
-    expect(dawnCardNames).toEqual(['Matariki', 'Whakaahu']);
+    expect(dawnCardNames).toEqual(['Moon', 'Matariki', 'Whakaahu']);
     expect(dawnPanelText).not.toContain('Poutūterangi');
     expect(dawnPanelText).not.toContain('Star month rule');
     expect(dawnPanelText).not.toContain('Source note');
@@ -766,8 +880,10 @@ describe('MaramatakaPage', () => {
     expect(nightEventContent).toContain('Matariki disappears');
     expect(nightEventContent).toContain('Holiday');
     expect(nightEventContent).toContain('Matariki public holiday');
-    expect(nightEventContent).toContain('Solar');
-    expect(nightEventContent).toContain('June solstice');
+    expect(nightEventContent).not.toContain('Solar');
+    expect(nightEventContent).toContain('Sunrise limit');
+    expect(nightEventContent).toContain('Northernmost sunrise');
+    expect(nightEventContent).toContain('Southernmost sunrise');
     expect(nightEventContent).not.toContain('Full Moon');
     expect(content).not.toContain('Te Marama i te rā');
     expect(content).not.toContain('Te Hua');
@@ -793,11 +909,11 @@ describe('MaramatakaPage', () => {
         element.classList.contains('lane-1'),
       ),
     ).toContain(true);
-    const solarTimelineEvent = fixture.nativeElement.querySelector(
-      '.year-event.solar-season',
+    const sunriseTimelineEvent = fixture.nativeElement.querySelector(
+      '.year-event.sunrise-extreme',
     ) as HTMLElement | null;
-    expect(solarTimelineEvent?.textContent).toContain('Solar');
-    expect(solarTimelineEvent?.style.top).toBe('14.9rem');
+    expect(sunriseTimelineEvent?.textContent).toContain('Sunrise limit');
+    expect(sunriseTimelineEvent?.style.top).toBe('14.9rem');
     const lunarTimelineEvent = fixture.nativeElement.querySelector(
       '.year-event.new-moon',
     ) as HTMLElement | null;
@@ -1198,6 +1314,74 @@ describe('MaramatakaPage', () => {
         ) as HTMLInputElement | null
       )?.value,
     ).toBe('2026-06-26');
+  });
+
+  it('uses the selected location timezone when converting picked dates', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-24T22:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(locationsFixture());
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests());
+
+    const page = fixture.componentInstance as unknown as {
+      onLocationChange(locationId: string): void;
+      onDateChange(date: string): void;
+    };
+    page.onLocationChange('tahiti');
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests('tahiti'));
+    fixture.detectChanges();
+
+    const dawnPanelText = (
+      fixture.nativeElement.querySelector(
+        '[data-testid="dawn-sky-panel"]',
+      ) as HTMLElement | null
+    )?.textContent;
+    expect(dawnPanelText).toMatch(/Sunrise\s+8:00\s*am/i);
+
+    page.onDateChange('2026-06-26');
+    const requests = flushMaramatakaRequests('tahiti');
+
+    expect(requests.pageRequest.request.params.get('date')).toBe('2026-06-26');
+    expect(requests.pageRequest.request.params.get('instant')).toBe(
+      '2026-06-26T22:00:00.000Z',
+    );
+    expect(requests.yearCoreRequest.request.params.get('date')).toBe(
+      '2026-06-26',
+    );
+    expect(requests.starMarkersRequest.request.params.get('date')).toBe(
+      '2026-06-26',
+    );
+  });
+
+  it('falls back to the known Tahiti timezone when cached locations omit timezone metadata', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-24T22:00:00.000Z'));
+
+    const fixture = TestBed.createComponent(MaramatakaPage);
+    fixture.detectChanges();
+
+    flushInitialRequests().flush(
+      locationsFixture().map(({ timezone, ...location }) => location),
+    );
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests());
+
+    const page = fixture.componentInstance as unknown as {
+      onLocationChange(locationId: string): void;
+      onDateChange(date: string): void;
+    };
+    page.onLocationChange('tahiti');
+    flushSuccessfulMaramatakaRequests(flushMaramatakaRequests('tahiti'));
+
+    page.onDateChange('2026-06-26');
+    const requests = flushMaramatakaRequests('tahiti');
+
+    expect(requests.pageRequest.request.params.get('date')).toBe('2026-06-26');
+    expect(requests.pageRequest.request.params.get('instant')).toBe(
+      '2026-06-26T22:00:00.000Z',
+    );
   });
 
   it('uses local NZ midday during daylight saving for selected dates', () => {

@@ -104,6 +104,7 @@
 
   <app-maramataka-today-view
     [copy]="store.copy()"
+    [timeZone]="store.selectedLocationTimezone()"
     [selectedLocationName]="store.selectedLocationName()"
     [todayLoading]="store.todayLoading()"
     [todayError]="store.todayError()"
@@ -115,6 +116,8 @@
     [starMarkersLoading]="store.starMarkersLoading()"
     [starMarkersError]="store.starMarkersError()"
     [starMarkers]="store.starMarkers()"
+    [dawnSunPath]="store.dawnSunPath()"
+    [dawnMoon]="store.dawnMoon()"
   ></app-maramataka-today-view>
 
   <app-maramataka-cycle-view

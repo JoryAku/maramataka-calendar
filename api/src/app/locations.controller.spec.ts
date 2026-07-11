@@ -16,30 +16,41 @@ describe('LocationsController', () => {
     it('should return all locations', () => {
       const locations = controller.getLocations();
 
-      expect(locations.length).toBeGreaterThanOrEqual(17);
+      expect(locations.length).toBeGreaterThanOrEqual(18);
+      expect(locations).toContainEqual({
+        id: 'tahiti',
+        name: 'Tahiti',
+        timezone: 'Pacific/Tahiti',
+        rohe: 'French Polynesia',
+      });
       expect(locations).toContainEqual({
         id: 'wellington',
         name: 'Wellington',
+        timezone: 'Pacific/Auckland',
         rohe: 'Te Whanganui-a-Tara',
       });
       expect(locations).toContainEqual({
         id: 'auckland',
         name: 'Auckland',
+        timezone: 'Pacific/Auckland',
         rohe: 'Tamaki Makaurau',
       });
       expect(locations).toContainEqual({
         id: 'christchurch',
         name: 'Christchurch',
+        timezone: 'Pacific/Auckland',
         rohe: 'Otautahi',
       });
       expect(locations).toContainEqual({
         id: 'gisborne',
         name: 'Gisborne',
+        timezone: 'Pacific/Auckland',
         rohe: 'Turanganui-a-Kiwa',
       });
       expect(locations).toContainEqual({
         id: 'waitangi-chatham-islands',
         name: 'Waitangi, Chatham Islands',
+        timezone: 'Pacific/Chatham',
         rohe: 'Rēkohu / Wharekauri',
       });
     });
@@ -50,10 +61,10 @@ describe('LocationsController', () => {
       locations.forEach((location) => {
         expect(location).toHaveProperty('id');
         expect(location).toHaveProperty('name');
+        expect(location).toHaveProperty('timezone');
         expect(location).toHaveProperty('rohe');
         expect(location).not.toHaveProperty('latitude');
         expect(location).not.toHaveProperty('longitude');
-        expect(location).not.toHaveProperty('timezone');
       });
     });
   });

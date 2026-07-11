@@ -170,6 +170,112 @@ export const starMarkerSchema = {
   },
 };
 
+const dawnSunPathPointSchema = {
+  type: 'object',
+  required: [
+    'observedAt',
+    'altitudeDegrees',
+    'azimuthDegrees',
+    'direction',
+  ],
+  properties: {
+    observedAt: isoDateTime,
+    altitudeDegrees: { type: 'number', example: -6 },
+    azimuthDegrees: { type: 'number', example: 71 },
+    direction: { type: 'string', example: 'E' },
+  },
+};
+
+const dawnSunPathSchema = {
+  type: 'object',
+  required: ['startsAt', 'sunriseAt', 'points', 'calculation'],
+  properties: {
+    startsAt: isoDateTime,
+    sunriseAt: isoDateTime,
+    points: {
+      type: 'array',
+      items: dawnSunPathPointSchema,
+    },
+    calculation: { type: 'string' },
+  },
+};
+
+const dawnSunriseExtremePointSchema = {
+  type: 'object',
+  required: [
+    'date',
+    'observedAt',
+    'altitudeDegrees',
+    'azimuthDegrees',
+    'direction',
+  ],
+  properties: {
+    date: { type: 'string', example: '2026-06-21' },
+    observedAt: isoDateTime,
+    altitudeDegrees: { type: 'number', example: 0 },
+    azimuthDegrees: { type: 'number', example: 58 },
+    direction: { type: 'string', example: 'ENE' },
+  },
+};
+
+const dawnSunriseExtremesSchema = {
+  type: 'object',
+  required: ['year', 'northernmost', 'southernmost', 'calculation'],
+  properties: {
+    year: { type: 'number', example: 2026 },
+    northernmost: dawnSunriseExtremePointSchema,
+    southernmost: dawnSunriseExtremePointSchema,
+    calculation: { type: 'string' },
+  },
+};
+
+const dawnMoonSchema = {
+  type: 'object',
+  required: [
+    'name',
+    'type',
+    'observedAt',
+    'phase',
+    'fractionIlluminated',
+    'altitudeDegrees',
+    'azimuthDegrees',
+    'direction',
+    'visibility',
+    'calculation',
+    'source',
+  ],
+  properties: {
+    name: { type: 'string', example: 'Moon' },
+    type: { type: 'string', enum: ['moon'] },
+    observedAt: isoDateTime,
+    phase: { type: 'string', example: 'Waxing Crescent' },
+    fractionIlluminated: { type: 'number', example: 0.25 },
+    altitudeDegrees: { type: 'number', example: 14 },
+    azimuthDegrees: { type: 'number', example: 96 },
+    direction: { type: 'string', example: 'E' },
+    visibility: {
+      type: 'string',
+      enum: ['prominent', 'visible', 'low', 'below-horizon'],
+    },
+    calculation: { type: 'string' },
+    source: { type: 'string' },
+  },
+};
+
+export const dawnSkySchema = {
+  type: 'object',
+  required: ['starMarkers', 'sunPath'],
+  properties: {
+    starMarkers: {
+      type: 'array',
+      items: starMarkerSchema,
+    },
+    sunPath: dawnSunPathSchema,
+    sunriseExtremes: dawnSunriseExtremesSchema,
+    moon: dawnMoonSchema,
+  },
+};
+
 const starMonthSchema = {
   type: 'object',
   required: ['name', 'rule', 'source'],
@@ -303,7 +409,7 @@ const yearEventSchema = {
         'star-marker',
         'star-appearance',
         'star-invisibility',
-        'solar-season',
+        'sunrise-extreme',
         'new-moon',
         'full-moon',
         'public-holiday',
@@ -395,4 +501,3 @@ export const maramatakaYearResponseSchema = {
     diagnostics: { type: 'array', items: yearDiagnosticSchema },
   },
 };
-

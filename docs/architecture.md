@@ -34,7 +34,7 @@ The raw astronomy layer provides stable astronomical facts:
 - moon phases
 - New Moons and Full Moons
 - moonrise, moonset, transit, and illumination details
-- equinoxes and solstices
+- dawn sky and sunrise horizon limits
 
 These values are cached with a raw astronomy fingerprint namespace.
 

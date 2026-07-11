@@ -5,6 +5,7 @@ import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { NZ_TIMEZONE } from './maramataka.constants';
 import {
   ApiMaramatakaCycleDetails,
+  DawnSky,
   ApiMaramatakaPageData,
   ApiMaramatakaYear,
   ApiMata,
@@ -21,25 +22,36 @@ import {
   StarMarker,
 } from './maramataka.models';
 
+const LOCATION_REGISTRY_VERSION = '2026-07-tahiti-timezone';
+
 @Injectable({ providedIn: 'root' })
 export class MaramatakaApiService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(MARAMATAKA_APP_CONFIG);
 
-  formatDate(date: Date): string {
-    return this.toYyyyMmDd(date);
+  formatDate(date: Date, timezone = NZ_TIMEZONE): string {
+    return this.toYyyyMmDd(date, timezone);
   }
 
   getLocations(): Observable<LocationSummary[]> {
+    const params = new HttpParams().set(
+      'registryVersion',
+      LOCATION_REGISTRY_VERSION,
+    );
+
     return this.profileRequest(
       'locations',
-      this.http.get<LocationSummary[]>(this.apiUrl('/locations')),
+      this.http.get<LocationSummary[]>(this.apiUrl('/locations'), { params }),
     );
   }
 
-  getPageData(locationId: string, date: Date): Observable<MaramatakaPageData> {
+  getPageData(
+    locationId: string,
+    date: Date,
+    timezone = NZ_TIMEZONE,
+  ): Observable<MaramatakaPageData> {
     const params = new HttpParams()
-      .set('date', this.toYyyyMmDd(date))
+      .set('date', this.toYyyyMmDd(date, timezone))
       .set('instant', date.toISOString())
       .set('location', locationId);
 
@@ -57,9 +69,10 @@ export class MaramatakaApiService {
     locationId: string,
     date: Date,
     options: { includeTimelineEvents?: boolean } = {},
+    timezone = NZ_TIMEZONE,
   ): Observable<MaramatakaYear> {
     const params = new HttpParams()
-      .set('date', this.toYyyyMmDd(date))
+      .set('date', this.toYyyyMmDd(date, timezone))
       .set('location', locationId)
       .set(
         'includeTimelineEvents',
@@ -67,30 +80,89 @@ export class MaramatakaApiService {
       );
 
     return this.profileRequest(
-      `year ${locationId} ${this.toYyyyMmDd(date)} timeline=${options.includeTimelineEvents ?? true}`,
+      `year ${locationId} ${this.toYyyyMmDd(date, timezone)} timeline=${options.includeTimelineEvents ?? true}`,
       this.http
         .get<ApiMaramatakaYear>(this.apiUrl('/maramataka/year'), { params })
         .pipe(map((response) => this.mapYear(response))),
     );
   }
 
-  getStarMarkers(locationId: string, date: Date): Observable<StarMarker[]> {
+  getDawnSky(
+    locationId: string,
+    date: Date,
+    timezone = NZ_TIMEZONE,
+  ): Observable<DawnSky> {
     const params = new HttpParams()
-      .set('date', this.toYyyyMmDd(date))
+      .set('date', this.toYyyyMmDd(date, timezone))
       .set('location', locationId);
 
     return this.profileRequest(
-      `star-markers ${locationId} ${this.toYyyyMmDd(date)}`,
+      `dawn-sky ${locationId} ${this.toYyyyMmDd(date, timezone)}`,
       this.http
-        .get<ApiStarMarker[]>(this.apiUrl('/maramataka/star-markers'), {
-          params,
-        })
-        .pipe(
-          map((response) =>
-            response.map((marker) => this.mapStarMarker(marker)),
-          ),
-        ),
+        .get<DawnSky<string> | ApiStarMarker[]>(
+          this.apiUrl('/maramataka/dawn-sky'),
+          {
+            params,
+          },
+        )
+        .pipe(map((response) => this.mapDawnSky(response))),
     );
+  }
+
+  private emptyDawnSunPath(): DawnSky['sunPath'] {
+    return {
+      startsAt: new Date(0),
+      sunriseAt: new Date(0),
+      points: [],
+      calculation: 'Dawn sun path unavailable from API response.',
+    };
+  }
+
+  private mapDawnSky(apiDawnSky: DawnSky<string> | ApiStarMarker[]): DawnSky {
+    if (Array.isArray(apiDawnSky)) {
+      return {
+        starMarkers: apiDawnSky.map((marker) => this.mapStarMarker(marker)),
+        sunPath: this.emptyDawnSunPath(),
+      };
+    }
+
+    return {
+      starMarkers: apiDawnSky.starMarkers.map((marker) =>
+        this.mapStarMarker(marker),
+      ),
+      sunPath: {
+        ...apiDawnSky.sunPath,
+        startsAt: new Date(apiDawnSky.sunPath.startsAt),
+        sunriseAt: new Date(apiDawnSky.sunPath.sunriseAt),
+        points: apiDawnSky.sunPath.points.map((point) => ({
+          ...point,
+          observedAt: new Date(point.observedAt),
+        })),
+      },
+      sunriseExtremes: apiDawnSky.sunriseExtremes
+        ? {
+            ...apiDawnSky.sunriseExtremes,
+            northernmost: {
+              ...apiDawnSky.sunriseExtremes.northernmost,
+              observedAt: new Date(
+                apiDawnSky.sunriseExtremes.northernmost.observedAt,
+              ),
+            },
+            southernmost: {
+              ...apiDawnSky.sunriseExtremes.southernmost,
+              observedAt: new Date(
+                apiDawnSky.sunriseExtremes.southernmost.observedAt,
+              ),
+            },
+          }
+        : undefined,
+      moon: apiDawnSky.moon
+        ? {
+            ...apiDawnSky.moon,
+            observedAt: new Date(apiDawnSky.moon.observedAt),
+          }
+        : undefined,
+    };
   }
 
   private apiUrl(path: string): string {
@@ -325,9 +397,9 @@ export class MaramatakaApiService {
     return typeof mata === 'string' ? undefined : mata.phaseGroup;
   }
 
-  private toYyyyMmDd(date: Date): string {
+  private toYyyyMmDd(date: Date, timezone: string): string {
     const formatter = new Intl.DateTimeFormat('en-NZ', {
-      timeZone: NZ_TIMEZONE,
+      timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

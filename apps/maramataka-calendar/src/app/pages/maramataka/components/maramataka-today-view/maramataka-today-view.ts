@@ -1,12 +1,24 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import {
+  DawnMoon,
+  DawnSunPath,
+  DawnSunPathPoint,
   MaramatakaToday,
   MoonDetails,
   StarMarker,
 } from '../../maramataka.models';
-import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { formatDateInTimeZone } from '../../maramataka-date-format';
 import { MaramatakaCopy } from '../../maramataka-copy';
+
+type HorizonBody = {
+  name: string;
+  type: StarMarker['type'] | 'moon';
+  visibility: StarMarker['visibility'];
+  altitudeDegrees: number;
+  azimuthDegrees: number;
+  direction: string;
+};
 
 @Component({
   selector: 'app-maramataka-today-view',
@@ -15,18 +27,20 @@ import { MaramatakaCopy } from '../../maramataka-copy';
   styleUrl: './maramataka-today-view.css',
 })
 export class MaramatakaTodayView {
-  protected readonly nzTimeZone = NZ_TIMEZONE;
   private readonly moonVisualRadius = 42;
   private readonly moonVisualCenter = 50;
   protected readonly horizonAltitudeGuideLines = [45, 30, 15, 0];
   private readonly horizonAltitudeMin = 0;
   private readonly horizonAltitudeMax = 45;
-  private readonly horizonPlotBottom = 12;
-  private readonly horizonPlotHeight = 76;
+  private readonly horizonPlotBottom = 26;
+  private readonly horizonPlotHeight = 62;
+  private readonly sunriseBelowHorizonMinAltitude = -18;
+  private readonly sunriseBelowHorizonBottom = 6;
   private readonly dawnFieldMinAzimuth = 0;
   private readonly dawnFieldMaxAzimuth = 180;
 
   copy = input.required<MaramatakaCopy>();
+  timeZone = input.required<string>();
   selectedLocationName = input.required<string>();
   todayLoading = input.required<boolean>();
   todayError = input<string | null>(null);
@@ -38,6 +52,8 @@ export class MaramatakaTodayView {
   starMarkersLoading = input.required<boolean>();
   starMarkersError = input<string | null>(null);
   starMarkers = input<StarMarker[]>([]);
+  dawnSunPath = input<DawnSunPath | null>(null);
+  dawnMoon = input<DawnMoon | null>(null);
 
   protected readonly countdownToNextMata = computed(() => {
     const today = this.today();
@@ -108,6 +124,25 @@ export class MaramatakaTodayView {
       ),
   );
 
+  protected readonly dawnVisibleMoon = computed(() => {
+    const moon = this.dawnMoon();
+
+    if (
+      !moon ||
+      moon.visibility === 'below-horizon' ||
+      !this.isInDawnFieldOfView(moon)
+    ) {
+      return null;
+    }
+
+    return moon;
+  });
+
+  protected readonly dawnVisibleBodies = computed(() => [
+    ...this.dawnVisibleMarkers(),
+    ...(this.dawnVisibleMoon() ? [this.dawnVisibleMoon()!] : []),
+  ]);
+
   protected readonly dawnHiddenMarkerCount = computed(
     () =>
       this.starMarkers().filter(
@@ -131,6 +166,19 @@ export class MaramatakaTodayView {
       null,
   );
 
+  protected readonly dawnSunPathPoints = computed(
+    () =>
+      this.dawnSunPath()?.points.filter((point) =>
+        this.isSunPathPointInDawnField(point),
+      ) ?? [],
+  );
+
+  protected readonly dawnSunrisePoint = computed(() => {
+    const points = this.dawnSunPathPoints();
+
+    return points.length ? points[points.length - 1] : null;
+  });
+
   protected readonly dawnMoonSummary = computed(() => {
     const details = this.moonDetails();
     const illumination = this.illuminationPercent();
@@ -142,7 +190,7 @@ export class MaramatakaTodayView {
     return `${details.phase}, ${illumination}% illuminated`;
   });
 
-  protected horizonMarkerLeft(marker: StarMarker): number {
+  protected horizonMarkerLeft(marker: HorizonBody): number {
     const normalizedAzimuth = this.normalizedAzimuth(marker);
     const clampedAzimuth = Math.max(
       this.dawnFieldMinAzimuth,
@@ -156,7 +204,7 @@ export class MaramatakaTodayView {
     );
   }
 
-  protected horizonMarkerBottom(marker: StarMarker): number {
+  protected horizonMarkerBottom(marker: HorizonBody): number {
     return this.horizonAltitudeBottom(marker.altitudeDegrees);
   }
 
@@ -174,11 +222,43 @@ export class MaramatakaTodayView {
     );
   }
 
-  protected isHorizonMarkerClamped(marker: StarMarker): boolean {
+  protected sunrisePointLeft(point: DawnSunPathPoint): number {
+    const normalizedAzimuth = ((point.azimuthDegrees % 360) + 360) % 360;
+    const clampedAzimuth = Math.max(
+      this.dawnFieldMinAzimuth,
+      Math.min(this.dawnFieldMaxAzimuth, normalizedAzimuth),
+    );
+
+    return (
+      ((clampedAzimuth - this.dawnFieldMinAzimuth) /
+        (this.dawnFieldMaxAzimuth - this.dawnFieldMinAzimuth)) *
+      100
+    );
+  }
+
+  protected sunrisePointBottom(point: DawnSunPathPoint): number {
+    if (point.altitudeDegrees < this.horizonAltitudeMin) {
+      const altitude = Math.max(
+        this.sunriseBelowHorizonMinAltitude,
+        point.altitudeDegrees,
+      );
+
+      return (
+        this.sunriseBelowHorizonBottom +
+        ((altitude - this.sunriseBelowHorizonMinAltitude) /
+          (this.horizonAltitudeMin - this.sunriseBelowHorizonMinAltitude)) *
+          (this.horizonPlotBottom - this.sunriseBelowHorizonBottom)
+      );
+    }
+
+    return this.horizonAltitudeBottom(point.altitudeDegrees);
+  }
+
+  protected isHorizonMarkerClamped(marker: HorizonBody): boolean {
     return marker.altitudeDegrees > this.horizonAltitudeMax;
   }
 
-  protected horizonMarkerClass(marker: StarMarker): string {
+  protected horizonMarkerClass(marker: HorizonBody): string {
     return [
       'horizon-marker',
       marker.visibility,
@@ -186,7 +266,7 @@ export class MaramatakaTodayView {
     ].join(' ');
   }
 
-  private isInDawnFieldOfView(marker: StarMarker): boolean {
+  private isInDawnFieldOfView(marker: HorizonBody): boolean {
     const azimuth = this.normalizedAzimuth(marker);
 
     return (
@@ -195,7 +275,16 @@ export class MaramatakaTodayView {
     );
   }
 
-  private normalizedAzimuth(marker: StarMarker): number {
+  private isSunPathPointInDawnField(point: DawnSunPathPoint): boolean {
+    const azimuth = ((point.azimuthDegrees % 360) + 360) % 360;
+
+    return (
+      azimuth >= this.dawnFieldMinAzimuth &&
+      azimuth <= this.dawnFieldMaxAzimuth
+    );
+  }
+
+  private normalizedAzimuth(marker: HorizonBody): number {
     return ((marker.azimuthDegrees % 360) + 360) % 360;
   }
 
@@ -245,7 +334,7 @@ export class MaramatakaTodayView {
     ].join(' ');
   }
 
-  protected starMarkerAltitudeLabel(marker: StarMarker): string {
+  protected starMarkerAltitudeLabel(marker: HorizonBody): string {
     if (marker.visibility === 'below-horizon') {
       return `${Math.abs(marker.altitudeDegrees)}° ${this.copy().today.belowHorizon}`;
     }
@@ -259,7 +348,18 @@ export class MaramatakaTodayView {
       .join(' / ');
   }
 
-  protected starMarkerVisibilityLabel(marker: StarMarker): string {
+  protected moonMetaLabel(moon: DawnMoon): string {
+    return `${moon.phase}, ${Math.round(moon.fractionIlluminated * 100)}% illuminated`;
+  }
+
+  protected formatTime(date: Date): string {
+    return formatDateInTimeZone(date, this.timeZone(), {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
+  protected starMarkerVisibilityLabel(marker: HorizonBody): string {
     return marker.visibility === 'below-horizon'
       ? this.copy().today.visibility.belowHorizon
       : this.copy().today.visibility[marker.visibility];

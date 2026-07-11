@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { StarMarker } from '@maramataka-calendar/astronomy';
+import { DawnSky, StarMarker } from '@maramataka-calendar/astronomy';
 import {
   MaramatakaCycleDetails,
   MaramatakaMonth,
@@ -17,12 +17,14 @@ describe('MaramatakaController', () => {
   let getYearMock: jest.Mock;
   let getMoonDetailsMock: jest.Mock;
   let getStarMarkersMock: jest.Mock;
+  let getDawnSkyMock: jest.Mock;
 
   beforeAll(async () => {
     getCycleDetailsMock = jest.fn();
     getYearMock = jest.fn();
     getMoonDetailsMock = jest.fn();
     getStarMarkersMock = jest.fn();
+    getDawnSkyMock = jest.fn();
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [MaramatakaController],
@@ -34,6 +36,7 @@ describe('MaramatakaController', () => {
             getYear: getYearMock,
             getMoonDetails: getMoonDetailsMock,
             getStarMarkers: getStarMarkersMock,
+            getDawnSky: getDawnSkyMock,
           },
         },
       ],
@@ -47,6 +50,7 @@ describe('MaramatakaController', () => {
     getYearMock.mockReset();
     getMoonDetailsMock.mockReset();
     getStarMarkersMock.mockReset();
+    getDawnSkyMock.mockReset();
   });
 
   const ruleSet = JSON.parse(
@@ -426,6 +430,42 @@ describe('MaramatakaController', () => {
         })),
       ).rejects.toThrow('date must be in YYYY-MM-DD format');
       expect(getStarMarkersMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /maramataka/dawn-sky', () => {
+    it('returns dawn sky with sampled Sun path for a valid request', async () => {
+      const dawnSky: DawnSky = {
+        starMarkers: [],
+        sunPath: {
+          startsAt: new Date('2026-06-24T17:00:00.000Z'),
+          sunriseAt: new Date('2026-06-24T19:00:00.000Z'),
+          points: [
+            {
+              observedAt: new Date('2026-06-24T17:00:00.000Z'),
+              altitudeDegrees: -18,
+              azimuthDegrees: 66,
+              direction: 'E',
+            },
+            {
+              observedAt: new Date('2026-06-24T19:00:00.000Z'),
+              altitudeDegrees: 0,
+              azimuthDegrees: 78,
+              direction: 'E',
+            },
+          ],
+          calculation: 'Sun path sampled from astronomical dawn to sunrise.',
+        },
+      };
+      getDawnSkyMock.mockResolvedValue(dawnSky);
+
+      const response = await controller.getDawnSky(dateLocationQuery({
+        date: '2026-06-25',
+        location: 'wellington',
+      }));
+
+      expect(response).toEqual(dawnSky);
+      expect(getDawnSkyMock).toHaveBeenCalledTimes(1);
     });
   });
 });

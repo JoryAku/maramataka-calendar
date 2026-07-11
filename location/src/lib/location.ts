@@ -11,12 +11,21 @@ export interface LocationData {
 export interface LocationSummary {
   id: string;
   name: string;
+  timezone: string;
   rohe?: string;
 }
 
 export const LOCATIONS: LocationData[] = [
   // Representative observing locations. The rohe labels provide local context
-  // for users; the coordinates are town/city points, not iwi boundary models.
+  // for users; the coordinates are town/city points, not boundary models.
+  {
+    id: 'tahiti',
+    name: 'Tahiti',
+    latitude: -17.5516,
+    longitude: -149.5585,
+    timezone: 'Pacific/Tahiti',
+    rohe: 'French Polynesia',
+  },
   {
     id: 'kaitaia',
     name: 'Kaitaia',
@@ -184,6 +193,7 @@ const LOCATION_SUMMARIES = Object.freeze(
     Object.freeze({
       id: location.id,
       name: location.name,
+      timezone: location.timezone,
       rohe: location.rohe,
     }),
   ),

@@ -1,6 +1,7 @@
 import {
   AstronomyProvider,
   AstronomyProviderError,
+  DawnSky,
   findAstronomyProviderError,
   formatIsoDateInTimezone,
   Location,
@@ -9,7 +10,6 @@ import {
   MoonRise,
   NewMoon,
   parseLocalDateTimeInTimezone,
-  SolarSeasonEvent,
   StarMarker,
   StarMarkerAppearanceWindow,
   StarMarkerDefinition,
@@ -431,19 +431,19 @@ export class MaramatakaService {
             timelineEndDate,
           )
         : Promise.resolve<MaramatakaYearEvent[]>([]);
-      const solarSeasonEventsPromise = includeTimelineEvents
-        ? this.createSolarSeasonEvents(starYear, core.startsAt, core.endsAt)
+      const sunriseExtremeEventsPromise = includeTimelineEvents
+        ? this.createSunriseExtremeEvents(location, core.startsAt, core.endsAt)
         : Promise.resolve<MaramatakaYearEvent[]>([]);
       const [
         timelineStarFirstAppearances,
         matarikiCalibrationMarkerAppearanceEvents,
         starInvisibilityEvents,
-        solarSeasonEvents,
+        sunriseExtremeEvents,
       ] = await Promise.all([
         timelineStarFirstAppearancesPromise,
         matarikiCalibrationMarkerAppearanceEventsPromise,
         starInvisibilityEventsPromise,
-        solarSeasonEventsPromise,
+        sunriseExtremeEventsPromise,
       ]);
 
       return {
@@ -463,7 +463,7 @@ export class MaramatakaService {
             ...core.yearSpecificEvents,
             ...matarikiCalibrationMarkerAppearanceEvents,
             ...starInvisibilityEvents,
-            ...solarSeasonEvents,
+            ...sunriseExtremeEvents,
           ],
         ),
         diagnostics: core.diagnostics,
@@ -755,15 +755,38 @@ export class MaramatakaService {
   }
 
   async getStarMarkers(location: Location, date: Date): Promise<StarMarker[]> {
+    const dawnSky = await this.getDawnSky(location, date);
+
+    return dawnSky.starMarkers;
+  }
+
+  async getDawnSky(location: Location, date: Date): Promise<DawnSky> {
     const localDate = this.formatIsoDateForLocation(date, location);
 
-    return (
-      this.astronomyProvider.getStarMarkers?.(
+    if (this.astronomyProvider.getDawnSky) {
+      return this.astronomyProvider.getDawnSky(
         localDate,
         location,
         this.ruleSetMarkerDefinitions,
-      ) ?? []
-    );
+      );
+    }
+
+    const starMarkers =
+      (await this.astronomyProvider.getStarMarkers?.(
+        localDate,
+        location,
+        this.ruleSetMarkerDefinitions,
+      )) ?? [];
+
+    return {
+      starMarkers,
+      sunPath: {
+        startsAt: new Date(0),
+        sunriseAt: new Date(0),
+        points: [],
+        calculation: 'Dawn sun path unavailable from astronomy provider.',
+      },
+    };
   }
 
   async getCurrentNight(
@@ -1228,34 +1251,55 @@ export class MaramatakaService {
     ];
   }
 
-  private async createSolarSeasonEvents(
-    starYear: number,
+  private async createSunriseExtremeEvents(
+    location: Location,
     timelineStartsAt: Date,
     timelineEndsAt: Date,
   ): Promise<MaramatakaYearEvent[]> {
-    const solarSeasons = (
+    const startYear = Number.parseInt(
+      this.formatIsoDateForLocation(timelineStartsAt, location).slice(0, 4),
+      10,
+    );
+    const endYear = Number.parseInt(
+      this.formatIsoDateForLocation(timelineEndsAt, location).slice(0, 4),
+      10,
+    );
+    const years = Array.from(
+      { length: endYear - startYear + 1 },
+      (_, index) => startYear + index,
+    );
+    const extremes = (
       await Promise.all(
-        [starYear, starYear + 1].map((year) =>
-          this.getOptionalSolarSeasons(year),
-        ),
+        years.map((year) => this.getOptionalSunriseExtremes(year, location)),
       )
-    )
-      .flatMap((result) => result.values)
+    ).filter(
+      (result): result is NonNullable<DawnSky['sunriseExtremes']> =>
+        Boolean(result),
+    );
+
+    return extremes
+      .flatMap((extreme) => [
+        {
+          type: 'sunrise-extreme' as const,
+          name: 'Northernmost sunrise',
+          occursAt: extreme.northernmost.observedAt,
+          description: `Sunrise reaches its northernmost horizon point for ${extreme.year}.`,
+          source: extreme.calculation,
+        },
+        {
+          type: 'sunrise-extreme' as const,
+          name: 'Southernmost sunrise',
+          occursAt: extreme.southernmost.observedAt,
+          description: `Sunrise reaches its southernmost horizon point for ${extreme.year}.`,
+          source: extreme.calculation,
+        },
+      ])
       .filter(
         (event) =>
           event.occursAt.getTime() >= timelineStartsAt.getTime() &&
           event.occursAt.getTime() < timelineEndsAt.getTime(),
       )
       .sort((a, b) => a.occursAt.getTime() - b.occursAt.getTime());
-
-    return solarSeasons.map((event) => ({
-      type: 'solar-season',
-      name: event.name,
-      occursAt: event.occursAt,
-      description:
-        'Astronomical equinox or solstice anchor from the solar year.',
-      source: event.source,
-    }));
   }
 
   private createYearEvents(
@@ -1490,6 +1534,17 @@ export class MaramatakaService {
     }
   }
 
+  private async getOptionalSunriseExtremes(
+    year: number,
+    location: Location,
+  ): Promise<DawnSky['sunriseExtremes'] | undefined> {
+    try {
+      return await this.astronomyProvider.getSunriseExtremes?.(year, location);
+    } catch {
+      return undefined;
+    }
+  }
+
   private async getTimelineStarFirstAppearances(
     location: Location,
     startDate: string,
@@ -1663,25 +1718,6 @@ export class MaramatakaService {
       return {
         year,
         values: this.asArray(await this.astronomyProvider.getNewMoons(year)),
-      };
-    } catch (error) {
-      return {
-        year,
-        values: [],
-        error: this.getErrorMessage(error),
-      };
-    }
-  }
-
-  private async getOptionalSolarSeasons(
-    year: number,
-  ): Promise<PhaseFetchResult<SolarSeasonEvent>> {
-    try {
-      return {
-        year,
-        values: this.asArray(
-          (await this.astronomyProvider.getSolarSeasons?.(year)) ?? [],
-        ),
       };
     } catch (error) {
       return {

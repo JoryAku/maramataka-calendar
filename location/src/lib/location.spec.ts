@@ -9,10 +9,16 @@ import {
 
 describe('locations', () => {
   describe('LOCATIONS registry', () => {
-    it('contains representative Aotearoa locations', () => {
-      expect(LOCATIONS.length).toBeGreaterThanOrEqual(17);
+    it('contains representative Pacific locations', () => {
+      expect(LOCATIONS.length).toBeGreaterThanOrEqual(18);
       expect(LOCATIONS).toEqual(
         expect.arrayContaining([
+          expect.objectContaining({
+            id: 'tahiti',
+            name: 'Tahiti',
+            timezone: 'Pacific/Tahiti',
+            rohe: 'French Polynesia',
+          }),
           expect.objectContaining({
             id: 'wellington',
             name: 'Wellington',
@@ -115,10 +121,14 @@ describe('locations', () => {
 
       expect(summaries).toHaveLength(LOCATIONS.length);
       summaries.forEach((summary: LocationSummary) => {
-        expect(Object.keys(summary).sort()).toEqual(['id', 'name', 'rohe']);
+        expect(Object.keys(summary).sort()).toEqual([
+          'id',
+          'name',
+          'rohe',
+          'timezone',
+        ]);
         expect(summary).not.toHaveProperty('latitude');
         expect(summary).not.toHaveProperty('longitude');
-        expect(summary).not.toHaveProperty('timezone');
       });
     });
   });

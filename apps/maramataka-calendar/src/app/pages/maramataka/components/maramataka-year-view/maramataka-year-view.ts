@@ -6,6 +6,7 @@ import {
   MaramatakaYearMonth,
 } from '../../maramataka.models';
 import { NZ_TIMEZONE } from '../../maramataka.constants';
+import { formatDateInTimeZone } from '../../maramataka-date-format';
 import { MaramatakaCopy } from '../../maramataka-copy';
 
 type YearEventLayoutGroup =
@@ -13,7 +14,7 @@ type YearEventLayoutGroup =
   | 'seasonal-marker'
   | 'star-invisibility'
   | 'public-holiday'
-  | 'solar-season'
+  | 'sunrise-extreme'
   | 'lunar-phase';
 
 @Component({
@@ -23,8 +24,6 @@ type YearEventLayoutGroup =
   styleUrl: './maramataka-year-view.css',
 })
 export class MaramatakaYearView {
-  protected readonly nzTimeZone = NZ_TIMEZONE;
-
   copy = input.required<MaramatakaCopy>();
   yearLoading = input.required<boolean>();
   yearTimelineLoading = input(false);
@@ -36,6 +35,9 @@ export class MaramatakaYearView {
 
   private readonly yearEventLayout = computed(
     () => this.computeYearEventLayout(),
+  );
+  protected readonly displayTimeZone = computed(
+    () => this.year()?.timezone ?? NZ_TIMEZONE,
   );
 
   protected selectYearMonth(month: MaramatakaYearMonth): void {
@@ -75,7 +77,7 @@ export class MaramatakaYearView {
       case 'star-appearance':
       case 'star-invisibility':
         return 13 + lane * 1.8;
-      case 'solar-season':
+      case 'sunrise-extreme':
         return 14.9;
       case 'new-moon':
       case 'full-moon':
@@ -101,8 +103,8 @@ export class MaramatakaYearView {
         return '●';
       case 'public-holiday':
         return '✦';
-      case 'solar-season':
-        return '☼';
+      case 'sunrise-extreme':
+        return '↕';
       case 'month-start':
         return '◇';
     }
@@ -124,16 +126,15 @@ export class MaramatakaYearView {
         return this.copy().year.eventTypes.fullMoon;
       case 'public-holiday':
         return this.copy().year.eventTypes.holiday;
-      case 'solar-season':
-        return this.copy().year.eventTypes.solar;
+      case 'sunrise-extreme':
+        return this.copy().year.eventTypes.sunriseLimit;
       case 'month-start':
         return this.copy().year.eventTypes.monthStart;
     }
   }
 
   protected yearEventDateLabel(event: MaramatakaYearEvent): string {
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
+    return formatDateInTimeZone(event.occursAt, this.displayTimeZone(), {
       day: 'numeric',
       month: 'short',
       ...(event.type === 'public-holiday'
@@ -141,7 +142,7 @@ export class MaramatakaYearView {
         : event.type === 'star-invisibility'
           ? { year: 'numeric' }
           : { hour: 'numeric', minute: '2-digit' }),
-    }).format(event.occursAt);
+    });
   }
 
   protected yearMonthOffsetPercent(month: MaramatakaYearMonth): number {
@@ -194,13 +195,19 @@ export class MaramatakaYearView {
       return '';
     }
 
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
+    return formatDateInTimeZone(selectedDate, this.displayTimeZone(), {
       day: 'numeric',
       month: 'short',
       hour: 'numeric',
       minute: '2-digit',
-    }).format(selectedDate);
+    });
+  }
+
+  protected visibleYearEvents(): MaramatakaYearEvent[] {
+    return (
+      this.year()?.events.filter((event) => this.shouldDisplayYearEvent(event)) ??
+      []
+    );
   }
 
   protected yearEventAriaLabel(event: MaramatakaYearEvent): string {
@@ -237,6 +244,31 @@ export class MaramatakaYearView {
     return parts.join(', ');
   }
 
+  protected formatShortDate(date: Date): string {
+    return formatDateInTimeZone(date, this.displayTimeZone(), {
+      day: 'numeric',
+      month: 'short',
+    });
+  }
+
+  protected formatYearDate(date: Date): string {
+    return formatDateInTimeZone(date, this.displayTimeZone(), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+  protected formatDateTime(date: Date): string {
+    return formatDateInTimeZone(date, this.displayTimeZone(), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
   private yearEventLane(event: MaramatakaYearEvent): number {
     return this.yearEventLayout().get(this.yearEventLayoutKey(event))?.lane ?? 0;
   }
@@ -262,12 +294,13 @@ export class MaramatakaYearView {
       { key: 'seasonal-marker', types: ['star-marker'] },
       { key: 'star-invisibility', types: ['star-appearance', 'star-invisibility'] },
       { key: 'public-holiday', types: ['public-holiday'] },
-      { key: 'solar-season', types: ['solar-season'] },
+      { key: 'sunrise-extreme', types: ['sunrise-extreme'] },
       { key: 'lunar-phase', types: ['new-moon', 'full-moon'] },
     ];
 
     for (const group of layoutGroups) {
       const events = year.events
+        .filter((event) => this.shouldDisplayYearEvent(event))
         .filter(
           (event) =>
             group.types.includes(event.type) &&
@@ -313,6 +346,10 @@ export class MaramatakaYearView {
     return `${event.type}|${event.name}|${event.occursAt.toISOString()}`;
   }
 
+  private shouldDisplayYearEvent(event: MaramatakaYearEvent): boolean {
+    return event.type !== 'month-start';
+  }
+
   private yearEventLayoutGroupForEvent(
     event: MaramatakaYearEvent,
   ): YearEventLayoutGroup | null {
@@ -326,8 +363,8 @@ export class MaramatakaYearView {
         return 'star-invisibility';
       case 'public-holiday':
         return 'public-holiday';
-      case 'solar-season':
-        return 'solar-season';
+      case 'sunrise-extreme':
+        return 'sunrise-extreme';
       case 'new-moon':
       case 'full-moon':
         return 'lunar-phase';
@@ -343,7 +380,7 @@ export class MaramatakaYearView {
       case 'star-invisibility':
         return 2;
       case 'public-holiday':
-      case 'solar-season':
+      case 'sunrise-extreme':
         return 1;
       case 'lunar-phase':
         return 3;
@@ -357,7 +394,7 @@ export class MaramatakaYearView {
       case 'star-invisibility':
         return 4;
       case 'public-holiday':
-      case 'solar-season':
+      case 'sunrise-extreme':
         return 0;
       case 'lunar-phase':
         return 2.8;
@@ -370,11 +407,4 @@ export class MaramatakaYearView {
     return startInsetPercent + rawOffset * (1 - startInsetPercent / 100);
   }
 
-  private formatShortDate(date: Date): string {
-    return new Intl.DateTimeFormat('en-NZ', {
-      timeZone: this.nzTimeZone,
-      day: 'numeric',
-      month: 'short',
-    }).format(date);
-  }
 }

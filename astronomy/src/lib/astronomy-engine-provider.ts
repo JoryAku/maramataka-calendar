@@ -1,5 +1,11 @@
 import {
   AstronomyProvider,
+  DawnMoon,
+  DawnSky,
+  DawnSunriseExtremePoint,
+  DawnSunriseExtremes,
+  DawnSunPath,
+  DawnSunPathPoint,
   FullMoon,
   Location,
   MoonDetails,
@@ -9,7 +15,6 @@ import {
   MoonRiseSet,
   MoonTransit,
   NewMoon,
-  SolarSeasonEvent,
   StarMarkerAppearanceWindow,
   StarMarkerDawnRisingConfig,
   StarMarker,
@@ -239,35 +244,6 @@ export class AstronomyEngineProvider implements AstronomyProvider {
       }));
   }
 
-  async getSolarSeasons(year: number): Promise<SolarSeasonEvent[]> {
-    return this.calculate('solar seasons', async (engine) => {
-      const seasons = engine.Seasons(year);
-
-      return [
-        {
-          name: 'March equinox' as const,
-          occursAt: seasons.mar_equinox.date,
-          source: ASTRONOMY_ENGINE_SOURCE,
-        },
-        {
-          name: 'June solstice' as const,
-          occursAt: seasons.jun_solstice.date,
-          source: ASTRONOMY_ENGINE_SOURCE,
-        },
-        {
-          name: 'September equinox' as const,
-          occursAt: seasons.sep_equinox.date,
-          source: ASTRONOMY_ENGINE_SOURCE,
-        },
-        {
-          name: 'December solstice' as const,
-          occursAt: seasons.dec_solstice.date,
-          source: ASTRONOMY_ENGINE_SOURCE,
-        },
-      ];
-    });
-  }
-
   async getMoonRise(date: string, location: Location): Promise<MoonRise> {
     return this.calculate('moonrise', async (engine) => {
       const observer = this.observer(engine, location);
@@ -389,6 +365,16 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     location: Location,
     markers = DEFAULT_STAR_MARKERS,
   ): Promise<StarMarker[]> {
+    const dawnSky = await this.getDawnSky(date, location, markers);
+
+    return dawnSky.starMarkers;
+  }
+
+  async getDawnSky(
+    date: string,
+    location: Location,
+    markers = DEFAULT_STAR_MARKERS,
+  ): Promise<DawnSky> {
     return this.calculate('star markers', async (engine) => {
       const observer = this.observer(engine, location);
       const observedAt = this.dawnObservationTime(
@@ -399,18 +385,42 @@ export class AstronomyEngineProvider implements AstronomyProvider {
       );
       const calculation =
         'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.';
+      const sunPath = this.dawnSunPath(date, location, engine, observer);
+      const sunriseExtremes = this.calculateSunriseExtremes(
+        Number.parseInt(date.slice(0, 4), 10),
+        location,
+        engine,
+        observer,
+      );
+      const moon = this.dawnMoon(engine, observer, observedAt);
 
-      return markers
-        .map((marker) =>
-          this.calculateStarMarker(
-            marker,
-            engine,
-            observer,
-            observedAt,
-            calculation,
-          ),
-        )
-        .sort((a, b) => b.altitudeDegrees - a.altitudeDegrees);
+      return {
+        starMarkers: markers
+          .map((marker) =>
+            this.calculateStarMarker(
+              marker,
+              engine,
+              observer,
+              observedAt,
+              calculation,
+            ),
+          )
+          .sort((a, b) => b.altitudeDegrees - a.altitudeDegrees),
+        sunPath,
+        sunriseExtremes,
+        moon,
+      };
+    });
+  }
+
+  async getSunriseExtremes(
+    year: number,
+    location: Location,
+  ): Promise<DawnSunriseExtremes> {
+    return this.calculate('sunrise extremes', async (engine) => {
+      const observer = this.observer(engine, location);
+
+      return this.calculateSunriseExtremes(year, location, engine, observer);
     });
   }
 
@@ -652,6 +662,169 @@ export class AstronomyEngineProvider implements AstronomyProvider {
     }
 
     return { astronomicalDawn, nauticalDawn, sunrise };
+  }
+
+  private dawnSunPath(
+    date: string,
+    location: Location,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+  ): DawnSunPath {
+    const { astronomicalDawn, sunrise } = this.dawnObservationWindow(
+      date,
+      location,
+      engine,
+      observer,
+    );
+    const points: DawnSunPathPoint[] = [];
+    const durationMs = sunrise.getTime() - astronomicalDawn.getTime();
+    const sampleCount = 6;
+
+    for (let index = 0; index <= sampleCount; index += 1) {
+      const observedAt = new Date(
+        astronomicalDawn.getTime() + (durationMs * index) / sampleCount,
+      );
+      points.push(this.sunPathPoint(observedAt, engine, observer));
+    }
+
+    return {
+      startsAt: astronomicalDawn,
+      sunriseAt: sunrise,
+      points,
+      calculation:
+        'Sun path sampled from astronomical dawn, when the rising Sun crosses 18° below the horizon, through sunrise at 0° altitude.',
+    };
+  }
+
+  private sunPathPoint(
+    observedAt: Date,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+  ): DawnSunPathPoint {
+    const equator = engine.Equator(
+      engine.Body.Sun,
+      observedAt,
+      observer,
+      true,
+      true,
+    );
+    const horizon = engine.Horizon(
+      observedAt,
+      observer,
+      equator.ra,
+      equator.dec,
+      'normal',
+    );
+
+    return {
+      observedAt,
+      altitudeDegrees: this.roundTo(horizon.altitude, 1),
+      azimuthDegrees: this.roundTo(horizon.azimuth, 1),
+      direction: this.directionFromAzimuth(horizon.azimuth),
+    };
+  }
+
+  private calculateSunriseExtremes(
+    year: number,
+    location: Location,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+  ): DawnSunriseExtremes {
+    const startDate = `${year.toString().padStart(4, '0')}-01-01`;
+    const endDate = `${(year + 1).toString().padStart(4, '0')}-01-01`;
+    let localDate = startDate;
+    let northernmost: DawnSunriseExtremePoint | undefined;
+    let southernmost: DawnSunriseExtremePoint | undefined;
+
+    while (localDate < endDate) {
+      const point = this.sunrisePoint(localDate, location, engine, observer);
+
+      if (!northernmost || point.azimuthDegrees < northernmost.azimuthDegrees) {
+        northernmost = point;
+      }
+
+      if (!southernmost || point.azimuthDegrees > southernmost.azimuthDegrees) {
+        southernmost = point;
+      }
+
+      localDate = this.addIsoDateDays(localDate, 1);
+    }
+
+    if (!northernmost || !southernmost) {
+      throw this.dataUnavailable(`No sunrise extremes found for ${year}`);
+    }
+
+    return {
+      year,
+      northernmost,
+      southernmost,
+      calculation:
+        'Northernmost and southernmost sunrise points found by scanning daily sunrise azimuths across the selected local calendar year.',
+    };
+  }
+
+  private sunrisePoint(
+    date: string,
+    location: Location,
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+  ): DawnSunriseExtremePoint {
+    const startsAt = this.localDateAtTime(date, location, 0, 0);
+    const sunriseAt = engine.SearchAltitude(
+      engine.Body.Sun,
+      observer,
+      1,
+      startsAt,
+      1,
+      0,
+    )?.date;
+
+    if (!sunriseAt) {
+      throw this.dataUnavailable(`No sunrise data found for ${date}`);
+    }
+
+    return {
+      date,
+      ...this.sunPathPoint(sunriseAt, engine, observer),
+    };
+  }
+
+  private dawnMoon(
+    engine: AstronomyEngineModule,
+    observer: InstanceType<AstronomyEngineModule['Observer']>,
+    observedAt: Date,
+  ): DawnMoon {
+    const equator = engine.Equator(
+      engine.Body.Moon,
+      observedAt,
+      observer,
+      true,
+      true,
+    );
+    const horizon = engine.Horizon(
+      observedAt,
+      observer,
+      equator.ra,
+      equator.dec,
+      'normal',
+    );
+    const moonPhaseAngle = engine.MoonPhase(observedAt);
+    const illumination = engine.Illumination(engine.Body.Moon, observedAt);
+
+    return {
+      name: 'Moon',
+      type: 'moon',
+      observedAt,
+      phase: this.phaseNameFromAngle(moonPhaseAngle),
+      fractionIlluminated: this.roundTo(illumination.phase_fraction, 4),
+      altitudeDegrees: this.roundTo(horizon.altitude, 1),
+      azimuthDegrees: this.roundTo(horizon.azimuth, 1),
+      direction: this.directionFromAzimuth(horizon.azimuth),
+      visibility: this.visibilityFromAltitude(horizon.altitude),
+      calculation:
+        'Moon sky position sampled at the dawn marker observation time.',
+      source: ASTRONOMY_ENGINE_SOURCE,
+    };
   }
 
   private findFirstDawnRisingAppearance(

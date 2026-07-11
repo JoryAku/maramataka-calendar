@@ -7,9 +7,9 @@ import { TestBed } from '@angular/core/testing';
 import { MARAMATAKA_APP_CONFIG } from '../../app-config';
 import { MaramatakaApiService } from './maramataka-api.service';
 import {
+  DawnSky,
   MaramatakaPageData,
   MaramatakaYear,
-  StarMarker,
 } from './maramataka.models';
 
 describe('MaramatakaApiService', () => {
@@ -91,45 +91,109 @@ describe('MaramatakaApiService', () => {
     TestBed.resetTestingModule();
   });
 
-  it('maps star markers from the API', () => {
-    let markers: StarMarker[] | undefined;
+  it('maps dawn sky from the API', () => {
+    let dawnSky: DawnSky | undefined;
 
     service
-      .getStarMarkers('wellington', new Date('2026-06-24T12:00:00.000Z'))
+      .getDawnSky('wellington', new Date('2026-06-24T12:00:00.000Z'))
       .subscribe((response) => {
-        markers = response;
+        dawnSky = response;
       });
 
     const request = httpTestingController.expectOne(
       (req) =>
-        req.url === '/api/maramataka/star-markers' &&
+        req.url === '/api/maramataka/dawn-sky' &&
         req.params.get('location') === 'wellington',
     );
 
     expect(request.request.params.get('date')).toBe('2026-06-25');
-    request.flush([
-      {
-        id: 'tautoru',
-        name: 'Tautoru',
-        type: 'asterism',
-        englishName: "Orion's Belt",
-        description: 'A seasonal dawn marker.',
-        seasonalAssociation:
-          'Associated with July alongside Kōpū in the seasonal star account.',
-        source: 'Elsdon Best, The Maori Division of Time',
-        confidence: 'confirmed',
-        observedAt: '2026-06-24T18:00:00.000Z',
-        altitudeDegrees: 18,
-        azimuthDegrees: 82,
-        direction: 'E',
-        visibility: 'visible',
-        calculation:
-          'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
+    request.flush({
+      starMarkers: [
+        {
+          id: 'tautoru',
+          name: 'Tautoru',
+          type: 'asterism',
+          englishName: "Orion's Belt",
+          description: 'A seasonal dawn marker.',
+          seasonalAssociation:
+            'Associated with July alongside Kōpū in the seasonal star account.',
+          source: 'Elsdon Best, The Maori Division of Time',
+          confidence: 'confirmed',
+          observedAt: '2026-06-24T18:00:00.000Z',
+          altitudeDegrees: 18,
+          azimuthDegrees: 82,
+          direction: 'E',
+          visibility: 'visible',
+          calculation:
+            'Dawn sky position sampled midway between the rising Sun crossing 18° and 12° below the horizon.',
+        },
+      ],
+      sunPath: {
+        startsAt: '2026-06-24T17:00:00.000Z',
+        sunriseAt: '2026-06-24T19:00:00.000Z',
+        points: [
+          {
+            observedAt: '2026-06-24T17:00:00.000Z',
+            altitudeDegrees: -18,
+            azimuthDegrees: 67,
+            direction: 'E',
+          },
+          {
+            observedAt: '2026-06-24T19:00:00.000Z',
+            altitudeDegrees: 0,
+            azimuthDegrees: 79,
+            direction: 'E',
+          },
+        ],
+        calculation: 'Sun path sampled from astronomical dawn to sunrise.',
       },
-    ]);
+      sunriseExtremes: {
+        year: 2026,
+        northernmost: {
+          date: '2026-06-21',
+          observedAt: '2026-06-20T19:25:00.000Z',
+          altitudeDegrees: 0,
+          azimuthDegrees: 58,
+          direction: 'ENE',
+        },
+        southernmost: {
+          date: '2026-12-21',
+          observedAt: '2026-12-20T17:45:00.000Z',
+          altitudeDegrees: 0,
+          azimuthDegrees: 122,
+          direction: 'ESE',
+        },
+        calculation: 'Annual sunrise limits.',
+      },
+      moon: {
+        name: 'Moon',
+        type: 'moon',
+        observedAt: '2026-06-24T18:00:00.000Z',
+        phase: 'Waning Gibbous',
+        fractionIlluminated: 0.82,
+        altitudeDegrees: 21,
+        azimuthDegrees: 104,
+        direction: 'ESE',
+        visibility: 'visible',
+        calculation: 'Moon sky position sampled at dawn.',
+        source: 'astronomy-engine',
+      },
+    });
 
-    expect(markers?.[0].name).toBe('Tautoru');
-    expect(markers?.[0].observedAt).toEqual(
+    expect(dawnSky?.starMarkers[0].name).toBe('Tautoru');
+    expect(dawnSky?.starMarkers[0].observedAt).toEqual(
+      new Date('2026-06-24T18:00:00.000Z'),
+    );
+    expect(dawnSky?.sunPath.sunriseAt).toEqual(
+      new Date('2026-06-24T19:00:00.000Z'),
+    );
+    expect(dawnSky?.sunPath.points[0].observedAt).toEqual(
+      new Date('2026-06-24T17:00:00.000Z'),
+    );
+    expect(dawnSky?.sunriseExtremes?.northernmost.observedAt).toEqual(
+      new Date('2026-06-20T19:25:00.000Z'),
+    );
+    expect(dawnSky?.moon?.observedAt).toEqual(
       new Date('2026-06-24T18:00:00.000Z'),
     );
   });
@@ -356,9 +420,12 @@ describe('MaramatakaApiService', () => {
 
     service.getLocations().subscribe();
 
-    const request = httpTestingController.expectOne(
-      'https://api.example.test/api/locations',
-    );
+    const request = httpTestingController.expectOne((req) => {
+      return (
+        req.url === 'https://api.example.test/api/locations' &&
+        req.params.get('registryVersion') === '2026-07-tahiti-timezone'
+      );
+    });
     request.flush([]);
   });
 });

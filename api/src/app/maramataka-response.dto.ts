@@ -1,4 +1,4 @@
-import { MoonDetails, StarMarker } from '@maramataka-calendar/astronomy';
+import { DawnSky, MoonDetails, StarMarker } from '@maramataka-calendar/astronomy';
 import { MaramatakaCycleDetails } from '@maramataka-calendar/maramataka-domain';
 
 export interface MoonDetailsResponseDto {
@@ -30,6 +30,8 @@ export interface MoonDetailsResponseDto {
 }
 
 export type StarMarkerResponseDto = StarMarker;
+
+export type DawnSkyResponseDto = DawnSky;
 
 export interface MaramatakaPageResponseDto {
   cycle: MaramatakaCycleDetails;
@@ -77,6 +79,10 @@ export function toMoonDetailsResponse(
     ],
     source: details.source,
   };
+}
+
+export function toDawnSkyResponse(dawnSky: DawnSky): DawnSkyResponseDto {
+  return dawnSky;
 }
 
 export function toStarMarkersResponse(

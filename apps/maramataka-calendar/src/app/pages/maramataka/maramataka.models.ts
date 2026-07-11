@@ -17,6 +17,7 @@ export interface MaramatakaNightOverlap {
 export interface LocationSummary {
   id: string;
   name: string;
+  timezone?: string;
   rohe?: string;
 }
 
@@ -79,7 +80,7 @@ export interface MaramatakaYearEvent<TDate = Date> {
     | 'star-marker'
     | 'star-appearance'
     | 'star-invisibility'
-    | 'solar-season'
+    | 'sunrise-extreme'
     | 'new-moon'
     | 'full-moon'
     | 'public-holiday';
@@ -249,6 +250,53 @@ export interface StarMarker<TDate = Date> {
   direction: string;
   visibility: StarMarkerVisibility;
   calculation: string;
+}
+
+export interface DawnSunPathPoint<TDate = Date> {
+  observedAt: TDate;
+  altitudeDegrees: number;
+  azimuthDegrees: number;
+  direction: string;
+}
+
+export interface DawnSunPath<TDate = Date> {
+  startsAt: TDate;
+  sunriseAt: TDate;
+  points: DawnSunPathPoint<TDate>[];
+  calculation: string;
+}
+
+export interface DawnSunriseExtremePoint<TDate = Date>
+  extends DawnSunPathPoint<TDate> {
+  date: string;
+}
+
+export interface DawnSunriseExtremes<TDate = Date> {
+  year: number;
+  northernmost: DawnSunriseExtremePoint<TDate>;
+  southernmost: DawnSunriseExtremePoint<TDate>;
+  calculation: string;
+}
+
+export interface DawnMoon<TDate = Date> {
+  name: 'Moon';
+  type: 'moon';
+  observedAt: TDate;
+  phase: string;
+  fractionIlluminated: number;
+  altitudeDegrees: number;
+  azimuthDegrees: number;
+  direction: string;
+  visibility: StarMarkerVisibility;
+  calculation: string;
+  source: string;
+}
+
+export interface DawnSky<TDate = Date> {
+  starMarkers: StarMarker<TDate>[];
+  sunPath: DawnSunPath<TDate>;
+  sunriseExtremes?: DawnSunriseExtremes<TDate>;
+  moon?: DawnMoon<TDate>;
 }
 
 export interface ApiMaramatakaNight {

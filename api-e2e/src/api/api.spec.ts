@@ -11,13 +11,19 @@ describe('GET /api', () => {
   it('returns a Maramataka page payload', async () => {
     const res = await axios.get('/api/maramataka/page', {
       params: {
-        date: '2026-01-01',
+        date: '2026-01-15',
         location: 'wellington',
       },
     });
 
     expect(res.status).toBe(200);
-    expect(res.data.cycle.version).toBe('mita-te-tai-best');
+    expect(res.data.cycle.version).toEqual(expect.any(String));
+    expect(res.data.cycle.ruleSet).toMatchObject({
+      id: expect.any(String),
+      name: expect.any(String),
+      version: expect.any(String),
+      mataVersion: expect.any(String),
+    });
     expect(typeof res.data.cycle.anchors.whiro.occursAt).toBe('string');
     expect(Array.isArray(res.data.cycle.nights)).toBe(true);
     expect(res.data.cycle.nights.length).toBeGreaterThan(0);
@@ -28,7 +34,7 @@ describe('GET /api', () => {
     const firstNight = res.data.cycle.nights[0];
     expect(firstNight).toMatchObject({
       mata: expect.objectContaining({
-        version: 'mita-te-tai-best',
+        version: expect.any(String),
       }),
     });
     expect(typeof firstNight.startsAt).toBe('string');

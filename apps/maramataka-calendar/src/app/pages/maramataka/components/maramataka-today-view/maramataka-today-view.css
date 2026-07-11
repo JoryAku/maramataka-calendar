@@ -1,1 +1,56 @@
-:host{display:block}
+@import url("./maramataka-today-view.feature.css");
+
+:host {
+  display: block;
+}
+
+.sunrise-marker {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  gap: 0.18rem;
+  justify-items: center;
+  width: 6.4rem;
+  color: #f0c66b;
+  text-align: center;
+  transform: translate(-50%, 50%);
+  pointer-events: none;
+}
+
+.horizon-line {
+  z-index: 1;
+}
+
+.sunrise-dot {
+  display: block;
+  width: 1rem;
+  aspect-ratio: 1;
+  border: 2px solid #33270d;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff9df 0 22%, #f0c66b 24% 100%);
+  box-shadow:
+    0 0 0 0.28rem #102821,
+    0 0 18px #f0c66b88;
+}
+
+.sunrise-label {
+  max-width: 100%;
+  color: #fff9df;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 1px 3px #000;
+  white-space: nowrap;
+}
+
+.horizon-marker.moon {
+  color: #f1efe6;
+}
+
+.horizon-marker.moon .horizon-dot {
+  border-color: #28352f;
+  background: radial-gradient(circle at 38% 42%, #fffdf0 0 48%, #9fb5ac 52% 100%);
+  box-shadow:
+    0 0 0 0.35rem #102821,
+    0 0 16px #f1efe655;
+}

@@ -143,26 +143,26 @@
     <dl class="timing-panel" [attr.aria-label]="copy().today.moonTimings">
       <div>
         <dt>{{ copy().today.moonrise }}</dt>
-        <dd>{{ today()!.startsAt | date: 'h:mm a' : nzTimeZone }}</dd>
+        <dd>{{ formatTime(today()!.startsAt) }}</dd>
       </div>
       @if (moonDetails()?.transit) {
       <div>
         <dt>{{ copy().today.meridian }}</dt>
         <dd>
-          {{ moonDetails()!.transit!.occursAt | date: 'h:mm a' : nzTimeZone }}
+          {{ formatTime(moonDetails()!.transit!.occursAt) }}
         </dd>
       </div>
       } @if (moonDetails()?.moonset) {
       <div>
         <dt>{{ copy().today.moonset }}</dt>
         <dd>
-          {{ moonDetails()!.moonset!.occursAt | date: 'h:mm a' : nzTimeZone }}
+          {{ formatTime(moonDetails()!.moonset!.occursAt) }}
         </dd>
       </div>
       }
       <div>
         <dt>{{ copy().today.nextMoonrise }}</dt>
-        <dd>{{ today()!.endsAt | date: 'h:mm a' : nzTimeZone }}</dd>
+        <dd>{{ formatTime(today()!.endsAt) }}</dd>
       </div>
     </dl>
   </article>
@@ -197,7 +197,7 @@
         @if (dawnObservationTime()) {
         <p class="dawn-sky-time">
           {{ copy().today.sampled }}
-          {{ dawnObservationTime()! | date: 'h:mm a' : nzTimeZone }}
+          {{ formatTime(dawnObservationTime()!) }}
         </p>
         }
         <p class="dawn-sky-scope">
@@ -205,13 +205,30 @@
         </p>
       </div>
       <span class="dawn-sky-count">
-        {{ dawnVisibleMarkers().length }} {{ copy().today.visible }}
+        {{ dawnVisibleBodies().length }} {{ copy().today.visible }}
       </span>
     </div>
-    @if (dawnVisibleMarkers().length) {
+    @if (dawnVisibleBodies().length || dawnSunrisePoint()) {
     <div class="dawn-horizon" data-testid="dawn-horizon">
       <div class="horizon-sky" [attr.aria-label]="copy().today.dawnHorizon">
-        <span class="horizon-line" aria-hidden="true"></span>
+        @if (dawnSunrisePoint(); as sunrisePoint) {
+        <span
+          class="sunrise-marker"
+          [style.left.%]="sunrisePointLeft(sunrisePoint)"
+          [style.bottom.%]="sunrisePointBottom(sunrisePoint)"
+        >
+          <span class="sunrise-dot" aria-hidden="true"></span>
+          <span class="sunrise-label">
+            {{ copy().today.sunrise }}
+            {{ formatTime(dawnSunPath()!.sunriseAt) }}
+          </span>
+        </span>
+        }
+        <span
+          class="horizon-line"
+          [style.bottom.%]="horizonAltitudeBottom(0)"
+          aria-hidden="true"
+        ></span>
         @for (altitude of horizonAltitudeGuideLines; track altitude) {
         <span
           class="horizon-altitude-line"
@@ -221,7 +238,7 @@
           <span>{{ altitude }}°</span>
         </span>
         }
-        @for (marker of dawnVisibleMarkers(); track marker.id) {
+        @for (marker of dawnVisibleBodies(); track marker.name) {
         <span
           [class]="horizonMarkerClass(marker)"
           [style.left.%]="horizonMarkerLeft(marker)"
@@ -247,7 +264,16 @@
         <span>S</span>
       </div>
     </div>
+    @if (dawnVisibleBodies().length) {
     <ul class="dawn-sky-list">
+      @if (dawnVisibleMoon(); as moon) {
+      <li>
+        <span>{{ starMarkerVisibilityLabel(moon) }}</span>
+        <strong>{{ moon.name }}</strong>
+        <em>{{ moonMetaLabel(moon) }}</em>
+        <small>{{ starMarkerAltitudeLabel(moon) }}</small>
+      </li>
+      }
       @for (marker of dawnVisibleMarkers(); track marker.id) {
       <li>
         <span>{{ starMarkerVisibilityLabel(marker) }}</span>
@@ -257,6 +283,11 @@
       </li>
       }
     </ul>
+    } @else {
+    <p class="state compact">
+      {{ copy().today.noDawnBodies }}
+    </p>
+    }
     } @else {
     <p class="state compact">
       {{ copy().today.noDawnBodies }}

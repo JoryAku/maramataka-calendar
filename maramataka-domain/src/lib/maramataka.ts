@@ -1,4 +1,4 @@
-import { StarMarker } from '@maramataka-calendar/astronomy';
+import { DawnSky, StarMarker } from '@maramataka-calendar/astronomy';
 import { Mata, MaramatakaVersion } from './mata';
 import {
   MaramatakaRuleSetSummary,
@@ -53,6 +53,8 @@ export interface MaramatakaStarMonth {
   note?: StarMonthNote;
 }
 
+export type MaramatakaDawnSky = DawnSky;
+
 export interface MaramatakaCycleDetails {
   version: MaramatakaVersion;
   ruleSet: MaramatakaRuleSetSummary;
@@ -87,7 +89,7 @@ export interface MaramatakaYearEvent {
     | 'star-marker'
     | 'star-appearance'
     | 'star-invisibility'
-    | 'solar-season'
+    | 'sunrise-extreme'
     | 'new-moon'
     | 'full-moon'
     | 'public-holiday';

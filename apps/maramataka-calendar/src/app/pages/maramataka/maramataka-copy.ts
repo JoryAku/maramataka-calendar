@@ -52,6 +52,7 @@ export interface MaramatakaCopy {
     dawnRule: string;
     visible: string;
     dawnHorizon: string;
+    sunrise: string;
     noDawnBodies: string;
     moonPhase: string;
     belowHorizonSuffix: string;
@@ -127,7 +128,7 @@ export interface MaramatakaCopy {
       fullMoon: string;
       lunarPhase: string;
       holiday: string;
-      solar: string;
+      sunriseLimit: string;
       monthStart: string;
     };
   };
@@ -196,6 +197,7 @@ export const MARAMATAKA_COPY: Record<AppLanguage, MaramatakaCopy> = {
         'Dawn is sampled while the Sun is 12° to 18° below the horizon.',
       visible: 'visible',
       dawnHorizon: 'Schematic dawn horizon',
+      sunrise: 'Sunrise',
       noDawnBodies:
         'No configured bodies are above the horizon in the sampled dawn sky.',
       moonPhase: 'Moon phase',
@@ -256,7 +258,7 @@ export const MARAMATAKA_COPY: Record<AppLanguage, MaramatakaCopy> = {
       loading: 'Loading maramataka year...',
       empty: 'No maramataka year timeline is available for this date.',
       ruleNote:
-        'Year view starts at Te Tahi o Pipiri and uses actual dates across the maramataka year. It marks marama boundaries, month and seasonal dawn appearances, Matariki appearance/disappearance, astronomical New Moons, astronomical Full Moons, equinoxes, solstices, and the Matariki public holiday marker.',
+        'Year view starts at Te Tahi o Pipiri and uses actual dates across the maramataka year. It marks marama boundaries, month and seasonal dawn appearances, Matariki appearance/disappearance, astronomical New Moons, astronomical Full Moons, sunrise horizon limits, and the Matariki public holiday marker.',
       loadingAnnotations: 'Loading celestial annotations...',
       diagnosticsHeading: 'Year timeline notes',
       timelineLabel: 'Maramataka year rhythm timeline',
@@ -275,7 +277,7 @@ export const MARAMATAKA_COPY: Record<AppLanguage, MaramatakaCopy> = {
         fullMoon: 'Full Moon',
         lunarPhase: 'Lunar phase',
         holiday: 'Holiday',
-        solar: 'Solar',
+        sunriseLimit: 'Sunrise limit',
         monthStart: 'Month start',
       },
     },
@@ -342,6 +344,7 @@ export const MARAMATAKA_COPY: Record<AppLanguage, MaramatakaCopy> = {
         'Ka inea te ata i te wā kei te 12° ki te 18° te Rā i raro i te pae.',
       visible: 'e kitea ana',
       dawnHorizon: 'Tauira pae ata',
+      sunrise: 'Putanga Rā',
       noDawnBodies:
         'Kāore ngā tinana kua whirihorahia i runga ake i te pae i te rangi ata kua inea.',
       moonPhase: 'Āhua o te Marama',
@@ -402,7 +405,7 @@ export const MARAMATAKA_COPY: Record<AppLanguage, MaramatakaCopy> = {
       loading: 'E uta ana te tau maramataka...',
       empty: 'Kāore he ara tau maramataka mō tēnei rā.',
       ruleNote:
-        'Ka tīmata te tirohanga tau i Te Tahi o Pipiri, ka whakamahi i ngā rā tūturu puta noa i te tau maramataka. Ka tohu i ngā rohe marama, ngā putanga ata o ngā marama me ngā kaupeka, te putanga/ngaronga o Matariki, ngā Marama Hou arorangi, ngā Marama Rakaunui arorangi, ngā equinox, ngā solstice, me te tohu hararei tūmatanui o Matariki.',
+        'Ka tīmata te tirohanga tau i Te Tahi o Pipiri, ka whakamahi i ngā rā tūturu puta noa i te tau maramataka. Ka tohu i ngā rohe marama, ngā putanga ata o ngā marama me ngā kaupeka, te putanga/ngaronga o Matariki, ngā Marama Hou arorangi, ngā Marama Rakaunui arorangi, ngā paenga putanga Rā, me te tohu hararei tūmatanui o Matariki.',
       loadingAnnotations: 'E uta ana ngā tohu arorangi...',
       diagnosticsHeading: 'Ngā tuhipoka ara tau',
       timelineLabel: 'Ara manawataki tau maramataka',
@@ -421,7 +424,7 @@ export const MARAMATAKA_COPY: Record<AppLanguage, MaramatakaCopy> = {
         fullMoon: 'Marama Rakaunui',
         lunarPhase: 'Āhua Marama',
         holiday: 'Hararei',
-        solar: 'Rā',
+        sunriseLimit: 'Paenga putanga Rā',
         monthStart: 'Timatanga marama',
       },
     },
